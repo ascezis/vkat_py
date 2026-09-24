@@ -42,7 +42,10 @@ window.COURSE_TOPICS.push({
       starterCode: '# Создай переменную coins и выведи её\n',
       hint: 'Сначала напиши coins = 50, а на следующей строке print(coins)',
       expectedOutput: "50",
-      astRequirements: {},
+      astRequirements: {
+        require_vars: ["coins"]
+      },
+      testCode: 'assert "coins" in _user_ns and _user_ns["coins"] == 50, "Переменная coins должна быть равна 50"',
       improveTip: "Имена переменных в Python всегда пишут строчными буквами в snake_case, без заглавных.",
       successMessage: "Переменная создана и выведена верно!"
     },
@@ -61,7 +64,11 @@ window.COURSE_TOPICS.push({
       starterCode: 'level1 = 20\n# Допиши код\n',
       hint: 'Создай level2 = 35, затем total = level1 + level2, и в конце print(total)',
       expectedOutput: "55",
-      astRequirements: {},
+      astRequirements: {
+        require_vars: ["level1", "level2", "total"],
+        require_add: true
+      },
+      testCode: 'assert "level1" in _user_ns and _user_ns["level1"] == 20, "Не найдена переменная level1 = 20"\nassert "level2" in _user_ns and _user_ns["level2"] == 35, "Не найдена переменная level2 = 35"\nassert "total" in _user_ns and _user_ns["total"] == 55, "Переменная total должна содержать сумму level1 + level2"',
       improveTip: "Отделяй операторы (+, -, =) пробелами с обеих сторон — код становится гораздо легче читать.",
       successMessage: "Сумма посчитана и выведена!"
     },
@@ -80,7 +87,11 @@ window.COURSE_TOPICS.push({
       starterCode: 'price_str = "120"\n# Преврати price_str в число, прибавь 30 и выведи результат\n',
       hint: 'price = int(price_str) + 30, а затем print(price)',
       expectedOutput: "150",
-      astRequirements: {},
+      astRequirements: {
+        require_call: ["int"],
+        require_add: true
+      },
+      testCode: 'assert any(isinstance(v, int) and v == 150 for v in _user_ns.values()) or "150" in _captured_output, "Преобразуй price_str через int() и прибавь 30"',
       improveTip: "Явное преобразование типов — отличный навык, оно спасает от частых ошибок при чтении данных от пользователя.",
       successMessage: "Типы данных успешно преобразованы!"
     }

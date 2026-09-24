@@ -40,6 +40,7 @@
     dom.startStatus = document.getElementById('start-status');
 
     // Экран урока
+    dom.paneExplain = document.querySelector('.pane-explain');
     dom.lessonTopic = document.getElementById('lesson-topic');
     dom.explainTitle = document.getElementById('explain-title');
     dom.explainContent = document.getElementById('explain-content');
@@ -182,6 +183,13 @@
     // Breadcrumbs
     dom.breadcrumb.innerHTML = `${topic.title.toLowerCase()} <b>·</b> задание ${state.currentTaskIndex + 1} из ${topic.tasks.length}`;
     dom.lessonTopic.textContent = topic.title.toLowerCase();
+
+    // Плавная анимация смены шага
+    if (dom.paneExplain) {
+      dom.paneExplain.classList.remove('pane-fade');
+      void dom.paneExplain.offsetWidth; // перезапуск CSS анимации
+      dom.paneExplain.classList.add('pane-fade');
+    }
 
     // Теория и формулировка
     dom.explainTitle.textContent = task.title;
@@ -368,7 +376,7 @@
         // Успех
         dom.resultMark.className = 'result-mark ok';
         dom.resultMark.textContent = '✓';
-        dom.resultTitle.className = 'result-title';
+        dom.resultTitle.className = 'result-title ok';
         dom.resultTitle.textContent = result.title;
         dom.resultSub.textContent = result.sub;
 

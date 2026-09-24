@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>вкат.py — интерактивный тренажёр по Python</title>
+  <link rel="stylesheet" href="app/styles.css">
+</head>
+<body>
+
+  <!-- ТОПБАР (общий для экранов урока и финала) -->
+  <div id="app-topbar" class="topbar" style="display: none;">
+    <div class="topbar-brand">
+      <div id="app-mark" class="mark" title="На стартовый экран">вкат<span class="dot">·</span>py</div>
+      <button id="btn-tree-toggle" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
+    </div>
+    <div id="app-breadcrumb" class="breadcrumb">тема <b>·</b> задание 1 из 5</div>
+  </div>
+  <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+
+  <!-- ЭКРАН 1: СТАРТОВЫЙ -->
+  <div id="screen-start" class="screen active">
+    <div class="topbar" style="border-bottom: none;">
+      <div class="topbar-brand">
+        <div class="mark">вкат<span class="dot">·</span>py</div>
+        <button id="btn-tree-start" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
+      </div>
+    </div>
+    <div class="start-center">
+      <div class="kicker">до первого занятия с группой</div>
+      <h1>Ты пришёл чуть позже — здесь быстро наверстаешь</h1>
+      <p class="start-sub">Одно-два занятия, шесть тем, задания с реальной проверкой кода. Без лекций — сразу пишешь и сразу видишь результат.</p>
+
+      <div class="facts">
+        <div class="fact">
+          <span class="n">6</span>
+          <span class="l">тем: от переменных до словарей</span>
+        </div>
+        <div class="fact">
+          <span class="n">26</span>
+          <span class="l">коротких заданий с автопроверкой</span>
+        </div>
+        <div class="fact">
+          <span class="n">1–2</span>
+          <span class="l">занятия, чтобы пройти всё</span>
+        </div>
+      </div>
+
+      <button id="btn-start" class="btn-start">Начать</button>
+      <div class="start-note">прогресс сохраняется на этом устройстве</div>
+      <div id="start-status" class="status-badge">Загрузка Python...</div>
+    </div>
+    <div class="bottombar">
+      <span>python · до классов</span>
+      <span>standalone</span>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 2: УРОК -->
+  <div id="screen-lesson" class="screen">
+    <div class="main-panes">
+      <!-- Панель объяснения и задания -->
+      <div class="pane pane-explain">
+        <div class="pane-label">объяснение</div>
+        <h1 id="explain-title">Заголовок урока</h1>
+        <div id="explain-content">
+          <p>Текст объяснения.</p>
+        </div>
+
+        <div id="example-box" class="example">code example<span class="out">output</span></div>
+
+        <div class="task">
+          <div class="task-label">задание</div>
+          <div id="task-content">
+            <p>Условие задачи.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Панель редактора кода -->
+      <div class="pane pane-code">
+        <div class="pane-label">твой код</div>
+        <div class="editor-wrapper">
+          <div id="line-numbers" class="line-numbers" aria-hidden="true">1</div>
+          <pre id="editor-highlight" class="editor-highlight" aria-hidden="true"></pre>
+          <textarea id="code-editor" class="editor" spellcheck="false" placeholder="# Напиши решение здесь..."></textarea>
+          <div id="autocomplete-popup" class="autocomplete-popup"></div>
+        </div>
+
+        <div class="editor-footer">
+          <div class="hint-container">
+            <button id="hint-toggle" class="hint-toggle">показать подсказку</button>
+            <div id="hint-content" class="hint-content"></div>
+          </div>
+          <div class="btn-actions">
+            <button id="btn-run" class="btn-run">Проверить</button>
+            <button id="btn-next" class="btn-next">Следующее задание</button>
+          </div>
+        </div>
+
+        <!-- Зона результата -->
+        <div id="result-box" class="result">
+          <div class="result-row">
+            <span id="result-mark" class="result-mark ok">✓</span>
+            <div>
+              <div id="result-title" class="result-title">Задание засчитано</div>
+              <div id="result-sub" class="result-sub">Вывод совпадает, код написан верно</div>
+            </div>
+          </div>
+
+          <div id="console-out" class="console" style="display: none;"></div>
+
+          <div id="improve-box" class="improve">
+            <div class="improve-label">как сделать лучше</div>
+            <div id="improve-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Боттомбар урока -->
+    <div class="bottombar">
+      <span id="lesson-topic">python · до классов</span>
+      <div id="step-dots" class="step-dots"></div>
+      <span id="step-label">шаг 1 / 5</span>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 3: ФИНАЛЬНЫЙ -->
+  <div id="screen-finish" class="screen">
+    <div class="finish-center">
+      <div class="finish-mark">✓</div>
+      <h1>Базовый разрыв закрыт!</h1>
+      <p class="finish-sub">Ты прошёл все ключевые темы: переменные, ветвления, циклы, функции, структуры данных и строки. Теперь ты готов подключиться к занятиям группы на равных.</p>
+
+      <div class="finish-actions">
+        <button id="btn-restart" class="btn-restart">Пройти заново / повторить темы</button>
+      </div>
+    </div>
+    <div class="bottombar">
+      <span>python · до классов</span>
+      <span>курс завершён</span>
+    </div>
+  </div>
+
+  <!-- ДЕРЕВО ОГЛАВЛЕНИЯ КУРСА (ВЫДВИЖНОЙ САЙДБАР) -->
+  <div id="tree-drawer" class="tree-drawer">
+    <div class="tree-header">
+      <div class="tree-header-info">
+        <div class="tree-title">вкат.py <span class="tree-slash">/</span> дерево курса</div>
+        <div id="tree-progress-summary" class="tree-progress-summary">пройдено 0 из 26 (0%)</div>
+      </div>
+      <button id="btn-tree-close" class="btn-tree-close" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div id="tree-body" class="tree-body">
+      <!-- Сюда динамически рендерится дерево курса -->
+    </div>
+    <div class="tree-footer">
+      <span>кликните по заданию для перехода</span>
+      <span class="tree-footer-key">Esc</span>
+    </div>
+  </div>
+  <div id="tree-backdrop" class="tree-backdrop"></div>
+
+  <!-- Скрипты: рантайм Pyodide, встроенные бинарники, чекер, контент тем и контроллер приложения -->
+  <script src="assets/pyodide/wasm_binary.js"></script>
+  <script src="assets/pyodide/stdlib_binary.js"></script>
+  <script src="assets/pyodide/pyodide.asm.js"></script>
+  <script src="assets/pyodide/pyodide.js"></script>
+  <script src="app/checker.js"></script>
+
+  <!-- Файлы тем контента -->
+  <script src="content/01-variables.js"></script>
+  <script src="content/02-conditions.js"></script>
+  <script src="content/03-loops.js"></script>
+  <script src="content/04-functions.js"></script>
+  <script src="content/05-lists-dicts.js"></script>
+  <script src="content/06-strings.js"></script>
+
+  <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
+  <script src="app/autocomplete.js"></script>
+  <!-- Подсветка синтаксиса Python (VS Code Dark+) -->
+  <script src="app/highlighter.js"></script>
+
+  <!-- Основной контроллер интерфейса -->
+  <script src="app/app.js"></script>
+
+</body>
+</html>

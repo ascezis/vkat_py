@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>вкат — циклы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --bg: #0a0a0a;
+    --bg-panel: #121212;
+    --bg-panel-alt: #0d0d0d;
+    --text: #ececec;
+    --text-muted: #7a7a7a;
+    --text-dim: #4d4d4d;
+    --border: #2a2a2a;
+    --border-strong: #454545;
+    --fill: #ececec;
+    --fill-text: #0a0a0a;
+    --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  /* This design intentionally ignores system light/dark preference —
+     it is a fixed dark IDE-style identity, like a code editor theme. */
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #0a0a0a; --bg-panel: #121212; --text: #ececec; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Top bar ---------- */
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .mark {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .mark .dot {
+    color: var(--text-dim);
+  }
+
+  .breadcrumb {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .breadcrumb b {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .progress-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 1px;
+    width: 46%;
+    background: var(--text);
+  }
+
+  /* ---------- Main two-pane layout ---------- */
+
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+  }
+
+  @media (max-width: 860px) {
+    .main { grid-template-columns: 1fr; }
+  }
+
+  .pane {
+    padding: 40px 36px;
+  }
+
+  .pane-explain {
+    border-right: 1px solid var(--border);
+  }
+
+  @media (max-width: 860px) {
+    .pane-explain { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  .pane-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+
+  .pane-explain h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    max-width: 34ch;
+  }
+
+  .pane-explain p {
+    color: var(--text-muted);
+    max-width: 52ch;
+    margin-bottom: 14px;
+  }
+
+  .pane-explain p:last-of-type {
+    margin-bottom: 26px;
+  }
+
+  .example {
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .example .out {
+    color: var(--text-muted);
+    display: block;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .task {
+    margin-top: 30px;
+    padding-top: 26px;
+    border-top: 1px solid var(--border);
+  }
+
+  .task-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .task p {
+    color: var(--text);
+    max-width: 52ch;
+  }
+
+  /* ---------- Code editor pane ---------- */
+
+  .pane-code {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .editor {
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    padding: 20px 22px;
+    resize: none;
+    outline: none;
+    min-height: 220px;
+  }
+
+  .editor:focus {
+    border-color: var(--border-strong);
+  }
+
+  .editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+  }
+
+  .hint-toggle {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 0;
+  }
+
+  .hint-toggle:hover { color: var(--text-muted); }
+
+  .btn-run {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--fill);
+    color: var(--fill-text);
+    border: 1px solid var(--fill);
+    padding: 11px 22px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .btn-run:hover { background: #d8d8d8; }
+  .btn-run:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+
+  /* ---------- Result zone ---------- */
+
+  .result {
+    margin-top: 22px;
+    border-top: 1px solid var(--border);
+    padding-top: 22px;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .result-mark {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .result-mark.ok { color: var(--text); }
+
+  .result-title {
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .result-sub {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  .console {
+    margin-top: 14px;
+    margin-left: 32px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    border-left: 2px solid var(--border-strong);
+    padding-left: 14px;
+  }
+
+  .improve {
+    margin-top: 18px;
+    margin-left: 32px;
+    padding: 16px 18px;
+    border: 1px dashed var(--border-strong);
+  }
+
+  .improve-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .improve p {
+    font-size: 13px;
+    color: var(--text-muted);
+    max-width: 56ch;
+  }
+
+  .improve code {
+    font-family: var(--font-mono);
+    color: var(--text);
+    background: var(--bg-panel-alt);
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+  }
+
+  /* ---------- Bottom nav ---------- */
+
+  .bottombar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .step-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .step-dots span {
+    width: 5px;
+    height: 5px;
+    background: var(--border-strong);
+  }
+
+  .step-dots span.done {
+    background: var(--text);
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="mark">вкат<span class="dot">·</span>py</div>
+    <div class="breadcrumb">циклы <b>·</b> задание 3 из 6</div>
+  </div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+
+  <div class="main">
+
+    <div class="pane pane-explain">
+      <div class="pane-label">объяснение</div>
+      <h1>Цикл for повторяет действие заданное число раз</h1>
+      <p>Вместо того чтобы писать print() пять раз подряд, можно один раз сказать «повтори это 5 раз» — и Python сделает всё сам.</p>
+      <p>range(5) — это последовательность из пяти чисел: 0, 1, 2, 3, 4. Переменная i на каждом шаге принимает следующее значение из неё.</p>
+
+      <div class="example">for i in range(3):
+    print("шаг", i)
+<span class="out">шаг 0
+шаг 1
+шаг 2</span></div>
+
+      <div class="task">
+        <div class="task-label">задание</div>
+        <p>Напиши цикл, который выведет числа очков от 1 до 5, каждое на отдельной строке — как будто игра считает очки за пять раундов.</p>
+      </div>
+    </div>
+
+    <div class="pane pane-code">
+      <div class="pane-label">твой код</div>
+      <textarea class="editor" spellcheck="false">for i in range(1, 6):
+    print(i)</textarea>
+
+      <div class="editor-footer">
+        <button class="hint-toggle">показать подсказку</button>
+        <button class="btn-run">Проверить</button>
+      </div>
+
+      <div class="result">
+        <div class="result-row">
+          <span class="result-mark ok">✓</span>
+          <div>
+            <div class="result-title">Задание засчитано</div>
+            <div class="result-sub">Вывод совпадает, цикл использован верно</div>
+          </div>
+        </div>
+
+        <div class="console">1
+2
+3
+4
+5</div>
+
+        <div class="improve">
+          <div class="improve-label">как сделать лучше</div>
+          <p>Код рабочий. Но когда границы диапазона — не просто технические числа, а имеют смысл (например, номер раунда), их обычно выносят в переменную с понятным именем: <code>rounds = 5</code> вместо <code>6</code> внутри range(). Так через месяц будет понятно, что означает это число, не вчитываясь в логику.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottombar">
+    <span>python · до классов</span>
+    <div class="step-dots">
+      <span class="done"></span><span class="done"></span><span class="done"></span>
+      <span></span><span></span><span></span>
+    </div>
+    <span>шаг 3 / 6</span>
+  </div>
+
+</body>
+</html>

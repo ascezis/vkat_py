@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>вкат.py — старт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --bg: #0a0a0a;
+    --bg-panel: #121212;
+    --text: #ececec;
+    --text-muted: #7a7a7a;
+    --text-dim: #4d4d4d;
+    --border: #2a2a2a;
+    --border-strong: #454545;
+    --fill: #ececec;
+    --fill-text: #0a0a0a;
+    --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #0a0a0a; --text: #ececec; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    padding: 24px 32px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 24px;
+  }
+
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    max-width: 15ch;
+    line-height: 1.3;
+    margin-bottom: 20px;
+  }
+
+  .sub {
+    color: var(--text-muted);
+    font-size: 15px;
+    max-width: 38ch;
+    line-height: 1.7;
+    margin-bottom: 44px;
+  }
+
+  .facts {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 52px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .fact {
+    text-align: left;
+  }
+
+  .fact .n {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .fact .l {
+    font-size: 12px;
+    color: var(--text-dim);
+    max-width: 14ch;
+  }
+
+  .btn-start {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    background: var(--fill);
+    color: var(--fill-text);
+    border: 1px solid var(--fill);
+    padding: 14px 34px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .btn-start:hover { background: #d8d8d8; }
+  .btn-start:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+
+  .note {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .bottombar {
+    padding: 20px 32px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+  }
+
+</style>
+</head>
+<body>
+
+  <div class="topbar">вкат·py</div>
+
+  <div class="center">
+    <div class="kicker">до первого занятия с группой</div>
+    <h1>Ты пришёл чуть позже — здесь быстро наверстаешь</h1>
+    <p class="sub">Одно-два занятия, шесть тем, задания с реальной проверкой кода. Без лекций — сразу пишешь и сразу видишь результат.</p>
+
+    <div class="facts">
+      <div class="fact">
+        <span class="n">6</span>
+        <span class="l">тем: от переменных до словарей</span>
+      </div>
+      <div class="fact">
+        <span class="n">~25</span>
+        <span class="l">коротких заданий с автопроверкой</span>
+      </div>
+      <div class="fact">
+        <span class="n">1–2</span>
+        <span class="l">занятия, чтобы пройти всё</span>
+      </div>
+    </div>
+
+    <button class="btn-start">Начать</button>
+    <div class="note">прогресс сохраняется на этом устройстве</div>
+  </div>
+
+  <div class="bottombar">python · до классов</div>
+
+</body>
+</html>

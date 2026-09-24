@@ -23,7 +23,9 @@ window.COURSE_TOPICS.push({
       starterCode: 'user = "Катя"\nscore = 99\n# Выведи фразу через f-строку\n',
       hint: 'print(f"{user} набрала {score} очков")',
       expectedOutput: "Катя набрала 99 очков",
-      astRequirements: {},
+      astRequirements: {
+        require_fstring: true
+      },
       improveTip: "f-строки работают быстрее и нагляднее, чем str(score) + ' очков'. Используй их везде для форматирования текста.",
       successMessage: "f-строка составлена идеально!"
     },
@@ -42,7 +44,9 @@ window.COURSE_TOPICS.push({
       starterCode: 'code = "RU-10495"\n# Сделай срез первых двух символов и выведи\n',
       hint: 'print(code[0:2])',
       expectedOutput: "RU",
-      astRequirements: {},
+      astRequirements: {
+        require_slice: true
+      },
       improveTip: "Если срез начинается с нуля, 0 можно не писать: code[:2] делает то же самое.",
       successMessage: "Срез строки получен точно!"
     },
@@ -61,7 +65,9 @@ window.COURSE_TOPICS.push({
       starterCode: 'command = "start"\n# Выведи command в верхнем регистре\n',
       hint: 'print(command.upper())',
       expectedOutput: "START",
-      astRequirements: {},
+      astRequirements: {
+        require_call: ["upper"]
+      },
       improveTip: "Строки в Python неизменяемы (immutable): метод command.upper() не меняет саму переменную command, а возвращает новую строку.",
       successMessage: "Регистр строки успешно изменён!"
     },
@@ -80,7 +86,9 @@ window.COURSE_TOPICS.push({
       starterCode: 'phone = "8-900-123-45"\n# Замени дефисы на пробелы и выведи строку\n',
       hint: 'print(phone.replace("-", " "))',
       expectedOutput: "8 900 123 45",
-      astRequirements: {},
+      astRequirements: {
+        require_call: ["replace"]
+      },
       improveTip: "Метод replace чувствителен к регистру и заменяет все найденные фрагменты по умолчанию.",
       successMessage: "Все задания финальной темы выполнены!"
     }

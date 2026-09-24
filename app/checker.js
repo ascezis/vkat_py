@@ -152,15 +152,48 @@ def analyze_ast(code_str, requirements_json):
     if reqs.get("require_if") and ast.If not in node_types:
         errors.append("В коде должно использоваться ветвление с условием if.")
 
-    # Проверка переменных на CamelCase для линтера
-    names = []
+    # Сбор присвоенных переменных и вызванных функций/методов
+    stored_names = set()
+    called_funcs = set()
     for n in nodes:
         if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):
-            names.append(n.id)
+            stored_names.add(n.id)
+        elif isinstance(n, ast.Call):
+            if isinstance(n.func, ast.Name):
+                called_funcs.add(n.func.id)
+            elif isinstance(n.func, ast.Attribute):
+                called_funcs.add(n.func.attr)
+
+    if reqs.get("require_vars"):
+        for var_name in reqs["require_vars"]:
+            if var_name not in stored_names:
+                errors.append(f"В коде должна быть объявлена переменная {var_name}.")
+
+    if reqs.get("require_add") and ast.Add not in node_types:
+        errors.append("В решении должна использоваться операция сложения (+).")
+
+    if reqs.get("require_sub") and ast.Sub not in node_types:
+        errors.append("В решении должна использоваться операция вычитания (-).")
+
+    if reqs.get("require_mul") and ast.Mult not in node_types:
+        errors.append("В решении должна использоваться операция умножения (*).")
+
+    if reqs.get("require_fstring") and ast.JoinedStr not in node_types:
+        errors.append("Используй f-строку (например, f'...{переменная}...') для подстановки значений.")
+
+    if reqs.get("require_slice"):
+        has_slice = any(isinstance(n, ast.Slice) for n in nodes)
+        if not has_slice:
+            errors.append("Используй срез строки через квадратные скобки [start:stop].")
+
+    if reqs.get("require_call"):
+        for fn_name in reqs["require_call"]:
+            if fn_name not in called_funcs:
+                errors.append(f"В решении необходимо использовать функцию или метод {fn_name}().")
 
     return json.dumps({
         "errors": errors,
-        "variables": names
+        "variables": list(stored_names)
     })
 
 def _inject_loop_guard(code_str, max_iters=100000):

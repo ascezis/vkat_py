@@ -23,7 +23,10 @@ window.COURSE_TOPICS.push({
       starterCode: '# Создай список heroes и выведи второй элемент\n',
       hint: 'heroes = ["Маг", "Воин", "Лучник"]\nprint(heroes[1])',
       expectedOutput: "Воин",
-      astRequirements: {},
+      astRequirements: {
+        require_vars: ["heroes"]
+      },
+      testCode: 'assert "heroes" in _user_ns and _user_ns["heroes"] == ["Маг", "Воин", "Лучник"], "Список heroes должен содержать [\\"Маг\\", \\"Воин\\", \\"Лучник\\"]"',
       improveTip: "Помни: первый элемент в Python всегда идёт под индексом [0], а не [1].",
       successMessage: "Список создан и доступ по индексу выполнен!"
     },
@@ -42,7 +45,10 @@ window.COURSE_TOPICS.push({
       starterCode: 'quest = ["лес", "пещера"]\n# Добавь "замок" и напечатай len(quest)\n',
       hint: 'quest.append("замок")\nprint(len(quest))',
       expectedOutput: "3",
-      astRequirements: {},
+      astRequirements: {
+        require_call: ["append", "len"]
+      },
+      testCode: 'assert "quest" in _user_ns and "замок" in _user_ns["quest"] and len(_user_ns["quest"]) == 3, "Добавь \\"замок\\" в список quest через .append()"',
       improveTip: "Метод append изменяет исходный список на месте и ничего не возвращает, поэтому не нужно писать quest = quest.append().",
       successMessage: "Метод .append() и функция len() освоены!"
     },
@@ -82,7 +88,10 @@ window.COURSE_TOPICS.push({
       starterCode: '# Создай словарь item и выведи значение по ключу "cost"\n',
       hint: 'item = {"title": "Факел", "cost": 15}\nprint(item["cost"])',
       expectedOutput: "15",
-      astRequirements: {},
+      astRequirements: {
+        require_vars: ["item"]
+      },
+      testCode: 'assert "item" in _user_ns and isinstance(_user_ns["item"], dict) and _user_ns["item"].get("cost") == 15, "Словарь item должен содержать ключ cost со значением 15"',
       improveTip: "Ключами словаря чаще всего выступают строки. Всегда проверяй кавычки вокруг имени ключа.",
       successMessage: "Словарь создан и значение по ключу получено!"
     }

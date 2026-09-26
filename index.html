@@ -15,6 +15,7 @@
       <button id="btn-tree-toggle" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
     </div>
     <div id="app-breadcrumb" class="breadcrumb">тема <b>·</b> задание 1 из 5</div>
+    <button id="btn-ref-open" class="btn-ref-open" title="Справочник и шаблоны">справка</button>
   </div>
   <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
 
@@ -183,6 +184,24 @@
   </div>
   <div id="tree-backdrop" class="tree-backdrop"></div>
 
+  <!-- СПРАВОЧНИК / БОЙЛЕРПЛЕЙТЫ (выдвижная панель справа) -->
+  <div id="ref-drawer" class="ref-drawer">
+    <div class="ref-header">
+      <div class="ref-header-info">
+        <div class="ref-title">вкат.py <span class="ref-slash">/</span> справка</div>
+        <div id="ref-topic-label" class="ref-topic-label">переменные</div>
+      </div>
+      <button id="btn-ref-close" class="btn-ref-close" title="Закрыть (Esc)">✕</button>
+    </div>
+    <div id="ref-body" class="ref-body">
+      <!-- Сюда рендерятся сниппеты -->
+    </div>
+    <div class="ref-footer">
+      <span>пустой редактор → вставить · иначе → скопировать</span>
+    </div>
+  </div>
+  <div id="ref-backdrop" class="ref-backdrop"></div>
+
   <!-- Скрипты: рантайм Pyodide, встроенные бинарники, чекер, контент тем и контроллер приложения -->
   <script src="assets/pyodide/wasm_binary.js"></script>
   <script src="assets/pyodide/stdlib_binary.js"></script>
@@ -204,6 +223,8 @@
   <script src="app/highlighter.js"></script>
   <!-- Диагностика профиля пользователя -->
   <script src="app/diagnosis.js"></script>
+  <!-- Справочник и бойлерплейты -->
+  <script src="app/reference.js"></script>
 
   <!-- Основной контроллер интерфейса -->
   <script src="app/app.js"></script>

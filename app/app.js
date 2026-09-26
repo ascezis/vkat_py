@@ -729,6 +729,14 @@
         openDiagnosis();
       });
     }
+
+    // Справочник: кнопка «справка» в топбаре урока
+    const btnRefOpen = document.getElementById('btn-ref-open');
+    if (btnRefOpen) {
+      btnRefOpen.addEventListener('click', () => {
+        if (window.Reference) window.Reference.open(state.currentTopicIndex);
+      });
+    }
   }
 
   function findFirstUnfinishedTask() {
@@ -759,6 +767,11 @@
     // Загружаем профиль из диагностики если есть
     if (window.Diagnosis) {
       state.profile = window.Diagnosis.loadProfile();
+    }
+
+    // Инициализируем справочник
+    if (window.Reference) {
+      window.Reference.init();
     }
 
     // Загружаем зарегистрированные темы

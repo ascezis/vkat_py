@@ -12,6 +12,9 @@
     POSITION: 'vkat_current_position'
   };
 
+  // Ключ профиля диагностики
+  const PROFILE_KEY = 'vkat_user_profile';
+
   // Состояние
   let state = {
     topics: [],
@@ -20,7 +23,8 @@
     completedTasks: new Set(),
     codeDrafts: {},
     isChecking: false,
-    pyodideReady: false
+    pyodideReady: false,
+    profile: null    // профиль из диагностики (null = не проходила)
   };
 
   // Элементы DOM
@@ -28,6 +32,7 @@
 
   function initDom() {
     dom.screenStart = document.getElementById('screen-start');
+    dom.screenDiagnosis = document.getElementById('screen-diagnosis');
     dom.screenLesson = document.getElementById('screen-lesson');
     dom.screenFinish = document.getElementById('screen-finish');
 
@@ -135,11 +140,16 @@
    */
   function showScreen(screen) {
     dom.screenStart.classList.remove('active');
+    if (dom.screenDiagnosis) dom.screenDiagnosis.classList.remove('active');
     dom.screenLesson.classList.remove('active');
     dom.screenFinish.classList.remove('active');
 
     if (screen === 'start') {
       dom.screenStart.classList.add('active');
+      dom.topbar.style.display = 'none';
+      updateStartProfileBadge();
+    } else if (screen === 'diagnosis') {
+      dom.screenDiagnosis.classList.add('active');
       dom.topbar.style.display = 'none';
     } else if (screen === 'lesson') {
       dom.screenLesson.classList.add('active');
@@ -148,6 +158,7 @@
       dom.screenFinish.classList.add('active');
       dom.topbar.style.display = 'flex';
       updateCourseProgress();
+      applyProfileFinishText();
     }
   }
 
@@ -484,6 +495,88 @@
     renderTask();
   }
 
+  // ============================================================
+  // ПРОФИЛЬ: диагностика и персонализация
+  // ============================================================
+
+  /**
+   * Отображает бейдж профиля на стартовом экране если диагностика уже пройдена
+   */
+  function updateStartProfileBadge() {
+    const badge = document.getElementById('diag-profile-badge');
+    const btn = document.getElementById('btn-diagnosis');
+    if (!badge) return;
+
+    if (state.profile) {
+      const LEVEL_LABELS = { experienced: 'знакомый', familiar: 'начинающий', zero: 'с нуля' };
+      const GOAL_LABELS = { games: 'игры', study: 'учёба', automation: 'автоматизация', curious: 'интерес' };
+      badge.style.display = 'block';
+      badge.textContent = `профиль: ${LEVEL_LABELS[state.profile.level] || state.profile.level} · ${GOAL_LABELS[state.profile.goal] || state.profile.goal}`;
+      if (btn) btn.textContent = 'перепройти диагностику →';
+    } else {
+      badge.style.display = 'none';
+      if (btn) btn.textContent = 'или сначала пройди диагностику →';
+    }
+  }
+
+  /**
+   * Применяет влияние профиля на текст финального экрана
+   */
+  function applyProfileFinishText() {
+    if (!state.profile) return;
+    const goal = state.profile.goal;
+    const finishSub = document.querySelector('.finish-sub');
+    if (!finishSub) return;
+
+    const messages = {
+      games: 'Теперь ты знаешь достаточно, чтобы написать свою первую текстовую игру. Переменные, циклы, функции — всё это уже в твоей копилке.',
+      study: 'База освоена. Python-синтаксис больше не проблема — можно спокойно идти на экзамен. Ты прошёл все ключевые темы.',
+      automation: 'Теперь ты знаешь переменные, циклы, функции и структуры данных. Следующий шаг — файлы, os и subprocess.',
+      curious: 'Отличный старт. Ты дошёл до конца всех шести тем и понял базовый синтаксис. Дальше — проекты, которые будут интересны именно тебе.'
+    };
+
+    finishSub.textContent = messages[goal] || finishSub.textContent;
+  }
+
+  /**
+   * Открывает экран диагностики
+   */
+  function openDiagnosis() {
+    showScreen('diagnosis');
+    const container = document.getElementById('diag-container');
+    if (container && window.Diagnosis) {
+      window.Diagnosis.start(container, (profile) => {
+        state.profile = profile;
+        launchCourseWithProfile(profile);
+      });
+    }
+  }
+
+  /**
+   * Запуск курса с учётом профиля
+   */
+  function launchCourseWithProfile(profile) {
+    findFirstUnfinishedTask();
+
+    // Если опытный пользователь и ещё не проходил тему 1 — предлагаем пропустить
+    if (profile.level === 'experienced' && state.currentTopicIndex === 0) {
+      const firstTopic = state.topics[0];
+      const firstAllDone = firstTopic && firstTopic.tasks.every(t => state.completedTasks.has(t.id));
+      if (!firstAllDone) {
+        const doSkip = window.confirm(
+          'Тема «Переменные и вывод» может показаться простой. Пропустить её и начать с «Условий»?'
+        );
+        if (doSkip && state.topics.length > 1) {
+          state.currentTopicIndex = 1;
+          state.currentTaskIndex = 0;
+        }
+      }
+    }
+
+    showScreen('lesson');
+    renderTask();
+  }
+
   /**
    * Управление выдвижным деревом курса
    */
@@ -613,6 +706,29 @@
     dom.btnRun.addEventListener('click', runCheck);
     dom.btnNext.addEventListener('click', nextTask);
     dom.btnRestart.addEventListener('click', restartCourse);
+
+    // Диагностика: кнопка на стартовом экране
+    const btnDiag = document.getElementById('btn-diagnosis');
+    if (btnDiag) {
+      btnDiag.addEventListener('click', openDiagnosis);
+    }
+
+    // Диагностика: кнопка «пропустить» внутри экрана диагностики
+    const btnDiagSkip = document.getElementById('btn-diag-skip');
+    if (btnDiagSkip) {
+      btnDiagSkip.addEventListener('click', () => {
+        showScreen('start');
+      });
+    }
+
+    // Диагностика: ссылка в дереве (повторное прохождение)
+    const btnTreeDiag = document.getElementById('btn-tree-diagnosis');
+    if (btnTreeDiag) {
+      btnTreeDiag.addEventListener('click', () => {
+        closeTreeDrawer();
+        openDiagnosis();
+      });
+    }
   }
 
   function findFirstUnfinishedTask() {
@@ -639,6 +755,11 @@
     setupEditor();
     setupEvents();
     loadStorage();
+
+    // Загружаем профиль из диагностики если есть
+    if (window.Diagnosis) {
+      state.profile = window.Diagnosis.loadProfile();
+    }
 
     // Загружаем зарегистрированные темы
     state.topics = window.COURSE_TOPICS || [];

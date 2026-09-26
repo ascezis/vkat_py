@@ -48,11 +48,32 @@
 
       <button id="btn-start" class="btn-start">Начать</button>
       <div class="start-note">прогресс сохраняется на этом устройстве</div>
+      <button id="btn-diagnosis" class="btn-diagnosis">или сначала пройди диагностику →</button>
+      <div id="diag-profile-badge" class="diag-profile-badge" style="display:none;"></div>
       <div id="start-status" class="status-badge">Загрузка Python...</div>
     </div>
     <div class="bottombar">
       <span>python · до классов</span>
       <span>standalone</span>
+    </div>
+  </div>
+
+  <!-- ЭКРАН 1.5: ДИАГНОСТИКА -->
+  <div id="screen-diagnosis" class="screen">
+    <div class="topbar" style="border-bottom: none;">
+      <div class="topbar-brand">
+        <div class="mark">вкат<span class="dot">·</span>py</div>
+      </div>
+      <button id="btn-diag-skip" class="btn-diag-skip">пропустить</button>
+    </div>
+    <div class="diag-center">
+      <div id="diag-container" class="diag-container">
+        <!-- Шаги диагностики рендерятся сюда -->
+      </div>
+    </div>
+    <div class="bottombar">
+      <span>вкат.py / диагностика</span>
+      <span>init / profile.py</span>
     </div>
   </div>
 
@@ -156,7 +177,7 @@
       <!-- Сюда динамически рендерится дерево курса -->
     </div>
     <div class="tree-footer">
-      <span>кликните по заданию для перехода</span>
+      <button id="btn-tree-diagnosis" class="btn-tree-diagnosis">диагностика профиля</button>
       <span class="tree-footer-key">Esc</span>
     </div>
   </div>
@@ -181,6 +202,8 @@
   <script src="app/autocomplete.js"></script>
   <!-- Подсветка синтаксиса Python (VS Code Dark+) -->
   <script src="app/highlighter.js"></script>
+  <!-- Диагностика профиля пользователя -->
+  <script src="app/diagnosis.js"></script>
 
   <!-- Основной контроллер интерфейса -->
   <script src="app/app.js"></script>

@@ -428,7 +428,7 @@
       
       const msg = err.message || String(err);
       if (window.location.protocol === 'file:' || msg.includes('dynamically imported') || msg.includes('CORS') || msg.includes('Failed to fetch')) {
-        dom.resultSub.textContent = 'Браузер блокирует WebAssembly при прямом открытии через file://. Запусти тренажёр через запустить.bat в папке проекта.';
+        dom.resultSub.textContent = 'Браузер блокирует WebAssembly при прямом открытии через file://. Запусти тренажёр через run.bat в папке проекта.';
       } else {
         dom.resultSub.textContent = msg;
       }
@@ -647,7 +647,7 @@
       if (dom.startStatus) dom.startStatus.textContent = 'Python готов к работе';
     } catch (e) {
       if (dom.startStatus) {
-        dom.startStatus.textContent = 'Внимание: локальный запуск требует запустить.bat при строгих политиках браузера';
+        dom.startStatus.textContent = 'Внимание: локальный запуск требует run.bat при строгих политиках браузера';
       }
     }
 

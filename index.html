@@ -12,6 +12,10 @@
   <div id="app-topbar" class="topbar" style="display: none;">
     <div class="topbar-brand">
       <div id="app-mark" class="mark" title="На стартовый экран">вкат<span class="dot">·</span>py</div>
+      <div class="topbar-nav">
+        <button id="nav-btn-course" class="btn-nav-tab active">курс</button>
+        <button id="nav-btn-interactive" class="btn-nav-tab">интерактив</button>
+      </div>
       <button id="btn-tree-toggle" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
     </div>
     <div id="app-breadcrumb" class="breadcrumb">тема <b>·</b> задание 1 из 5</div>
@@ -23,6 +27,10 @@
     <div class="topbar" style="border-bottom: none;">
       <div class="topbar-brand">
         <div class="mark">вкат<span class="dot">·</span>py</div>
+        <div class="topbar-nav">
+          <button id="nav-btn-start-course" class="btn-nav-tab active">курс</button>
+          <button id="nav-btn-start-interactive" class="btn-nav-tab">интерактив</button>
+        </div>
         <button id="btn-tree-start" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
       </div>
     </div>
@@ -143,6 +151,91 @@
     </div>
   </div>
 
+  <!-- ЭКРАН 4: ИНТЕРАКТИВ (СБОР МОНЕТ) -->
+  <div id="screen-interactive" class="screen">
+    <div class="interactive-panes">
+      <!-- Левая панель: Арена Turtle -->
+      <div class="pane pane-arena">
+        <div class="arena-header">
+          <div class="arena-header-left">
+            <div class="interactive-mode-strip">
+              <button id="interactive-mode-coins" class="mode-btn active" type="button">монеты</button>
+              <button id="interactive-mode-maze" class="mode-btn" type="button">лабиринт</button>
+            </div>
+            <div id="interactive-level-strip" class="level-strip"></div>
+          </div>
+          <div class="arena-stats">
+            <span id="interactive-stats-coins" class="arena-coin-counter">монеты: <b id="interactive-coin-score">0</b> / <span id="interactive-coin-total">3</span></span>
+            <span id="interactive-stats-maze" class="arena-maze-target" style="display: none;">цель: выход ⚑</span>
+            <span id="interactive-status-badge" class="interactive-badge">готов к запуску</span>
+          </div>
+        </div>
+        <div id="interactive-level-desc" class="arena-desc">Описание уровня...</div>
+
+        <!-- Холст арены -->
+        <div class="arena-canvas-container">
+          <canvas id="interactive-canvas" width="480" height="400"></canvas>
+        </div>
+
+        <!-- Терминальный лог перемещений -->
+        <div class="arena-log-box">
+          <span class="arena-log-title">терминальный лог черепашки</span>
+          <div id="interactive-action-log" class="arena-log"></div>
+        </div>
+      </div>
+
+      <!-- Правая панель: Конструктор карточек кода -->
+      <div class="pane pane-blocks">
+        <div class="interactive-tabs">
+          <button id="interactive-tab-blocks" class="interactive-tab-btn active">карточки команд</button>
+          <button id="interactive-tab-python" class="interactive-tab-btn">код на python</button>
+        </div>
+
+        <!-- Режим 1: Блоки / Карточки -->
+        <div id="interactive-view-blocks" style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
+          <div class="palette-section">
+            <div class="section-label">палитра команд (кликни для добавления)</div>
+            <div id="interactive-palette-list" class="palette-list"></div>
+          </div>
+
+          <div class="workspace-section">
+            <div class="section-label">программа черепашки</div>
+            <div id="interactive-workspace-list" class="workspace-list"></div>
+            <div id="interactive-workspace-empty" class="workspace-empty-note" style="display: none;">
+              программа пуста — добавь команды из палитры выше
+            </div>
+          </div>
+        </div>
+
+        <!-- Режим 2: Просмотр Python кода -->
+        <div id="interactive-view-python" class="interactive-code-container" style="display: none;">
+          <div class="interactive-code-header">
+            <span class="section-label">сгенерированный код turtle</span>
+            <button id="interactive-btn-copy-code" class="btn-interactive-text">скопировать код</button>
+          </div>
+          <pre id="interactive-python-code" class="interactive-code-pre"></pre>
+        </div>
+
+        <!-- Панель управления -->
+        <div class="interactive-ctrl-bar">
+          <div class="ctrl-group">
+            <button id="interactive-btn-run" class="btn-interactive-primary">Запустить</button>
+            <button id="interactive-btn-step" class="btn-interactive-sec">Шаг</button>
+            <button id="interactive-btn-reset" class="btn-interactive-sec">Сброс арены</button>
+          </div>
+          <div id="interactive-speed-bar" class="speed-bar"></div>
+          <button id="interactive-btn-clear" class="btn-interactive-text">очистить всё</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Боттомбар интерактива -->
+    <div class="bottombar">
+      <span>интерактив · модуль turtle</span>
+      <span>сбор монет</span>
+    </div>
+  </div>
+
   <!-- ДЕРЕВО ОГЛАВЛЕНИЯ КУРСА (ВЫДВИЖНОЙ САЙДБАР) -->
   <div id="tree-drawer" class="tree-drawer">
     <div class="tree-header">
@@ -181,6 +274,9 @@
   <script src="app/autocomplete.js"></script>
   <!-- Подсветка синтаксиса Python (VS Code Dark+) -->
   <script src="app/highlighter.js"></script>
+
+  <!-- Модуль интерактивной арены сбора монет -->
+  <script src="app/interactive.js"></script>
 
   <!-- Основной контроллер интерфейса -->
   <script src="app/app.js"></script>

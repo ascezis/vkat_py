@@ -30,11 +30,17 @@
     dom.screenStart = document.getElementById('screen-start');
     dom.screenLesson = document.getElementById('screen-lesson');
     dom.screenFinish = document.getElementById('screen-finish');
+    dom.screenInteractive = document.getElementById('screen-interactive');
 
     dom.topbar = document.getElementById('app-topbar');
     dom.mark = document.getElementById('app-mark');
     dom.breadcrumb = document.getElementById('app-breadcrumb');
     dom.progressFill = document.getElementById('progress-fill');
+
+    dom.navBtnCourse = document.getElementById('nav-btn-course');
+    dom.navBtnInteractive = document.getElementById('nav-btn-interactive');
+    dom.navBtnStartCourse = document.getElementById('nav-btn-start-course');
+    dom.navBtnStartInteractive = document.getElementById('nav-btn-start-interactive');
 
     dom.btnStart = document.getElementById('btn-start');
     dom.startStatus = document.getElementById('start-status');
@@ -136,18 +142,43 @@
     dom.screenStart.classList.remove('active');
     dom.screenLesson.classList.remove('active');
     dom.screenFinish.classList.remove('active');
+    if (dom.screenInteractive) dom.screenInteractive.classList.remove('active');
+
+    // Останавливаем таймер арены при уходе с интерактива
+    if (screen !== 'interactive' && window.InteractiveTurtle && typeof window.InteractiveTurtle.stop === 'function') {
+      window.InteractiveTurtle.stop();
+    }
 
     if (screen === 'start') {
       dom.screenStart.classList.add('active');
       dom.topbar.style.display = 'none';
+      updateNavButtons('course');
     } else if (screen === 'lesson') {
       dom.screenLesson.classList.add('active');
       dom.topbar.style.display = 'flex';
+      updateNavButtons('course');
     } else if (screen === 'finish') {
       dom.screenFinish.classList.add('active');
       dom.topbar.style.display = 'flex';
       updateCourseProgress();
+      updateNavButtons('course');
+    } else if (screen === 'interactive') {
+      if (dom.screenInteractive) dom.screenInteractive.classList.add('active');
+      dom.topbar.style.display = 'flex';
+      dom.breadcrumb.innerHTML = 'интерактив <b>·</b> сбор монет turtle';
+      updateNavButtons('interactive');
+      if (window.InteractiveTurtle && typeof window.InteractiveTurtle.start === 'function') {
+        window.InteractiveTurtle.start();
+      }
     }
+  }
+
+  function updateNavButtons(activeTab) {
+    const isCourse = activeTab === 'course';
+    if (dom.navBtnCourse) dom.navBtnCourse.classList.toggle('active', isCourse);
+    if (dom.navBtnInteractive) dom.navBtnInteractive.classList.toggle('active', !isCourse);
+    if (dom.navBtnStartCourse) dom.navBtnStartCourse.classList.toggle('active', isCourse);
+    if (dom.navBtnStartInteractive) dom.navBtnStartInteractive.classList.toggle('active', !isCourse);
   }
 
   /**
@@ -571,6 +602,28 @@
     dom.mark.addEventListener('click', () => {
       showScreen('start');
     });
+
+    if (dom.navBtnCourse) {
+      dom.navBtnCourse.addEventListener('click', () => {
+        showScreen('lesson');
+        renderTask();
+      });
+    }
+    if (dom.navBtnStartCourse) {
+      dom.navBtnStartCourse.addEventListener('click', () => {
+        showScreen('start');
+      });
+    }
+    if (dom.navBtnInteractive) {
+      dom.navBtnInteractive.addEventListener('click', () => {
+        showScreen('interactive');
+      });
+    }
+    if (dom.navBtnStartInteractive) {
+      dom.navBtnStartInteractive.addEventListener('click', () => {
+        showScreen('interactive');
+      });
+    }
 
     if (dom.btnTreeToggle) {
       dom.btnTreeToggle.addEventListener('click', openTreeDrawer);

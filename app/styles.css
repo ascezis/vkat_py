@@ -1016,3 +1016,914 @@ body {
   color: var(--text-muted);
   font-size: 10px;
 }
+
+/* ==========================================================================
+   МОДУЛЬ «ИНТЕРАКТИВ: СБОР МОНЕТ» (TURTLE CODEBLOCKS)
+   ========================================================================== */
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-nav-tab {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 5px 14px;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: all 0.15s ease;
+}
+
+.btn-nav-tab:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--bg-panel);
+}
+
+.btn-nav-tab.active {
+  color: var(--fill-text);
+  background: var(--fill);
+  border-color: var(--fill);
+  font-weight: 500;
+}
+
+.btn-nav-tab:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* Двухпанельный лейаут интерактива */
+.interactive-panes {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 120px);
+}
+
+@media (max-width: 960px) {
+  .interactive-panes {
+    flex-direction: column;
+  }
+}
+
+.pane-arena {
+  flex: 1;
+  border-right: 1px solid var(--border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--bg);
+  min-width: 320px;
+}
+
+.pane-blocks {
+  flex: 1.15;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--bg-panel);
+  min-width: 340px;
+}
+
+/* Шапка арены: селектор уровня и статус */
+.arena-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.arena-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.arena-select {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg-panel-alt);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 6px 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.arena-select:focus {
+  border-color: var(--text);
+}
+
+.arena-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: -4px;
+}
+
+.arena-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.arena-coin-counter {
+  color: var(--text);
+}
+
+.arena-coin-counter b {
+  color: var(--fill);
+  font-weight: 600;
+}
+
+.interactive-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-panel-alt);
+  letter-spacing: 0.02em;
+}
+
+.interactive-badge.running {
+  color: var(--fill-text);
+  background: var(--fill);
+  border-color: var(--fill);
+}
+
+.interactive-badge.success {
+  border-color: var(--border-strong);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Холст арены */
+.arena-canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+#interactive-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #0a0a0a;
+}
+
+/* Лог перемещений черепашки */
+.arena-log-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.arena-log-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.arena-log {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 10px 12px;
+  height: 90px;
+  overflow-y: auto;
+}
+
+.arena-log .log-line {
+  white-space: nowrap;
+}
+
+/* Правая панель: переключатель табов */
+.interactive-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.interactive-tab-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.interactive-tab-btn:hover {
+  color: var(--text);
+}
+
+.interactive-tab-btn.active {
+  color: var(--text);
+  border-bottom: 2px solid var(--text);
+  font-weight: 500;
+}
+
+/* Палитра команд */
+.palette-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.palette-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.palette-card {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-panel-alt);
+  border: 1px dashed var(--border-strong);
+  color: var(--text);
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.palette-card:hover {
+  border-color: var(--text);
+  background: var(--bg);
+  transform: translateY(-1px);
+}
+
+.palette-card .card-param {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.palette-card .card-add-icon {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+/* Рабочая область программы */
+.workspace-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.workspace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.workspace-empty-note {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  border: 1px dashed var(--border);
+  padding: 24px;
+  text-align: center;
+}
+
+/* Карточка команды (code card) */
+.code-card {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.code-card:hover {
+  border-color: var(--border-strong);
+}
+
+.code-card.active-step {
+  border-left: 3px solid var(--fill);
+  background: #181c24;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.card-order {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 16px;
+}
+
+.card-fn-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.card-center {
+  display: flex;
+  align-items: center;
+}
+
+.card-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+}
+
+.card-num-input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  width: 48px;
+  text-align: right;
+  outline: none;
+}
+
+.card-unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-card-ctrl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.btn-card-ctrl:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--bg);
+}
+
+.btn-card-ctrl:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.btn-card-ctrl.del:hover {
+  color: #fff;
+  border-color: var(--border-strong);
+  background: #331515;
+}
+
+/* Вложенные карточки (для цикла repeat) */
+.card-container-body {
+  margin-top: 8px;
+  padding-left: 20px;
+  border-left: 2px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.code-card.sub-card {
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.btn-add-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  padding: 4px 10px;
+  cursor: pointer;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.btn-add-sub:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+/* Нижняя панель действий (Запустить / Шаг / Сброс) */
+.interactive-ctrl-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.ctrl-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-interactive-primary {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: none;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-interactive-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-interactive-sec {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-interactive-sec:hover {
+  border-color: var(--text);
+  background: var(--bg-panel-alt);
+}
+
+.btn-interactive-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.btn-interactive-text:hover {
+  color: var(--text);
+}
+
+/* Окно Python-кода */
+.interactive-code-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.interactive-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.interactive-code-pre {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 320px;
+  white-space: pre-wrap;
+}
+
+
+/* ================================================================
+   ИНТЕРАКТИВ v2 — Дополнительные стили
+================================================================ */
+
+/* ── Полоска выбора уровня ────────────────────────────────────── */
+
+.level-strip {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.level-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  transition: border-color 120ms, color 120ms, background 120ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.level-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.level-btn.active {
+  background: var(--fill);
+  color: var(--fill-text);
+  border-color: var(--fill);
+  font-weight: 600;
+}
+
+/* ── Регулятор скорости ──────────────────────────────────────── */
+
+.speed-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.speed-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.speed-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: border-color 100ms, color 100ms, background 100ms;
+  white-space: nowrap;
+}
+
+.speed-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.speed-btn.active {
+  background: var(--fill);
+  color: var(--fill-text);
+  border-color: var(--fill);
+  font-weight: 600;
+}
+
+/* ── Хэндл для drag-and-drop ─────────────────────────────────── */
+
+.card-drag-handle {
+  width: 16px;
+  height: 100%;
+  flex-shrink: 0;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+
+.card-drag-handle::before {
+  content: '⠿';
+  font-size: 14px;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.card-drag-handle:hover::before {
+  opacity: 1;
+}
+
+.code-card[draggable='true']:active .card-drag-handle {
+  cursor: grabbing;
+}
+
+/* Состояние «в процессе перетаскивания» */
+.code-card.dragging {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+/* Индикаторы целевой позиции сброса */
+.code-card.drop-before {
+  border-top: 2px solid var(--fill);
+}
+
+.code-card.drop-after {
+  border-bottom: 2px solid var(--fill);
+}
+
+/* ── Степпер числового значения +/− ─────────────────────────── */
+
+.card-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.btn-step {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: border-color 100ms, color 100ms;
+  flex-shrink: 0;
+}
+
+.btn-step:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.btn-step:active {
+  background: var(--fill);
+  color: var(--fill-text);
+}
+
+.step-display {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  min-width: 28px;
+  text-align: center;
+  user-select: none;
+  cursor: default;
+}
+
+.step-display:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  cursor: text;
+}
+
+.step-unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  min-width: 14px;
+}
+
+.step-inline-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 44px;
+  text-align: center;
+  outline: none;
+  padding: 0;
+}
+
+/* ── Группированная палитра ──────────────────────────────────── */
+
+.palette-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.palette-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.palette-group-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* Переопределяем .palette-card под button-элемент */
+.palette-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.palette-card:hover {
+  border-color: var(--border-strong);
+  background: #161616;
+}
+
+.palette-card:active {
+  background: var(--fill);
+  color: var(--fill-text);
+}
+
+.palette-card-name {
+  font-weight: 500;
+}
+
+.palette-card-param {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── Обновлённые карточки рабочей области ────────────────────── */
+
+/* Добавляем drag-handle в card-header */
+.code-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* Аnim-подсветка активного шага — чуть ярче */
+.code-card.active-step {
+  border-color: var(--fill);
+  background: #161616;
+}
+
+.code-card.active-step .card-fn-label {
+  color: var(--fill);
+}
+
+/* ── Человекочитаемый лог ────────────────────────────────────── */
+
+.arena-log-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.log-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  animation: logFadeIn 180ms ease;
+}
+
+@keyframes logFadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Обновлённый ctrl-bar (с speed-bar) ─────────────────────── */
+
+.interactive-ctrl-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Переключатель режимов (монеты / лабиринт) ──────────────── */
+
+.interactive-mode-strip {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 2px;
+  align-items: center;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color 100ms, background 100ms;
+  text-transform: lowercase;
+}
+
+.mode-btn:hover {
+  color: var(--text);
+}
+
+.mode-btn.active {
+  background: var(--fill);
+  color: var(--fill-text);
+  font-weight: 600;
+}
+
+.arena-maze-target {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.interactive-badge.collision {
+  border-color: #e05555;
+  color: #ff7b7b;
+  background: rgba(224, 85, 85, 0.12);
+}

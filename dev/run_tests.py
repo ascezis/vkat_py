@@ -406,6 +406,78 @@ tasks_data = {
             ("нет проверки деления на ноль", "def calc(a, b, op):\n    if op == '+':\n        return a + b\n    if op == '-':\n        return a - b\n    if op == '*':\n        return a * b\n    if op == '/':\n        return a / b"),
             ("print вместо return", "def calc(a, b, op):\n    if op == '+':\n        print(a + b)")
         ]
+    },
+    "l1_dict_c1": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": 'get_price({"чай": 100, "кофе": 150}, "чай")', "returns": 100},
+            {"call": 'get_price({"чай": 100, "кофе": 150}, "сок")', "returns": 0},
+            {"call": 'get_price({}, "чай")', "returns": 0, "hidden": True},
+            {"call": 'get_price({"чай": 0}, "чай")', "returns": 0, "hidden": True}
+        ],
+        "ref": "def get_price(prices, name):\n    return prices.get(name, 0)\n\nmenu = {'чай': 100, 'кофе': 150}\nprint(get_price(menu, 'чай'))\nprint(get_price(menu, 'сок'))",
+        "wrong": [
+            ("квадратные скобки без get", "def get_price(prices, name):\n    return prices[name]"),
+            ("print вместо return", "def get_price(prices, name):\n    print(prices.get(name, 0))")
+        ]
+    },
+    "l1_dict_f1": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "expectedOutput": "7\n3",
+        "tests": [
+            {"call": 'add_item({"a": 1}, "a", 2)', "returns": 3},
+            {"call": 'add_item({}, "b", 4)', "returns": 4},
+            {"call": 'add_item({"x": 0}, "y", 1)', "returns": 1, "hidden": True}
+        ],
+        "ref": "def add_item(stock, name, count):\n    stock[name] = stock.get(name, 0) + count\n    return stock[name]\n\nstock = {'яблоки': 5}\nprint(add_item(stock, 'яблоки', 2))\nprint(add_item(stock, 'груши', 3))",
+        "wrong": [
+            ("код не изменён", "def add_item(stock, name, count):\n    stock[name] += count\n    return stock[name]\n\nstock = {'яблоки': 5}\nprint(add_item(stock, 'яблоки', 2))\nprint(add_item(stock, 'груши', 3))"),
+            ("не возвращает значение", "def add_item(stock, name, count):\n    stock[name] = stock.get(name, 0) + count\n\nstock = {'яблоки': 5}\nprint(add_item(stock, 'яблоки', 2))\nprint(add_item(stock, 'груши', 3))")
+        ]
+    },
+    "l1_dict_c2": {
+        "astRequirements": {"require_def": True, "require_return": True, "forbid_calls": ["Counter"]},
+        "tests": [
+            {"call": 'count_chars("abca")["a"]', "returns": 2},
+            {"call": 'count_chars("abca")["b"]', "returns": 1},
+            {"call": 'len(count_chars("abca"))', "returns": 3},
+            {"call": 'len(count_chars(""))', "returns": 0, "hidden": True},
+            {"call": 'count_chars("aaa")["a"]', "returns": 3, "hidden": True}
+        ],
+        "ref": "def count_chars(text):\n    result = {}\n    for ch in text:\n        result[ch] = result.get(ch, 0) + 1\n    return result\n\nprint(count_chars('abca'))",
+        "wrong": [
+            ("использует Counter", "def count_chars(text):\n    return dict(Counter(text))"),
+            ("всегда 1", "def count_chars(text):\n    result = {}\n    for ch in text:\n        result[ch] = 1\n    return result")
+        ]
+    },
+    "l1_dict_c3": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": 'total_price({"чай": 100, "кофе": 150}, {"чай": 2, "кофе": 1})', "returns": 350},
+            {"call": 'total_price({"чай": 100}, {})', "returns": 0},
+            {"call": 'total_price({"чай": 100, "кофе": 150}, {"кофе": 3})', "returns": 450},
+            {"call": 'total_price({"a": 1, "b": 2}, {"a": 5, "b": 5})', "returns": 15, "hidden": True}
+        ],
+        "ref": "def total_price(prices, cart):\n    total = 0\n    for name, qty in cart.items():\n        total += prices[name] * qty\n    return total\n\nprint(total_price({'чай': 100, 'кофе': 150}, {'чай': 2, 'кофе': 1}))",
+        "wrong": [
+            ("без умножения на количество", "def total_price(prices, cart):\n    total = 0\n    for name in cart:\n        total += prices[name]\n    return total"),
+            ("print вместо return", "def total_price(prices, cart):\n    total = 0\n    for name, qty in cart.items():\n        total += prices[name] * qty\n    print(total)")
+        ]
+    },
+    "l1_dict_c4": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": 'len(group_by_length(["a", "bb", "c"])[1])', "returns": 2},
+            {"call": 'group_by_length(["a", "bb", "c"])[2][0]', "returns": "bb"},
+            {"call": 'len(group_by_length(["a", "bb", "c"]))', "returns": 2},
+            {"call": 'len(group_by_length([]))', "returns": 0, "hidden": True},
+            {"call": 'group_by_length(["abc", "xyz", "q"])[3][1]', "returns": "xyz", "hidden": True}
+        ],
+        "ref": "def group_by_length(words):\n    result = {}\n    for word in words:\n        n = len(word)\n        if n not in result:\n            result[n] = []\n        result[n].append(word)\n    return result\n\nprint(group_by_length(['a', 'bb', 'c']))",
+        "wrong": [
+            ("перезаписывает вместо append", "def group_by_length(words):\n    result = {}\n    for word in words:\n        result[len(word)] = [word]\n    return result"),
+            ("возвращает число слов", "def group_by_length(words):\n    return len(words)")
+        ]
     }
 }
 
@@ -435,7 +507,10 @@ for tid, tinfo in tasks_data.items():
 # Проверка predict
 predict_tests = [
     ("l1_fn_p1", "def square(x):\n    return x * x\n\nprint(square(2) + square(3))", "13"),
-    ("l1_fn_p2", "def g(x):\n    print(x * 2)\n\ny = g(4)\nprint(y)", "8\nNone")
+    ("l1_fn_p2", "def g(x):\n    print(x * 2)\n\ny = g(4)\nprint(y)", "8\nNone"),
+    ("l1_dict_p1", "d = {'a': 1, 'b': 2}\nd['c'] = d['a'] + d['b']\nd['a'] = 10\nprint(d['a'], d['c'])", "10 3"),
+    ("l1_dict_p2", "d = {'x': 1, 'y': 2}\nprint('x' in d, 1 in d)\nprint(d.get('z'))\nprint(d.get('z', 0))", "True False\nNone\n0"),
+    ("l1_dict_p3", "scores = {'Аня': 5, 'Борис': 3}\nfor name, score in scores.items():\n    print(name, score * 2)", "Аня 10\nБорис 6")
 ]
 
 for pid, pcode, pexp in predict_tests:

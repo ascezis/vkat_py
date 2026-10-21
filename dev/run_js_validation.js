@@ -27,8 +27,10 @@ loadScript('content/04-functions.js');
 loadScript('content/05-lists-dicts.js');
 loadScript('content/06-strings.js');
 loadScript('content/l1-04-functions.js');
+loadScript('content/l1-05-dicts.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');
+loadScript('dev/selftest/l1-dicts.js');
 
 const stages = context.window.COURSE_STAGES;
 const topics = context.window.COURSE_TOPICS;
@@ -51,7 +53,7 @@ function check(desc, condition) {
 console.log('\n=== Валидация этапов и тем ===');
 check('COURSE_STAGES объявлен и содержит 2 этапа', Array.isArray(stages) && stages.length === 2);
 check('Этап start содержит 6 тем', stages[0].id === 'start' && stages[0].topics.length === 6);
-check('Этап core содержит l1_functions', stages[1].id === 'core' && stages[1].topics[0] === 'l1_functions');
+check('Этап core содержит l1_functions и l1_dicts', stages[1].id === 'core' && stages[1].topics.includes('l1_functions') && stages[1].topics.includes('l1_dicts'));
 
 const topicMap = new Map(topics.map(t => [t.id, t]));
 stages.forEach(st => {
@@ -73,7 +75,7 @@ const expectedOrder = [
 ];
 
 expectedOrder.forEach((id, idx) => {
-  check(`Элемент #${idx + 1} равен ${id}`, l1.items[idx].id === id);
+  check(`[l1_functions] Элемент #${idx + 1} равен ${id}`, l1.items[idx].id === id);
 });
 
 // Проверка подсчёта обязательных и необязательных элементов
@@ -86,9 +88,40 @@ l1.items.forEach(it => {
   else if (it.optional || it.tier === 'star') optCount++;
   else reqCount++;
 });
-check('Обязательных проверяемых элементов 13', reqCount === 13);
-check('Необязательных (★) элементов 2', optCount === 2);
-check('Элементов теории 5', theoryCount === 5);
+check('[l1_functions] Обязательных проверяемых элементов 13', reqCount === 13);
+check('[l1_functions] Необязательных (★) элементов 2', optCount === 2);
+check('[l1_functions] Элементов теории 5', theoryCount === 5);
+
+console.log('\n=== Валидация элементов темы l1_dicts ===');
+const l1d = topicMap.get('l1_dicts');
+check('Тема l1_dicts содержит items[]', l1d && Array.isArray(l1d.items));
+check('Тема l1_dicts содержит ровно 19 элементов', l1d && l1d.items.length === 19);
+
+const expectedDictOrder = [
+  'l1_dict_t1', 'l1_dict_q1', 'l1_dict_t2', 'l1_dict_p1', 'l1_dict_t3',
+  'l1_dict_q2', 'l1_dict_p2', 'l1_dict_c1', 'l1_dict_t4', 'l1_dict_q3',
+  'l1_dict_p3', 'l1_dict_f1', 'l1_dict_t5', 'l1_dict_q4', 'l1_dict_q5',
+  'l1_dict_c2', 'l1_dict_c3', 'l1_dict_c4', 'l1_dict_t6'
+];
+
+expectedDictOrder.forEach((id, idx) => {
+  check(`[l1_dicts] Элемент #${idx + 1} равен ${id}`, l1d && l1d.items[idx] && l1d.items[idx].id === id);
+});
+
+let reqCountD = 0;
+let optCountD = 0;
+let theoryCountD = 0;
+if (l1d) {
+  l1d.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountD++;
+    else if (it.optional || it.tier === 'star') optCountD++;
+    else reqCountD++;
+  });
+}
+check('[l1_dicts] Обязательных проверяемых элементов 12', reqCountD === 12);
+check('[l1_dicts] Необязательных (★) элементов 1', optCountD === 1);
+check('[l1_dicts] Элементов теории 6', theoryCountD === 6);
 
 console.log('\n=== Валидация уникальности ID во всём курсе ===');
 const allIds = new Set();
@@ -103,7 +136,7 @@ topics.forEach(t => {
     allIds.add(it.id);
   });
 });
-check('Все ID элементов курса уникальны', !hasDuplicates && allIds.size === 46);
+check('Все ID элементов курса уникальны (65 элементов)', !hasDuplicates && allIds.size === 65);
 
 console.log('\n=== Валидация дружелюбных ошибок (FriendlyErrors) ===');
 check('IndentationError распознаётся', typeof errors.explain('IndentationError: expected an indented block after function definition') === 'string');

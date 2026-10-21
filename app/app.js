@@ -140,6 +140,8 @@
     dom.checkMigrateLegacy = document.getElementById('check-migrate-legacy');
     dom.btnSubmitCreateProfile = document.getElementById('btn-submit-create-profile');
     dom.btnCancelCreateProfile = document.getElementById('btn-cancel-create-profile');
+    dom.btnQuickStartList = document.getElementById('btn-quick-start-list');
+    dom.btnQuickStartCreate = document.getElementById('btn-quick-start-create');
 
     // PIN Modal
     dom.pinModal = document.getElementById('pin-modal');
@@ -149,6 +151,14 @@
     dom.pinErrorAlert = document.getElementById('pin-error-alert');
     dom.btnModalPinSubmit = document.getElementById('btn-modal-pin-submit');
     dom.btnModalPinCancel = document.getElementById('btn-modal-pin-cancel');
+    dom.btnModalPinCloseX = document.getElementById('btn-modal-pin-close-x');
+
+    // Справка о системе профилей
+    dom.modalProfileHelp = document.getElementById('modal-profile-help');
+    dom.btnShowProfileHelpList = document.getElementById('btn-show-profile-help-list');
+    dom.btnShowProfileHelpCreate = document.getElementById('btn-show-profile-help-create');
+    dom.btnCloseProfileHelpX = document.getElementById('btn-close-profile-help-x');
+    dom.btnCloseProfileHelpOk = document.getElementById('btn-close-profile-help-ok');
 
     // Пользователь в топбаре
     dom.appUserBadge = document.getElementById('app-user-badge');
@@ -372,14 +382,28 @@
 
       card.innerHTML = `
         ${p.id === lastId ? '<span class="profile-badge-last">последний вход</span>' : ''}
-        ${p.pinHash ? '<span class="profile-lock-icon" title="Защищено PIN-кодом">🔒</span>' : ''}
-        <button type="button" class="profile-delete-btn" title="Удалить профиль">✕</button>
+        <div class="profile-card-actions">
+          <button type="button" class="profile-card-action-btn btn-export" title="Скачать профиль (.json)">↓ .json</button>
+          <button type="button" class="profile-card-action-btn btn-delete" title="Удалить профиль">✕</button>
+        </div>
         <div class="profile-avatar">${escapeHtml(initial)}</div>
         <div class="profile-card-name">${escapeHtml(p.name)}</div>
         <div class="profile-card-progress">${progressText}</div>
       `;
 
-      const deleteBtn = card.querySelector('.profile-delete-btn');
+      const exportBtn = card.querySelector('.btn-export');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          try {
+            await window.VkatStorage.exportProfile(p.id);
+          } catch (err) {
+            alert('Ошибка экспорта профиля: ' + err.message);
+          }
+        });
+      }
+
+      const deleteBtn = card.querySelector('.btn-delete');
       if (deleteBtn) {
         deleteBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -503,6 +527,30 @@
         if (dom.inputModalPin) dom.inputModalPin.focus();
       });
     }
+  }
+
+  async function startAsGuest() {
+    try {
+      const profiles = await window.VkatStorage.listProfiles();
+      let guest = profiles.find(p => p.name.toLowerCase() === 'гость');
+      if (!guest) {
+        guest = await window.VkatStorage.createProfile('Гость');
+      }
+      await window.VkatStorage.selectProfile(guest.id);
+      await loadStorage();
+      showScreen('start');
+    } catch (err) {
+      console.error('Ошибка быстрого старта:', err);
+      alert('Не удалось запустить гостевой режим: ' + err.message);
+    }
+  }
+
+  function openProfileHelp() {
+    if (dom.modalProfileHelp) dom.modalProfileHelp.style.display = 'flex';
+  }
+
+  function closeProfileHelp() {
+    if (dom.modalProfileHelp) dom.modalProfileHelp.style.display = 'none';
   }
 
   /**
@@ -1469,6 +1517,10 @@
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (dom.modalProfileHelp && dom.modalProfileHelp.style.display !== 'none') {
+          closeProfileHelp();
+          return;
+        }
         if (dom.pinModal && dom.pinModal.style.display !== 'none') {
           closePinModal();
           return;
@@ -1478,6 +1530,21 @@
         }
       }
     });
+
+    // Быстрый старт (гостевой режим в 1 клик)
+    if (dom.btnQuickStartList) dom.btnQuickStartList.addEventListener('click', startAsGuest);
+    if (dom.btnQuickStartCreate) dom.btnQuickStartCreate.addEventListener('click', startAsGuest);
+
+    // Справка о системе профилей
+    if (dom.btnShowProfileHelpList) dom.btnShowProfileHelpList.addEventListener('click', openProfileHelp);
+    if (dom.btnShowProfileHelpCreate) dom.btnShowProfileHelpCreate.addEventListener('click', openProfileHelp);
+    if (dom.btnCloseProfileHelpX) dom.btnCloseProfileHelpX.addEventListener('click', closeProfileHelp);
+    if (dom.btnCloseProfileHelpOk) dom.btnCloseProfileHelpOk.addEventListener('click', closeProfileHelp);
+    if (dom.modalProfileHelp) {
+      dom.modalProfileHelp.addEventListener('click', (e) => {
+        if (e.target === dom.modalProfileHelp) closeProfileHelp();
+      });
+    }
 
     // Кнопки смены профиля
     if (dom.btnAppSwitchProfile) dom.btnAppSwitchProfile.addEventListener('click', switchProfile);
@@ -1532,6 +1599,7 @@
 
     if (dom.btnModalPinSubmit) dom.btnModalPinSubmit.addEventListener('click', submitPin);
     if (dom.btnModalPinCancel) dom.btnModalPinCancel.addEventListener('click', closePinModal);
+    if (dom.btnModalPinCloseX) dom.btnModalPinCloseX.addEventListener('click', closePinModal);
     if (dom.pinModal) {
       dom.pinModal.addEventListener('click', (e) => {
         if (e.target === dom.pinModal) closePinModal();

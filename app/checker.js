@@ -125,7 +125,8 @@ def analyze_ast(code_str, requirements_json):
     try:
         tree = ast.parse(code_str)
     except SyntaxError as e:
-        return json.dumps({"syntax_error": str(e), "lineno": e.lineno, "offset": e.offset})
+        err_type = type(e).__name__
+        return json.dumps({"syntax_error": f"{err_type}: {e}", "lineno": e.lineno, "offset": e.offset})
 
     errors = []
     

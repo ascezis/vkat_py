@@ -12,17 +12,17 @@
       explain: () => 'Строки внутри функции, цикла или условия сдвигаются на 4 пробела вправо. Остальной код пишется без отступа.'
     },
     {
-      test: (msg) => /SyntaxError/i.test(msg) && /expected ':'/i.test(msg),
+      test: (msg) => /expected ':'/i.test(msg),
       explain: () => 'В конце строки с def, if, elif, else, for, while нужно двоеточие.'
     },
     {
-      test: (msg) => /SyntaxError/i.test(msg) && (/was never closed/i.test(msg) || /unmatched/i.test(msg) || /unterminated string literal/i.test(msg) || /EOL while scanning string literal/i.test(msg)),
+      test: (msg) => /was never closed/i.test(msg) || /unmatched/i.test(msg) || /unterminated string literal/i.test(msg) || /EOL while scanning string literal/i.test(msg),
       explain: () => 'Не хватает или лишняя скобка или кавычка. Проверь, что каждая открывающая скобка и кавычка закрыта.'
     },
     {
-      test: (msg) => /NameError: name '([^']+)' is not defined/i.test(msg),
+      test: (msg) => /name '([^']+)' is not defined/i.test(msg),
       explain: (msg) => {
-        const match = msg.match(/NameError: name '([^']+)' is not defined/i);
+        const match = msg.match(/name '([^']+)' is not defined/i);
         const name = match ? match[1] : 'переменной';
         return `Python не знает имя \`${name}\`. Проверь написание (регистр важен), создана ли переменная или функция до использования, и не создана ли она внутри функции: снаружи она не видна.`;
       }

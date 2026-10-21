@@ -140,11 +140,41 @@ check('Все ID элементов курса уникальны (65 элеме
 
 console.log('\n=== Валидация дружелюбных ошибок (FriendlyErrors) ===');
 check('IndentationError распознаётся', typeof errors.explain('IndentationError: expected an indented block after function definition') === 'string');
-check('SyntaxError : распознаётся', typeof errors.explain('SyntaxError: expected \':\'') === 'string');
+check('SyntaxError : распознаётся со словом SyntaxError', typeof errors.explain('SyntaxError: expected \':\'') === 'string');
+check('Синтаксис : распознаётся БЕЗ слова SyntaxError (реальный str(e))', typeof errors.explain("expected ':' (<unknown>, line 1)") === 'string');
+check('Незакрытая скобка распознаётся БЕЗ слова SyntaxError', typeof errors.explain("'(' was never closed (<unknown>, line 1)") === 'string');
+check('Лишняя скобка (unmatched) распознаётся', typeof errors.explain("unmatched ')' (<unknown>, line 1)") === 'string');
+check('Незакрытая фигурная скобка { распознаётся', typeof errors.explain("'{' was never closed (<unknown>, line 1)") === 'string');
 check('NameError распознаётся и содержит имя переменной', errors.explain("NameError: name 'total' is not defined").includes('total'));
 check('TypeError NoneType распознаётся', errors.explain("TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'").includes('return'));
 check('ZeroDivisionError распознаётся', errors.explain('ZeroDivisionError: division by zero').includes('Деление на ноль'));
 check('IndexError распознаётся', errors.explain('IndexError: list index out of range').includes('Индексы начинаются с 0'));
+
+console.log('\n=== Валидация выбора первого элемента этапа (не пропускает теорию) ===');
+function isOptional(item) {
+  return Boolean(item.optional || item.tier === 'star');
+}
+function findFirstUncompleted(stageId, completedSet) {
+  const stage = stages.find(s => s.id === stageId);
+  for (const topId of stage.topics) {
+    const t = topicMap.get(topId);
+    for (let k = 0; k < t.items.length; k++) {
+      const it = t.items[k];
+      if (!isOptional(it) && !completedSet.has(it.id)) {
+        return it;
+      }
+    }
+  }
+  return null;
+}
+
+const emptyCompleted = new Set();
+const firstCoreItem = findFirstUncompleted('core', emptyCompleted);
+check('На пустом прогрессе этап core начинает с первого элемента (теория l1_fn_t1)', firstCoreItem && firstCoreItem.id === 'l1_fn_t1' && firstCoreItem.type === 'theory');
+
+const theoryDone = new Set(['l1_fn_t1']);
+const secondCoreItem = findFirstUncompleted('core', theoryDone);
+check('После прочтения теории core переходит к квизу (l1_fn_q1)', secondCoreItem && secondCoreItem.id === 'l1_fn_q1');
 
 console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
 if (failed > 0) process.exit(1);

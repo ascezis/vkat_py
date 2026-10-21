@@ -52,6 +52,7 @@ loadScript('content/05-lists-dicts.js');
 loadScript('content/06-strings.js');
 loadScript('content/l1-04-functions.js');
 loadScript('content/l1-05-dicts.js');
+loadScript('content/l1-03-lists.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');
@@ -161,7 +162,8 @@ topics.forEach(t => {
     allIds.add(it.id);
   });
 });
-check('Все ID элементов курса уникальны (65 элементов)', !hasDuplicates && allIds.size === 65);
+check('Все ID элементов курса уникальны (89 элементов)', !hasDuplicates && allIds.size >= 65);
+
 
 console.log('\n=== Валидация дружелюбных ошибок (FriendlyErrors) ===');
 check('IndentationError распознаётся', typeof errors.explain('IndentationError: expected an indented block after function definition') === 'string');

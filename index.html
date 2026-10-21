@@ -29,24 +29,11 @@
     <div class="start-center">
       <div class="kicker">до первого занятия с группой</div>
       <h1>Ты пришёл чуть позже — здесь быстро наверстаешь</h1>
-      <p class="start-sub">Одно-два занятия, шесть тем, задания с реальной проверкой кода. Без лекций — сразу пишешь и сразу видишь результат.</p>
+      <p class="start-sub">Одно-два занятия, темы с реальной проверкой кода. Без лекций — сразу пишешь и сразу видишь результат.</p>
 
-      <div class="facts">
-        <div class="fact">
-          <span class="n">6</span>
-          <span class="l">тем: от переменных до словарей</span>
-        </div>
-        <div class="fact">
-          <span class="n">26</span>
-          <span class="l">коротких заданий с автопроверкой</span>
-        </div>
-        <div class="fact">
-          <span class="n">1–2</span>
-          <span class="l">занятия, чтобы пройти всё</span>
-        </div>
-      </div>
+      <!-- Карточки этапов курса (генерируются динамически из COURSE_STAGES) -->
+      <div id="stage-cards" class="stage-cards"></div>
 
-      <button id="btn-start" class="btn-start">Начать</button>
       <div class="start-note">прогресс сохраняется на этом устройстве</div>
       <div id="start-status" class="status-badge">Загрузка Python...</div>
     </div>
@@ -58,18 +45,34 @@
 
   <!-- ЭКРАН 2: УРОК -->
   <div id="screen-lesson" class="screen">
-    <div class="main-panes">
+    <!-- Для теории: полноэкранная панель чтения -->
+    <div id="pane-theory" class="pane-theory" style="display: none;">
+      <div class="theory-wrapper">
+        <div class="pane-label">теория</div>
+        <h1 id="theory-title">Заголовок теории</h1>
+        <div id="theory-content"></div>
+        <div class="theory-footer">
+          <button id="btn-theory-next" class="btn-start">Дальше</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Двухпанельная сетка для code / predict / quiz -->
+    <div id="main-panes" class="main-panes">
       <!-- Панель объяснения и задания -->
       <div class="pane pane-explain">
-        <div class="pane-label">объяснение</div>
-        <h1 id="explain-title">Заголовок урока</h1>
+        <div class="pane-label" id="explain-label">объяснение</div>
+        <div class="title-row">
+          <h1 id="explain-title">Заголовок урока</h1>
+          <span id="task-badge" class="badge-tier" style="display: none;"></span>
+        </div>
         <div id="explain-content">
           <p>Текст объяснения.</p>
         </div>
 
         <div id="example-box" class="example">code example<span class="out">output</span></div>
 
-        <div class="task">
+        <div id="task-box" class="task">
           <div class="task-label">задание</div>
           <div id="task-content">
             <p>Условие задачи.</p>
@@ -77,8 +80,8 @@
         </div>
       </div>
 
-      <!-- Панель редактора кода -->
-      <div class="pane pane-code">
+      <!-- Правая панель для code -->
+      <div id="pane-code" class="pane pane-code">
         <div class="pane-label">твой код</div>
         <div class="editor-wrapper">
           <div id="line-numbers" class="line-numbers" aria-hidden="true">1</div>
@@ -93,12 +96,13 @@
             <div id="hint-content" class="hint-content"></div>
           </div>
           <div class="btn-actions">
+            <button id="btn-skip" class="btn-skip" style="display: none;">Пропустить</button>
             <button id="btn-run" class="btn-run">Проверить</button>
             <button id="btn-next" class="btn-next">Следующее задание</button>
           </div>
         </div>
 
-        <!-- Зона результата -->
+        <!-- Зона результата code -->
         <div id="result-box" class="result">
           <div class="result-row">
             <span id="result-mark" class="result-mark ok">✓</span>
@@ -106,6 +110,11 @@
               <div id="result-title" class="result-title">Задание засчитано</div>
               <div id="result-sub" class="result-sub">Вывод совпадает, код написан верно</div>
             </div>
+          </div>
+
+          <div id="error-explain" class="error-explain" style="display: none;">
+            <div class="error-explain-label">что это значит</div>
+            <div id="error-explain-text" class="error-explain-text"></div>
           </div>
 
           <div id="console-out" class="console" style="display: none;"></div>
@@ -116,6 +125,69 @@
           </div>
         </div>
       </div>
+
+      <!-- Правая панель для predict -->
+      <div id="pane-predict" class="pane pane-predict" style="display: none;">
+        <div class="pane-label">код программы (только для чтения)</div>
+        <pre id="predict-code-view" class="predict-code"></pre>
+
+        <div class="task-label" style="margin-top: 20px;">что выведет программа?</div>
+        <textarea id="predict-input" class="predict-input" placeholder="Введи ожидаемый вывод (например: 13)..."></textarea>
+
+        <div class="editor-footer" style="padding: 0; margin-top: 10px;">
+          <div></div>
+          <div class="btn-actions">
+            <button id="btn-predict-check" class="btn-run">Проверить</button>
+            <button id="btn-predict-next" class="btn-next" style="display: none;">Следующее задание</button>
+          </div>
+        </div>
+
+        <div id="predict-result-box" class="result" style="margin-top: 20px;">
+          <div class="result-row">
+            <span id="predict-result-mark" class="result-mark ok">✓</span>
+            <div>
+              <div id="predict-result-title" class="result-title">Ответ совпал</div>
+              <div id="predict-result-sub" class="result-sub"></div>
+            </div>
+          </div>
+          <div id="predict-explain-box" class="explain-box" style="margin-top: 14px;">
+            <div class="task-label">разбор</div>
+            <div id="predict-explain-content" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Правая панель для quiz -->
+      <div id="pane-quiz" class="pane pane-quiz" style="display: none;">
+        <div class="pane-label">вопрос с вариантами ответов</div>
+        <h2 id="quiz-question" style="font-size: 16px; font-weight: 500; margin-bottom: 14px;"></h2>
+        <pre id="quiz-code-view" class="predict-code" style="display: none;"></pre>
+
+        <div id="quiz-options" class="quiz-options"></div>
+
+        <div class="editor-footer" style="padding: 0; margin-top: 14px;">
+          <div></div>
+          <div class="btn-actions">
+            <button id="btn-quiz-check" class="btn-run">Проверить</button>
+            <button id="btn-quiz-next" class="btn-next" style="display: none;">Следующее задание</button>
+          </div>
+        </div>
+
+        <div id="quiz-result-box" class="result" style="margin-top: 20px;">
+          <div class="result-row">
+            <span id="quiz-result-mark" class="result-mark ok">✓</span>
+            <div>
+              <div id="quiz-result-title" class="result-title">Верно</div>
+              <div id="quiz-result-sub" class="result-sub"></div>
+            </div>
+          </div>
+          <div id="quiz-explain-box" class="explain-box" style="margin-top: 14px;">
+            <div class="task-label">разбор</div>
+            <div id="quiz-explain-content" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Боттомбар урока -->
@@ -130,16 +202,17 @@
   <div id="screen-finish" class="screen">
     <div class="finish-center">
       <div class="finish-mark">✓</div>
-      <h1>Базовый разрыв закрыт!</h1>
-      <p class="finish-sub">Ты прошёл все ключевые темы: переменные, ветвления, циклы, функции, структуры данных и строки. Теперь ты готов подключиться к занятиям группы на равных.</p>
+      <h1 id="finish-title">Базовый разрыв закрыт!</h1>
+      <p id="finish-sub" class="finish-sub">Ты прошёл все ключевые темы. Теперь ты готов подключиться к занятиям группы на равных.</p>
 
       <div class="finish-actions">
-        <button id="btn-restart" class="btn-restart">Пройти заново / повторить темы</button>
+        <button id="btn-finish-next-stage" class="btn-start" style="display: none; margin-bottom: 12px;">Дальше</button>
+        <button id="btn-restart" class="btn-restart">Повторить этап</button>
       </div>
     </div>
     <div class="bottombar">
-      <span>python · до классов</span>
-      <span>курс завершён</span>
+      <span id="finish-stage-label">python · этап</span>
+      <span>этап завершён</span>
     </div>
   </div>
 
@@ -148,7 +221,7 @@
     <div class="tree-header">
       <div class="tree-header-info">
         <div class="tree-title">вкат.py <span class="tree-slash">/</span> дерево курса</div>
-        <div id="tree-progress-summary" class="tree-progress-summary">пройдено 0 из 26 (0%)</div>
+        <div id="tree-progress-summary" class="tree-progress-summary">пройдено 0 из 0</div>
       </div>
       <button id="btn-tree-close" class="btn-tree-close" title="Закрыть (Esc)">✕</button>
     </div>
@@ -162,12 +235,16 @@
   </div>
   <div id="tree-backdrop" class="tree-backdrop"></div>
 
-  <!-- Скрипты: рантайм Pyodide, встроенные бинарники, чекер, контент тем и контроллер приложения -->
+  <!-- Скрипты: рантайм Pyodide, встроенные бинарники, дружелюбные ошибки, чекер -->
   <script src="assets/pyodide/wasm_binary.js"></script>
   <script src="assets/pyodide/stdlib_binary.js"></script>
   <script src="assets/pyodide/pyodide.asm.js"></script>
   <script src="assets/pyodide/pyodide.js"></script>
+  <script src="app/errors.js"></script>
   <script src="app/checker.js"></script>
+
+  <!-- Этапы курса (подключаются до файлов тем) -->
+  <script src="content/stages.js"></script>
 
   <!-- Файлы тем контента -->
   <script src="content/01-variables.js"></script>
@@ -176,6 +253,7 @@
   <script src="content/04-functions.js"></script>
   <script src="content/05-lists-dicts.js"></script>
   <script src="content/06-strings.js"></script>
+  <script src="content/l1-04-functions.js"></script>
 
   <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
   <script src="app/autocomplete.js"></script>

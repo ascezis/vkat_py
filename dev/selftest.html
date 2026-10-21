@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>вкат.py — Самопроверка контента курса</title>
+  <link rel="stylesheet" href="../app/styles.css">
+  <style>
+    body {
+      padding: 32px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .summary-card {
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .summary-stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 8px;
+    }
+    .stat-val {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .selftest-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .selftest-table th, .selftest-table td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .selftest-table th {
+      background: var(--bg-panel);
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .badge-pass {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .badge-fail {
+      color: #fff;
+      background: var(--border-strong);
+      padding: 2px 6px;
+      font-weight: 600;
+    }
+    .details {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 4px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .btn-run-tests {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: var(--fill);
+      color: var(--fill-text);
+      border: 1px solid var(--fill);
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .btn-run-tests:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="mark" style="margin-bottom: 12px;">вкат<span class="dot">·</span>py / selftest</div>
+    <h1>Страница самопроверки контента курса</h1>
+    <p style="color: var(--text-muted); font-size: 14px;">Автоматическая проверка структуры курса, эталонов, ошибочных решений и задач предсказания вывода.</p>
+  </div>
+
+  <div id="summary-box" class="summary-card">
+    <div id="status-line">Инициализация среды тестирования...</div>
+    <div id="summary-stats" class="summary-stats" style="display: none;">
+      <div>Всего тестов: <span id="stat-total" class="stat-val">0</span></div>
+      <div>Пройдено: <span id="stat-passed" class="stat-val">0</span></div>
+      <div>Провалено: <span id="stat-failed" class="stat-val">0</span></div>
+      <div>Время: <span id="stat-time" class="stat-val">0с</span></div>
+    </div>
+  </div>
+
+  <button id="btn-start" class="btn-run-tests" disabled>Запустить самопроверку</button>
+
+  <table class="selftest-table">
+    <thead>
+      <tr>
+        <th style="width: 140px;">Элемент</th>
+        <th style="width: 180px;">Тип проверки</th>
+        <th style="width: 100px;">Статус</th>
+        <th>Детали</th>
+      </tr>
+    </thead>
+    <tbody id="results-body">
+      <tr>
+        <td colspan="4" style="color: var(--text-muted); text-align: center; padding: 24px;">Загрузка Pyodide и данных курса...</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Зависимости -->
+  <script src="../assets/pyodide/wasm_binary.js"></script>
+  <script src="../assets/pyodide/stdlib_binary.js"></script>
+  <script src="../assets/pyodide/pyodide.asm.js"></script>
+  <script src="../assets/pyodide/pyodide.js"></script>
+
+  <script src="../app/errors.js"></script>
+  <script src="../app/checker.js"></script>
+
+  <!-- Этапы и темы -->
+  <script src="../content/stages.js"></script>
+  <script src="../content/01-variables.js"></script>
+  <script src="../content/02-conditions.js"></script>
+  <script src="../content/03-loops.js"></script>
+  <script src="../content/04-functions.js"></script>
+  <script src="../content/05-lists-dicts.js"></script>
+  <script src="../content/06-strings.js"></script>
+  <script src="../content/l1-04-functions.js"></script>
+  <script src="../content/l1-05-dicts.js"></script>
+
+  <!-- Тестовые эталоны и неправильные решения -->
+  <script src="selftest/l1-functions.js"></script>
+  <script src="selftest/l1-dicts.js"></script>
+
+  <script>
+    (async function () {
+      const statusLine = document.getElementById('status-line');
+      const summaryStats = document.getElementById('summary-stats');
+      const statTotal = document.getElementById('stat-total');
+      const statPassed = document.getElementById('stat-passed');
+      const statFailed = document.getElementById('stat-failed');
+      const statTime = document.getElementById('stat-time');
+      const btnStart = document.getElementById('btn-start');
+      const resultsBody = document.getElementById('results-body');
+
+      let allTests = [];
+
+      function addRow(id, type, passed, details) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${id}</code></td>
+          <td>${type}</td>
+          <td><span class="${passed ? 'badge-pass' : 'badge-fail'}">${passed ? '✓ PASS' : '× FAIL'}</span></td>
+          <td>${details ? `<div class="details">${details}</div>` : ''}</td>
+        `;
+        resultsBody.appendChild(tr);
+      }
+
+      function normalize(str) {
+        if (!str) return '';
+        return str.replace(/\r\n/g, '\n').split('\n').map(l => l.trimEnd()).join('\n').trim();
+      }
+
+      async function runAll() {
+        btnStart.disabled = true;
+        resultsBody.innerHTML = '';
+        statusLine.textContent = 'Выполняются тесты самопроверки...';
+        summaryStats.style.display = 'none';
+
+        const startTime = Date.now();
+        let passedCount = 0;
+        let failedCount = 0;
+
+        // 1. Валидация структуры курса
+        const allIds = new Set();
+        let structureErrors = [];
+
+        const topics = window.COURSE_TOPICS || [];
+        const stages = window.COURSE_STAGES || [];
+        const topicMap = new Map(topics.map(t => [t.id, t]));
+
+        // Проверка наличия тем этапов
+        stages.forEach(st => {
+          st.topics.forEach(topId => {
+            if (!topicMap.has(topId)) {
+              structureErrors.push(`Этап "${st.id}" ссылается на отсутствующую тему "${topId}".`);
+            }
+          });
+        });
+
+        // Нормализация и проверка каждого элемента
+        topics.forEach(topic => {
+          const items = topic.items || topic.tasks || [];
+          items.forEach(item => {
+            // Уникальность id
+            if (allIds.has(item.id)) {
+              structureErrors.push(`Дублирующийся id элемента: "${item.id}" в теме "${topic.id}".`);
+            }
+            allIds.add(item.id);
+
+            const type = item.type || 'code';
+            if (type === 'theory') {
+              if (!Array.isArray(item.blocks) || item.blocks.length === 0) {
+                structureErrors.push(`У элемента теории "${item.id}" нет блоков.`);
+              }
+            } else if (type === 'quiz') {
+              if (!item.question) structureErrors.push(`У quiz "${item.id}" нет question.`);
+              if (!Array.isArray(item.options) || item.options.length < 2) structureErrors.push(`У quiz "${item.id}" меньше двух options.`);
+              if (typeof item.correct !== 'number' || item.correct < 0 || item.correct >= item.options.length) {
+                structureErrors.push(`У quiz "${item.id}" некорректный correct (${item.correct}).`);
+              }
+              if (!item.explain) structureErrors.push(`У quiz "${item.id}" нет explain.`);
+            } else if (type === 'predict') {
+              if (!item.code) structureErrors.push(`У predict "${item.id}" нет code.`);
+              if (item.expectedOutput === undefined) structureErrors.push(`У predict "${item.id}" нет expectedOutput.`);
+              if (!item.explain) structureErrors.push(`У predict "${item.id}" нет explain.`);
+            } else if (type === 'code') {
+              if (!item.assignment) structureErrors.push(`У code-задания "${item.id}" нет assignment.`);
+              if (item.id.startsWith('l1_') && (!Array.isArray(item.hints) || item.hints.length === 0)) {
+                structureErrors.push(`У задания этапа 2 "${item.id}" нет hints[].`);
+              }
+              if (Array.isArray(item.tests)) {
+                item.tests.forEach((t, i) => {
+                  if (!t.call) structureErrors.push(`В задании "${item.id}" у теста #${i + 1} отсутствует call.`);
+                });
+              }
+            }
+          });
+        });
+
+        const structPass = structureErrors.length === 0;
+        if (structPass) {
+          passedCount++;
+          addRow('COURSE_STRUCTURE', 'Валидация схемы курса', true, 'Все id уникальны, обязательные поля присутствуют, темы этапов найдены.');
+        } else {
+          failedCount++;
+          addRow('COURSE_STRUCTURE', 'Валидация схемы курса', false, structureErrors.join('\n'));
+        }
+
+        // 2. Прогон эталонов и неправильных решений
+        const selftestData = window.COURSE_SELFTEST || {};
+        const itemsMap = new Map();
+        topics.forEach(t => {
+          (t.items || t.tasks || []).forEach(it => itemsMap.set(it.id, it));
+        });
+
+        for (const [taskId, data] of Object.entries(selftestData)) {
+          const task = itemsMap.get(taskId);
+          if (!task) {
+            failedCount++;
+            addRow(taskId, 'Поиск задачи', false, `Задача ${taskId} не найдена в контенте.`);
+            continue;
+          }
+
+          // Прогон эталона
+          try {
+            const refRes = await window.CodeChecker.checkSolution(data.reference, task);
+            if (refRes.passed) {
+              passedCount++;
+              addRow(taskId, 'Прогон эталона (reference)', true, 'Эталонное решение успешно засчитано.');
+            } else {
+              failedCount++;
+              addRow(taskId, 'Прогон эталона (reference)', false, `Эталон отклонён: ${refRes.title} — ${refRes.sub}\nВывод: ${refRes.stdout || ''}`);
+            }
+          } catch (e) {
+            failedCount++;
+            addRow(taskId, 'Прогон эталона (reference)', false, `Исключение: ${e.message || e}`);
+          }
+
+          // Прогон заведомо неверных
+          if (Array.isArray(data.wrong)) {
+            for (const wrong of data.wrong) {
+              try {
+                const wrongRes = await window.CodeChecker.checkSolution(wrong.code, task);
+                if (!wrongRes.passed) {
+                  passedCount++;
+                  addRow(taskId, `Ошибочное: "${wrong.name}"`, true, `Корректно отклонено: ${wrongRes.sub || wrongRes.title}`);
+                } else {
+                  failedCount++;
+                  addRow(taskId, `Ошибочное: "${wrong.name}"`, false, `ОШИБКА: Неправильное решение было ошибочно ПРИНЯТО чекером!`);
+                }
+              } catch (e) {
+                // Если чекер выбросил исключение, а не вернул passed: false
+                failedCount++;
+                addRow(taskId, `Ошибочное: "${wrong.name}"`, false, `Сбой чекера: ${e.message || e}`);
+              }
+            }
+          }
+        }
+
+        // 3. Прогон заданий типа predict
+        for (const topic of topics) {
+          const items = topic.items || topic.tasks || [];
+          for (const item of items) {
+            if (item.type === 'predict') {
+              try {
+                const runRes = await window.CodeChecker.runCode(item.code);
+                const actual = normalize(runRes.stdout);
+                const expected = normalize(item.expectedOutput);
+                if (actual === expected && !runRes.error) {
+                  passedCount++;
+                  addRow(item.id, 'Прогон predict (runCode)', true, `Вывод совпадает с expectedOutput ("${actual.replace(/\n/g, '\\n')}")`);
+                } else {
+                  failedCount++;
+                  addRow(item.id, 'Прогон predict (runCode)', false, `Несовпадение: ожидалось "${expected}", получено "${actual}". Ошибка: ${runRes.error || 'нет'}`);
+                }
+              } catch (e) {
+                failedCount++;
+                addRow(item.id, 'Прогон predict (runCode)', false, `Исключение при запуске: ${e.message || e}`);
+              }
+            }
+          }
+        }
+
+        // Итог
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        statTotal.textContent = passedCount + failedCount;
+        statPassed.textContent = passedCount;
+        statFailed.textContent = failedCount;
+        statTime.textContent = elapsed + 'с';
+        summaryStats.style.display = 'flex';
+
+        if (failedCount === 0) {
+          statusLine.textContent = `Все проверки успешно пройдены (${passedCount} из ${passedCount + failedCount}).`;
+        } else {
+          statusLine.textContent = `Обнаружены ошибки: ${failedCount} проверок провалено!`;
+        }
+
+        btnStart.disabled = false;
+      }
+
+      // Инициализация при открытии
+      try {
+        statusLine.textContent = 'Инициализация Python (Pyodide)...';
+        await window.CodeChecker.initPyodide();
+        statusLine.textContent = 'Python готов. Нажмите «Запустить самопроверку» для старта тестов.';
+        btnStart.disabled = false;
+        btnStart.addEventListener('click', runAll);
+        // Запуск автоматически
+        runAll();
+      } catch (err) {
+        statusLine.textContent = 'Ошибка инициализации Pyodide: ' + (err.message || err);
+      }
+    })();
+  </script>
+
+</body>
+</html>

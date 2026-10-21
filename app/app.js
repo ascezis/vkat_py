@@ -749,7 +749,12 @@
         dom.predictResultMark.textContent = '×';
         dom.predictResultTitle.className = 'result-title err';
         dom.predictResultTitle.textContent = 'Ответ отличается от фактического вывода';
-        dom.predictResultSub.textContent = `Твой ответ: "${userVal}"\nФактический вывод программы: "${actualVal}"`;
+
+        let diffMsg = `Твой ответ:\n${userVal || '(пусто)'}\n\nФактический вывод программы:\n${actualVal || '(пусто)'}`;
+        if (actualVal.includes('\n') && !userVal.includes('\n')) {
+          diffMsg += '\n\nПодсказка: каждый вызов print() выводит значение с новой строки.';
+        }
+        dom.predictResultSub.textContent = diffMsg;
       }
 
       dom.predictExplainContent.textContent = task.explain || '';

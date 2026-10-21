@@ -125,6 +125,39 @@
     dom.btnTreeToggle = document.getElementById('btn-tree-toggle');
     dom.btnTreeStart = document.getElementById('btn-tree-start');
     dom.btnTreeClose = document.getElementById('btn-tree-close');
+
+    // Профили
+    dom.screenProfiles = document.getElementById('screen-profiles');
+    dom.profilesViewList = document.getElementById('profiles-view-list');
+    dom.profilesViewCreate = document.getElementById('profiles-view-create');
+    dom.profilesGrid = document.getElementById('profiles-grid');
+    dom.inputImportFile = document.getElementById('input-import-file');
+    dom.createProfileHeading = document.getElementById('create-profile-heading');
+    dom.formCreateProfile = document.getElementById('form-create-profile');
+    dom.inputProfileName = document.getElementById('input-profile-name');
+    dom.inputProfilePin = document.getElementById('input-profile-pin');
+    dom.legacyMigrationBox = document.getElementById('legacy-migration-box');
+    dom.checkMigrateLegacy = document.getElementById('check-migrate-legacy');
+    dom.btnSubmitCreateProfile = document.getElementById('btn-submit-create-profile');
+    dom.btnCancelCreateProfile = document.getElementById('btn-cancel-create-profile');
+
+    // PIN Modal
+    dom.pinModal = document.getElementById('pin-modal');
+    dom.pinModalTitle = document.getElementById('pin-modal-title');
+    dom.pinDots = document.getElementById('pin-dots');
+    dom.inputModalPin = document.getElementById('input-modal-pin');
+    dom.pinErrorAlert = document.getElementById('pin-error-alert');
+    dom.btnModalPinSubmit = document.getElementById('btn-modal-pin-submit');
+    dom.btnModalPinCancel = document.getElementById('btn-modal-pin-cancel');
+
+    // Пользователь в топбаре
+    dom.appUserBadge = document.getElementById('app-user-badge');
+    dom.appUserName = document.getElementById('app-user-name');
+    dom.btnAppSwitchProfile = document.getElementById('btn-app-switch-profile');
+    dom.startUserBadge = document.getElementById('start-user-badge');
+    dom.startUserName = document.getElementById('start-user-name');
+    dom.btnStartSwitchProfile = document.getElementById('btn-start-switch-profile');
+    dom.versionResetLabel = document.getElementById('version-reset-label');
   }
 
   /**
@@ -163,28 +196,39 @@
   }
 
   /**
-   * Загрузка сохраненного прогресса
+   * Загрузка сохраненного прогресса активного профиля
    */
-  function loadStorage() {
+  async function loadStorage() {
     try {
-      const savedCompleted = localStorage.getItem(STORAGE_KEYS.COMPLETED);
-      if (savedCompleted) {
-        state.completedTasks = new Set(JSON.parse(savedCompleted));
+      const data = await window.VkatStorage.load();
+      if (data && Array.isArray(data.completed)) {
+        state.completedTasks = new Set(data.completed);
+      } else {
+        state.completedTasks = new Set();
       }
 
-      const savedDrafts = localStorage.getItem(STORAGE_KEYS.DRAFTS);
-      if (savedDrafts) {
-        state.codeDrafts = JSON.parse(savedDrafts);
+      state.codeDrafts = (data && data.drafts) || {};
+
+      const pos = (data && data.position) || {};
+      let topicIdx = 0;
+      let taskIdx = 0;
+
+      if (pos.topicId) {
+        const tIdx = state.topics.findIndex(t => t.id === pos.topicId);
+        if (tIdx !== -1) {
+          topicIdx = tIdx;
+          const items = state.topics[tIdx].items || state.topics[tIdx].tasks || [];
+          if (pos.itemId) {
+            const iIdx = items.findIndex(it => it.id === pos.itemId);
+            if (iIdx !== -1) taskIdx = iIdx;
+          }
+        }
       }
 
-      const savedPos = localStorage.getItem(STORAGE_KEYS.POSITION);
-      if (savedPos) {
-        const pos = JSON.parse(savedPos);
-        state.currentTopicIndex = pos.topicIndex || 0;
-        state.currentTaskIndex = pos.taskIndex || 0;
-      }
+      state.currentTopicIndex = topicIdx;
+      state.currentTaskIndex = taskIdx;
     } catch (e) {
-      console.warn('Не удалось загрузить данные из localStorage:', e);
+      console.warn('Не удалось загрузить данные профиля:', e);
     }
 
     // Защита от выхода за границы
@@ -199,17 +243,17 @@
   }
 
   function saveStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEYS.COMPLETED, JSON.stringify(Array.from(state.completedTasks)));
-      localStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(state.codeDrafts));
-      localStorage.setItem(STORAGE_KEYS.POSITION, JSON.stringify({
-        topicIndex: state.currentTopicIndex,
-        taskIndex: state.currentTaskIndex
-      }));
-      localStorage.setItem(STORAGE_KEYS.SCHEMA, '2');
-    } catch (e) {
-      console.warn('Не удалось сохранить в localStorage:', e);
-    }
+    const currentTopic = state.topics[state.currentTopicIndex];
+    const currentItem = currentTopic ? (currentTopic.items || currentTopic.tasks || [])[state.currentTaskIndex] : null;
+
+    window.VkatStorage.save({
+      completed: Array.from(state.completedTasks),
+      drafts: state.codeDrafts,
+      position: {
+        topicId: currentTopic ? currentTopic.id : '',
+        itemId: currentItem ? currentItem.id : ''
+      }
+    });
   }
 
   /**
@@ -263,14 +307,220 @@
   }
 
   /**
+   * Обновление отображения бейджа пользователя в топбарах
+   */
+  function updateProfileBadges() {
+    const profile = window.VkatStorage ? window.VkatStorage.getActiveProfileSync() : null;
+    const name = profile ? profile.name : '';
+    if (dom.appUserName) dom.appUserName.textContent = name;
+    if (dom.startUserName) dom.startUserName.textContent = name;
+    if (dom.appUserBadge) dom.appUserBadge.style.display = profile ? 'inline-flex' : 'none';
+    if (dom.startUserBadge) dom.startUserBadge.style.display = profile ? 'inline-flex' : 'none';
+  }
+
+  /**
+   * Смена профиля: сброс буфера, очистка сессии текущей вкладки и перезагрузка
+   */
+  function switchProfile() {
+    if (window.VkatStorage) {
+      window.VkatStorage.flushSync();
+      window.VkatStorage.clearActiveProfile();
+    }
+    window.location.reload();
+  }
+
+  /**
+   * Рендер экрана профилей
+   */
+  async function renderProfilesScreen() {
+    if (!window.VkatStorage) return;
+    const profiles = await window.VkatStorage.listProfiles();
+    if (profiles.length === 0) {
+      showCreateProfileView(true);
+    } else {
+      showProfileListView(profiles);
+    }
+  }
+
+  function showProfileListView(profiles) {
+    if (dom.profilesViewList) dom.profilesViewList.style.display = 'flex';
+    if (dom.profilesViewCreate) dom.profilesViewCreate.style.display = 'none';
+    if (!dom.profilesGrid) return;
+
+    dom.profilesGrid.innerHTML = '';
+    const lastId = window.VkatStorage ? window.VkatStorage.getLastProfileId() : null;
+
+    profiles.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'profile-card' + (p.id === lastId ? ' active-hint' : '');
+
+      let doneCount = 0;
+      try {
+        const raw = localStorage.getItem('vkat_p:' + p.id);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.completed)) {
+            doneCount = parsed.completed.length;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      const initial = (p.name || '?').trim().charAt(0).toUpperCase();
+      const progressText = doneCount > 0 ? `${doneCount} ${pluralize(doneCount, 'шаг пройден', 'шага пройдено', 'шагов пройдено')}` : 'новый ученик';
+
+      card.innerHTML = `
+        ${p.id === lastId ? '<span class="profile-badge-last">последний вход</span>' : ''}
+        ${p.pinHash ? '<span class="profile-lock-icon" title="Защищено PIN-кодом">🔒</span>' : ''}
+        <button type="button" class="profile-delete-btn" title="Удалить профиль">✕</button>
+        <div class="profile-avatar">${escapeHtml(initial)}</div>
+        <div class="profile-card-name">${escapeHtml(p.name)}</div>
+        <div class="profile-card-progress">${progressText}</div>
+      `;
+
+      const deleteBtn = card.querySelector('.profile-delete-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm(`Точно удалить профиль "${p.name}" и все его данные на этом компьютере?`)) {
+            await window.VkatStorage.deleteProfile(p.id);
+            await renderProfilesScreen();
+          }
+        });
+      }
+
+      card.addEventListener('click', () => {
+        handleProfileSelection(p);
+      });
+
+      dom.profilesGrid.appendChild(card);
+    });
+
+    // Карточка "+ Новый профиль"
+    const newCard = document.createElement('div');
+    newCard.className = 'profile-card profile-card-new';
+    newCard.id = 'btn-add-profile';
+    newCard.innerHTML = `
+      <div class="profile-new-icon">+</div>
+      <div class="profile-card-name">Новый профиль</div>
+      <div class="profile-card-progress">добавить ученика</div>
+    `;
+    newCard.addEventListener('click', () => {
+      showCreateProfileView(false);
+    });
+    dom.profilesGrid.appendChild(newCard);
+  }
+
+  function showCreateProfileView(isFirst) {
+    if (dom.profilesViewList) dom.profilesViewList.style.display = 'none';
+    if (dom.profilesViewCreate) dom.profilesViewCreate.style.display = 'flex';
+
+    if (dom.createProfileHeading) {
+      dom.createProfileHeading.textContent = isFirst ? 'вкат.py / добро пожаловать' : 'Как тебя зовут?';
+    }
+    if (dom.inputProfileName) dom.inputProfileName.value = '';
+    if (dom.inputProfilePin) dom.inputProfilePin.value = '';
+
+    if (dom.btnCancelCreateProfile) {
+      dom.btnCancelCreateProfile.style.display = isFirst ? 'none' : 'inline-block';
+    }
+
+    const hasLegacy = window.VkatStorage ? window.VkatStorage.checkLegacyData() : false;
+    if (dom.legacyMigrationBox) {
+      dom.legacyMigrationBox.style.display = hasLegacy ? 'block' : 'none';
+    }
+    if (dom.checkMigrateLegacy) {
+      dom.checkMigrateLegacy.checked = hasLegacy;
+    }
+
+    requestAnimationFrame(() => {
+      if (dom.inputProfileName) dom.inputProfileName.focus();
+    });
+  }
+
+  let currentPinTargetProfile = null;
+
+  function handleProfileSelection(profile) {
+    if (profile.pinHash) {
+      openPinModal(profile);
+    } else {
+      activateProfileAndStart(profile.id);
+    }
+  }
+
+  async function activateProfileAndStart(profileId, pin) {
+    try {
+      await window.VkatStorage.selectProfile(profileId, pin);
+      await loadStorage();
+      showScreen('start');
+    } catch (err) {
+      console.error('Ошибка входа в профиль:', err);
+      alert('Не удалось войти в профиль: ' + err.message);
+    }
+  }
+
+  function openPinModal(profile) {
+    currentPinTargetProfile = profile;
+    if (dom.pinModalTitle) dom.pinModalTitle.textContent = profile.name;
+    if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = '';
+    if (dom.inputModalPin) dom.inputModalPin.value = '';
+    updatePinDots('');
+    if (dom.pinModal) dom.pinModal.style.display = 'flex';
+    requestAnimationFrame(() => {
+      if (dom.inputModalPin) dom.inputModalPin.focus();
+    });
+  }
+
+  function closePinModal() {
+    if (dom.pinModal) dom.pinModal.style.display = 'none';
+    currentPinTargetProfile = null;
+    if (dom.inputModalPin) dom.inputModalPin.value = '';
+    updatePinDots('');
+  }
+
+  function updatePinDots(val) {
+    if (!dom.pinDots) return;
+    const dots = dom.pinDots.querySelectorAll('.pin-dot');
+    dots.forEach((dot, idx) => {
+      dot.classList.toggle('filled', idx < val.length);
+    });
+  }
+
+  async function submitPin() {
+    if (!currentPinTargetProfile) return;
+    const pin = dom.inputModalPin ? dom.inputModalPin.value : '';
+    try {
+      await window.VkatStorage.selectProfile(currentPinTargetProfile.id, pin);
+      closePinModal();
+      await loadStorage();
+      showScreen('start');
+    } catch (err) {
+      if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = 'Неверный PIN-код';
+      if (dom.inputModalPin) dom.inputModalPin.value = '';
+      updatePinDots('');
+      requestAnimationFrame(() => {
+        if (dom.inputModalPin) dom.inputModalPin.focus();
+      });
+    }
+  }
+
+  /**
    * Переключение экранов
    */
   function showScreen(screen) {
+    if (dom.screenProfiles) dom.screenProfiles.classList.remove('active');
     dom.screenStart.classList.remove('active');
     dom.screenLesson.classList.remove('active');
     dom.screenFinish.classList.remove('active');
 
-    if (screen === 'start') {
+    updateProfileBadges();
+
+    if (screen === 'profiles') {
+      if (dom.screenProfiles) dom.screenProfiles.classList.add('active');
+      dom.topbar.style.display = 'none';
+      renderProfilesScreen();
+    } else if (screen === 'start') {
       dom.screenStart.classList.add('active');
       dom.topbar.style.display = 'none';
       renderStartCards();
@@ -1187,7 +1437,9 @@
     const task = getCurrentTask();
     if (task) {
       state.codeDrafts[task.id] = dom.editor.value;
-      saveStorage();
+      if (window.VkatStorage) {
+        window.VkatStorage.saveDraftDebounced(task.id, dom.editor.value);
+      }
     }
     updateLineNumbers();
   }
@@ -1216,8 +1468,139 @@
     if (dom.treeBackdrop) dom.treeBackdrop.addEventListener('click', closeTreeDrawer);
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && dom.treeDrawer && dom.treeDrawer.classList.contains('open')) {
-        closeTreeDrawer();
+      if (e.key === 'Escape') {
+        if (dom.pinModal && dom.pinModal.style.display !== 'none') {
+          closePinModal();
+          return;
+        }
+        if (dom.treeDrawer && dom.treeDrawer.classList.contains('open')) {
+          closeTreeDrawer();
+        }
+      }
+    });
+
+    // Кнопки смены профиля
+    if (dom.btnAppSwitchProfile) dom.btnAppSwitchProfile.addEventListener('click', switchProfile);
+    if (dom.btnStartSwitchProfile) dom.btnStartSwitchProfile.addEventListener('click', switchProfile);
+
+    // Создание профиля
+    if (dom.btnCancelCreateProfile) {
+      dom.btnCancelCreateProfile.addEventListener('click', () => renderProfilesScreen());
+    }
+
+    if (dom.formCreateProfile) {
+      dom.formCreateProfile.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = dom.inputProfileName ? dom.inputProfileName.value.trim() : '';
+        const pin = dom.inputProfilePin ? dom.inputProfilePin.value.trim() : '';
+        if (!name) return;
+
+        try {
+          const profile = await window.VkatStorage.createProfile(name, pin);
+          const shouldMigrate = dom.checkMigrateLegacy && dom.checkMigrateLegacy.checked;
+          if (shouldMigrate && window.VkatStorage.checkLegacyData()) {
+            await window.VkatStorage.migrateLegacyToProfile(profile.id);
+          }
+          await window.VkatStorage.selectProfile(profile.id, pin);
+          await loadStorage();
+          showScreen('start');
+        } catch (err) {
+          alert('Ошибка создания профиля: ' + err.message);
+        }
+      });
+    }
+
+    // Ввод PIN в модальном окне
+    if (dom.inputModalPin) {
+      dom.inputModalPin.addEventListener('input', () => {
+        dom.inputModalPin.value = dom.inputModalPin.value.replace(/\D/g, '').slice(0, 4);
+        const val = dom.inputModalPin.value;
+        updatePinDots(val);
+        if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = '';
+        if (val.length === 4) {
+          submitPin();
+        }
+      });
+
+      dom.inputModalPin.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitPin();
+        }
+      });
+    }
+
+    if (dom.btnModalPinSubmit) dom.btnModalPinSubmit.addEventListener('click', submitPin);
+    if (dom.btnModalPinCancel) dom.btnModalPinCancel.addEventListener('click', closePinModal);
+    if (dom.pinModal) {
+      dom.pinModal.addEventListener('click', (e) => {
+        if (e.target === dom.pinModal) closePinModal();
+      });
+    }
+
+    // Импорт профиля из файла
+    if (dom.inputImportFile) {
+      dom.inputImportFile.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          try {
+            const jsonStr = evt.target.result;
+            const importedMeta = await window.VkatStorage.importProfile(jsonStr);
+            await renderProfilesScreen();
+            alert(`Профиль "${importedMeta.name}" успешно импортирован!`);
+          } catch (err) {
+            alert('Ошибка импорта профиля: ' + err.message);
+          } finally {
+            dom.inputImportFile.value = '';
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // Защищённый сброс всех данных устройства (удержание 4 секунды)
+    if (dom.versionResetLabel) {
+      let resetTimer = null;
+      const startReset = () => {
+        resetTimer = setTimeout(async () => {
+          if (confirm('Внимание: Выполнить полный сброс ВСЕХ профилей и данных тренажера на этом компьютере?')) {
+            await window.VkatStorage.resetAll();
+            window.location.reload();
+          }
+        }, 4000);
+      };
+      const cancelReset = () => {
+        if (resetTimer) {
+          clearTimeout(resetTimer);
+          resetTimer = null;
+        }
+      };
+      dom.versionResetLabel.addEventListener('mousedown', startReset);
+      dom.versionResetLabel.addEventListener('mouseup', cancelReset);
+      dom.versionResetLabel.addEventListener('mouseleave', cancelReset);
+      dom.versionResetLabel.addEventListener('touchstart', startReset);
+      dom.versionResetLabel.addEventListener('touchend', cancelReset);
+    }
+
+    // Сброс буфера перед уходом со страницы
+    window.addEventListener('beforeunload', () => {
+      if (window.VkatStorage) {
+        window.VkatStorage.flushSync();
+      }
+    });
+
+    // Межвкладочная синхронизация прогресса одного и того же профиля
+    window.addEventListener('storage', (e) => {
+      if (!window.VkatStorage) return;
+      const active = window.VkatStorage.getActiveProfileSync();
+      if (active && e.key === (window.VkatStorage.KEYS.PROFILE_PREFIX + active.id)) {
+        loadStorage().then(() => {
+          updateCourseProgress();
+          const cur = getCurrentTask();
+          if (cur) renderStepDots(state.topics[state.currentTopicIndex]);
+        });
       }
     });
 
@@ -1247,6 +1630,15 @@
         runPredictCheck();
       }
     });
+    dom.predictInput.addEventListener('input', () => {
+      const task = getCurrentTask();
+      if (task) {
+        state.codeDrafts[task.id] = dom.predictInput.value;
+        if (window.VkatStorage) {
+          window.VkatStorage.saveDraftDebounced(task.id, dom.predictInput.value);
+        }
+      }
+    });
 
     // Quiz
     dom.btnQuizCheck.addEventListener('click', runQuizCheck);
@@ -1261,7 +1653,16 @@
     buildCourseStructure();
     setupEditor();
     setupEvents();
-    loadStorage();
+
+    // Проверяем наличие активного профиля в текущей вкладке
+    const activeProfile = window.VkatStorage ? window.VkatStorage.getActiveProfileSync() : null;
+
+    if (activeProfile) {
+      await loadStorage();
+      showScreen('start');
+    } else {
+      showScreen('profiles');
+    }
 
     // Фоновая подготовка Pyodide
     if (dom.startStatus) dom.startStatus.textContent = 'Подготовка среды Python...';
@@ -1274,8 +1675,6 @@
         dom.startStatus.textContent = 'Внимание: локальный запуск требует run.bat при строгих политиках браузера';
       }
     }
-
-    showScreen('start');
   }
 
   window.addEventListener('DOMContentLoaded', startApp);

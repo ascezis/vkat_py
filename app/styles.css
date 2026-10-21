@@ -1474,3 +1474,379 @@ body {
   height: 7px;
 }
 
+/* ==========================================================================
+   СИСТЕМА ПРОФИЛЕЙ: ТОПБАР, ВЫБОР И КАРТОЧКИ
+   ========================================================================== */
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  background: var(--bg-panel);
+}
+
+.topbar-user .user-name {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.btn-switch-profile {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.btn-switch-profile:hover {
+  color: var(--text);
+}
+
+.profiles-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin: 32px 0;
+}
+
+.profile-card {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.profile-card:hover {
+  border-color: var(--fill);
+  background: var(--bg-panel-alt);
+  transform: translateY(-2px);
+}
+
+.profile-card.active-hint {
+  border-color: var(--fill);
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.profile-card:hover .profile-avatar {
+  background: var(--fill);
+  color: var(--fill-text);
+  border-color: var(--fill);
+}
+
+.profile-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.profile-card-progress {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.profile-badge-last {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--fill);
+  color: var(--fill-text);
+  padding: 2px 6px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.profile-lock-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.profile-delete-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.profile-card:hover .profile-delete-btn {
+  opacity: 0.6;
+}
+
+.profile-delete-btn:hover {
+  opacity: 1 !important;
+  color: #f87171;
+}
+
+/* Карточка "+ Новый профиль" */
+.profile-card-new {
+  border-style: dashed;
+  background: transparent;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.profile-card-new:hover {
+  border-style: solid;
+}
+
+.profile-new-icon {
+  font-size: 28px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.profile-card-new:hover .profile-new-icon {
+  color: var(--text);
+}
+
+/* Форма создания профиля */
+.profile-form {
+  width: 100%;
+  max-width: 440px;
+  margin-top: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 28px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.profile-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.profile-input:focus {
+  border-color: var(--fill);
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.form-group-checkbox {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: var(--fill);
+  width: 16px;
+  height: 16px;
+}
+
+.profile-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.profiles-footer-actions {
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.btn-import-label {
+  color: var(--text-dim);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.btn-import-label:hover {
+  color: var(--text);
+}
+
+/* PIN Modal */
+.pin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.pin-modal-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.pin-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.pin-modal-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.pin-modal-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.pin-dot.filled {
+  background: var(--fill);
+  border-color: var(--fill);
+}
+
+.pin-hidden-input {
+  opacity: 0;
+  position: absolute;
+  pointer-events: auto;
+  width: 1px;
+  height: 1px;
+}
+
+.pin-error-alert {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #f87171;
+  min-height: 18px;
+  margin-bottom: 16px;
+}
+
+.pin-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.version-label {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.version-label:hover {
+  color: var(--text);
+}
+
+

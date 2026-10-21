@@ -224,6 +224,10 @@
     return isGradable(item) && !item.optional && item.tier !== 'star';
   }
 
+  function isOptional(item) {
+    return Boolean(item.optional || item.tier === 'star');
+  }
+
   /**
    * Подсчёт прогресса по этапу
    */
@@ -292,8 +296,9 @@
       const topicsCount = stageTopics.length;
       const progress = getStageProgress(stage.id);
 
+      const hasAnyCompleted = stageTopics.some(t => t.items.some(it => state.completedTasks.has(it.id)));
       const isCompleted = progress.total > 0 && progress.completed === progress.total;
-      const btnText = progress.completed === 0 ? 'Начать' : (isCompleted ? 'Повторить' : 'Продолжить');
+      const btnText = !hasAnyCompleted ? 'Начать' : (isCompleted ? 'Повторить' : 'Продолжить');
 
       const card = document.createElement('div');
       card.className = 'stage-card';
@@ -340,11 +345,11 @@
 
     if (stageTopics.length === 0) return;
 
-    // Ищем первое непройденное обязательное задание этапа
+    // Ищем первый непройденный элемент любого типа (кроме необязательных)
     for (const st of stageTopics) {
       for (let k = 0; k < st.topic.items.length; k++) {
         const item = st.topic.items[k];
-        if (isRequired(item) && !state.completedTasks.has(item.id)) {
+        if (!isOptional(item) && !state.completedTasks.has(item.id)) {
           state.currentTopicIndex = st.index;
           state.currentTaskIndex = k;
           showScreen('lesson');

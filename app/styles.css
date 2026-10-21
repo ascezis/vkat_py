@@ -1608,36 +1608,43 @@ body {
   letter-spacing: 0.03em;
 }
 
-.profile-lock-icon {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.profile-delete-btn {
+/* Действия на карточке профиля (экспорт и удаление) */
+.profile-card-actions {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  transition: opacity 0.15s ease;
+  z-index: 2;
 }
 
-.profile-card:hover .profile-delete-btn {
-  opacity: 0.6;
+.profile-card:hover .profile-card-actions {
+  opacity: 1;
 }
 
-.profile-delete-btn:hover {
-  opacity: 1 !important;
+.profile-card-action-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 3px 7px;
+  line-height: 1.2;
+  transition: all 0.15s ease;
+}
+
+.profile-card-action-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.profile-card-action-btn.btn-delete:hover {
   color: #f87171;
+  border-color: #f87171;
 }
 
 /* Карточка "+ Новый профиль" */
@@ -1663,6 +1670,29 @@ body {
   color: var(--text);
 }
 
+/* Панель быстрого старта */
+.profiles-quick-bar {
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+
+.btn-ghost-sm {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-ghost-sm:hover {
+  color: var(--text);
+  border-color: var(--fill);
+  background: var(--bg-panel);
+}
+
 /* Форма создания профиля */
 .profile-form {
   width: 100%;
@@ -1685,6 +1715,24 @@ body {
   font-size: 13px;
   font-family: var(--font-mono);
   color: var(--text-muted);
+}
+
+.form-group-pin {
+  border-top: 1px dashed var(--border);
+  padding-top: 16px;
+  margin-top: 10px;
+}
+
+.form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.form-label-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .profile-input {
@@ -1731,14 +1779,40 @@ body {
 
 .profile-form-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 24px;
 }
 
 .profiles-footer-actions {
-  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
   font-family: var(--font-mono);
   font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.profiles-help-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+}
+
+.profiles-help-btn:hover {
+  color: var(--text);
+}
+
+.footer-separator {
+  color: var(--text-dim);
 }
 
 .btn-import-label {
@@ -1752,11 +1826,30 @@ body {
   color: var(--text);
 }
 
+/* Кнопка закрытия модальных окон (крестик) */
+.modal-close-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.modal-close-icon:hover {
+  color: var(--text);
+}
+
 /* PIN Modal */
 .pin-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1767,54 +1860,49 @@ body {
 .pin-modal-card {
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  padding: 32px 28px;
+  padding: 36px 32px;
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   text-align: center;
+  position: relative;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
-.pin-kicker {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 6px;
+.pin-modal-header {
+  margin-bottom: 8px;
 }
 
 .pin-modal-name {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .pin-modal-sub {
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 24px;
 }
 
 .pin-dots {
   display: flex;
   justify-content: center;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin: 32px 0 24px 0;
 }
 
 .pin-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border-strong);
   background: transparent;
   transition: all 0.15s ease;
 }
 
 .pin-dot.filled {
-  background: var(--fill);
-  border-color: var(--fill);
+  background: var(--text);
+  border-color: var(--text);
 }
 
 .pin-hidden-input {
@@ -1837,6 +1925,89 @@ body {
   display: flex;
   gap: 10px;
   justify-content: center;
+}
+
+/* Информационное модальное окно (Как устроена система профилей) */
+.info-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.info-modal-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 32px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.info-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.info-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.info-modal-body {
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.help-item-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.help-item p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.help-item b {
+  color: var(--text);
+}
+
+.help-item code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.info-modal-footer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .version-label {

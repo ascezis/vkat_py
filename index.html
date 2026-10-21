@@ -38,11 +38,21 @@
       <h1>Кто будет заниматься?</h1>
       <p class="start-sub">Прогресс и черновики кода сохраняются отдельно для каждого ученика.</p>
 
+      <div class="profiles-quick-bar">
+        <button type="button" id="btn-quick-start-list" class="btn-ghost-sm" title="Начать мгновенно без создания профиля">
+          Быстрый старт (продолжить как гость) →
+        </button>
+      </div>
+
       <div id="profiles-grid" class="profiles-grid">
         <!-- Карточки профилей рендерятся динамически -->
       </div>
 
       <div class="profiles-footer-actions">
+        <button type="button" id="btn-show-profile-help-list" class="profiles-help-btn">
+          ? Как устроена система профилей
+        </button>
+        <span class="footer-separator">·</span>
         <label class="btn-import-label" title="Импорт профиля из .json файла">
           ↑ Импортировать профиль из файла
           <input type="file" id="input-import-file" accept=".json" style="display: none;">
@@ -62,10 +72,12 @@
           <input type="text" id="input-profile-name" class="profile-input" placeholder="Например, Артём" maxlength="30" required autocomplete="off">
         </div>
 
-        <div class="form-group">
-          <label for="input-profile-pin">PIN-код (4 цифры, необязательно)</label>
-          <input type="password" id="input-profile-pin" class="profile-input" placeholder="••••" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
-          <span class="form-hint">Защитит твой профиль от случайного входа соседа по парте.</span>
+        <div class="form-group form-group-pin">
+          <div class="form-label-row">
+            <label for="input-profile-pin">PIN-код для защиты</label>
+            <span class="form-label-badge">необязательно</span>
+          </div>
+          <input type="password" id="input-profile-pin" class="profile-input" placeholder="4 цифры (защита от соседа)" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
         </div>
 
         <div id="legacy-migration-box" class="form-group-checkbox" style="display: none;">
@@ -76,18 +88,27 @@
         </div>
 
         <div class="profile-form-actions">
-          <button type="submit" id="btn-submit-create-profile" class="btn-start">Начать занятия</button>
+          <button type="submit" id="btn-submit-create-profile" class="btn-start">Создать профиль</button>
+          <button type="button" id="btn-quick-start-create" class="btn-ghost" title="Войти сразу без создания профиля">Быстрый старт (гость) →</button>
           <button type="button" id="btn-cancel-create-profile" class="btn-ghost" style="display: none;">Назад к списку</button>
         </div>
       </form>
+
+      <div class="profiles-footer-actions" style="margin-top: 24px;">
+        <button type="button" id="btn-show-profile-help-create" class="profiles-help-btn">
+          ? Как устроена система профилей
+        </button>
+      </div>
     </div>
 
     <!-- Модальное окно ввода PIN-кода для закрытого профиля -->
     <div id="pin-modal" class="pin-modal-backdrop" style="display: none;">
       <div class="pin-modal-card">
-        <div class="pin-kicker">вход по pin-коду</div>
-        <div id="pin-modal-title" class="pin-modal-name">Имя</div>
-        <p class="pin-modal-sub">Введи 4 цифры своего PIN-кода</p>
+        <button type="button" id="btn-modal-pin-close-x" class="modal-close-icon" title="Закрыть">✕</button>
+        <div class="pin-modal-header">
+          <div id="pin-modal-title" class="pin-modal-name">Имя</div>
+          <p class="pin-modal-sub">Введи 4-значный PIN-код</p>
+        </div>
         
         <div class="pin-dots" id="pin-dots">
           <span class="pin-dot"></span>
@@ -102,6 +123,45 @@
         <div class="pin-modal-actions">
           <button type="button" id="btn-modal-pin-submit" class="btn-start">Войти</button>
           <button type="button" id="btn-modal-pin-cancel" class="btn-ghost">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно: справка о системе профилей -->
+    <div id="modal-profile-help" class="info-modal-backdrop" style="display: none;">
+      <div class="info-modal-card">
+        <div class="info-modal-header">
+          <div class="info-modal-title">Как работает тренажёр и профили</div>
+          <button type="button" id="btn-close-profile-help-x" class="modal-close-icon" title="Закрыть">✕</button>
+        </div>
+        <div class="info-modal-body">
+          <div class="help-item">
+            <div class="help-item-title">1. Полная автономность (всё на твоём компьютере)</div>
+            <p>Тренажёр не отправляет твои решения на сервер. Все задачи, черновики кода и прогресс сохраняются локально в твоём браузере. Никаких аккаунтов, паролей от почты или интернета.</p>
+          </div>
+          <div class="help-item">
+            <div class="help-item-title">2. Занятия в классе за одним компьютером</div>
+            <p>Если за этим же компьютером по очереди занимаются несколько учеников, каждый выбирает своё имя. Твой прогресс и черновики в редакторе изолированы от других.</p>
+          </div>
+          <div class="help-item">
+            <div class="help-item-title">3. Быстрый старт (режим гостя)</div>
+            <p>Если ты открыл тренажёр дома или по ссылке в интернете, нажми <b>«Быстрый старт»</b> — можно сразу писать код без ввода имени.</p>
+          </div>
+          <div class="help-item">
+            <div class="help-item-title">4. PIN-код (защита от соседа)</div>
+            <p>При создании профиля можно задать 4 цифры. Это необязательно, но защитит твой профиль от случайного клика соседа по парте.</p>
+          </div>
+          <div class="help-item">
+            <div class="help-item-title">5. Перенос между компьютерами (Экспорт и Импорт)</div>
+            <p>Наведи курсор на карточку своего профиля и нажми кнопку скачивания <b>↓</b>. Сохрани файл <code>.json</code> на флешку, а на следующем уроке загрузи через кнопку <b>«Импортировать профиль из файла»</b>.</p>
+          </div>
+          <div class="help-item">
+            <div class="help-item-title">6. Независимые вкладки браузера</div>
+            <p>Если открыть тренажёр в двух вкладках с разными профилями, они работают полностью независимо и не конфликтуют.</p>
+          </div>
+        </div>
+        <div class="info-modal-footer">
+          <button type="button" id="btn-close-profile-help-ok" class="btn-start">Понятно</button>
         </div>
       </div>
     </div>

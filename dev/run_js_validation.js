@@ -6,11 +6,35 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
+const localStorageStore = new Map();
+const sessionStorageStore = new Map();
+
+const localStorageMock = {
+  getItem: (k) => localStorageStore.has(k) ? localStorageStore.get(k) : null,
+  setItem: (k, v) => localStorageStore.set(k, String(v)),
+  removeItem: (k) => localStorageStore.delete(k),
+  clear: () => localStorageStore.clear()
+};
+
+const sessionStorageMock = {
+  getItem: (k) => sessionStorageStore.has(k) ? sessionStorageStore.get(k) : null,
+  setItem: (k, v) => sessionStorageStore.set(k, String(v)),
+  removeItem: (k) => sessionStorageStore.delete(k),
+  clear: () => sessionStorageStore.clear()
+};
+
 const context = {
-  window: {},
-  console: console
+  console: console,
+  TextEncoder: TextEncoder,
+  Uint8Array: Uint8Array,
+  setTimeout: setTimeout,
+  clearTimeout: clearTimeout,
+  localStorage: localStorageMock,
+  sessionStorage: sessionStorageMock,
+  crypto: globalThis.crypto
 };
 context.window = context;
+context.globalThis = context;
 
 function loadScript(relPath) {
   const fullPath = path.join(__dirname, '..', relPath);
@@ -28,6 +52,7 @@ loadScript('content/05-lists-dicts.js');
 loadScript('content/06-strings.js');
 loadScript('content/l1-04-functions.js');
 loadScript('content/l1-05-dicts.js');
+loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');
 loadScript('dev/selftest/l1-dicts.js');
@@ -176,5 +201,113 @@ const theoryDone = new Set(['l1_fn_t1']);
 const secondCoreItem = findFirstUncompleted('core', theoryDone);
 check('После прочтения теории core переходит к квизу (l1_fn_q1)', secondCoreItem && secondCoreItem.id === 'l1_fn_q1');
 
-console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
-if (failed > 0) process.exit(1);
+async function runStorageValidation() {
+  console.log('\n=== Валидация системы профилей и VkatStorage ===');
+  const storage = context.window.VkatStorage;
+  check('VkatStorage экспортирован', Boolean(storage && typeof storage.listProfiles === 'function'));
+
+  // 1. Пустое состояние
+  const initialProfiles = await storage.listProfiles();
+  check('На пустом хранилище список профилей пуст', Array.isArray(initialProfiles) && initialProfiles.length === 0);
+
+  // 2. Создание профиля без PIN
+  const p1 = await storage.createProfile('Артём');
+  check('Профиль Артём создан с 8-значным ID', p1 && p1.name === 'Артём' && p1.id && p1.id.length === 8);
+  check('У профиля без PIN нет pinHash', p1.pinHash === undefined);
+  const profilesAfterP1 = await storage.listProfiles();
+  check('listProfiles содержит 1 профиль', profilesAfterP1.length === 1 && profilesAfterP1[0].name === 'Артём');
+
+  // 3. Создание профиля с PIN
+  const p2 = await storage.createProfile('Даша', '1234');
+  check('Профиль Даша создан с pinHash', p2 && p2.pinHash && typeof p2.pinHash === 'string');
+
+  // 4. Проверка PIN-кода
+  let wrongPinCaught = false;
+  try {
+    await storage.selectProfile(p2.id, '9999');
+  } catch (e) {
+    wrongPinCaught = true;
+  }
+  check('Неверный PIN-код отклоняется', wrongPinCaught);
+
+  await storage.selectProfile(p2.id, '1234');
+  check('Верный PIN позволяет авторизоваться', storage.getActiveProfileSync() && storage.getActiveProfileSync().id === p2.id);
+
+  // 5. Изоляция сессии вкладки
+  check('sessionStorage содержит активный профиль', sessionStorageMock.getItem('vkat_active_profile') === p2.id);
+  check('localStorage содержит подсказку последнего входа', localStorageMock.getItem('vkat_last_profile') === p2.id);
+
+  // 6. Сохранение и загрузка данных с семантической позицией
+  await storage.save({
+    completed: ['l1_fn_c1'],
+    drafts: { 'l1_fn_c1': 'def double(x): return x * 2' },
+    position: { topicId: 'l1_functions', itemId: 'l1_fn_c1' }
+  });
+  const dataP2 = await storage.load();
+  check('Данные профиля Даша сохранены и загружены', dataP2.completed.includes('l1_fn_c1'));
+  check('Семантическая позиция { topicId, itemId } сохранена', dataP2.position.topicId === 'l1_functions' && dataP2.position.itemId === 'l1_fn_c1');
+  check('Снимок данных профиля сохранён в ключе vkat_p:<id>', Boolean(localStorageMock.getItem('vkat_p:' + p2.id)));
+
+  // 7. Debounced черновики и flushSync
+  storage.saveDraftDebounced('l1_fn_c2', 'print("test")');
+  storage.flushSync();
+  const dataAfterFlush = await storage.load();
+  check('flushSync немедленно синхронизирует отложенные черновики в хранилище', dataAfterFlush.drafts['l1_fn_c2'] === 'print("test")');
+
+  // 8. Переключение на профиль Артёма — изоляция данных
+  await storage.selectProfile(p1.id);
+  const dataP1 = await storage.load();
+  check('Данные Артёма изолированы от Даши (прогресс пуст)', dataP1.completed.length === 0 && !dataP1.drafts['l1_fn_c1']);
+
+  // 9. Миграция устаревших данных (Legacy)
+  localStorageStore.clear();
+  sessionStorageStore.clear();
+  storage.clearActiveProfile();
+
+  localStorageMock.setItem('vkat_completed_tasks', JSON.stringify(['variables_task1']));
+  localStorageMock.setItem('vkat_code_drafts', JSON.stringify({ 'variables_task1': 'a = 5' }));
+  localStorageMock.setItem('vkat_current_position', JSON.stringify({ topicIndex: 0, taskIndex: 0 }));
+  localStorageMock.setItem('vkat_schema', '2');
+
+  check('checkLegacyData обнаруживает устаревшие данные при отсутствии профилей', storage.checkLegacyData() === true);
+
+  const pMigrate = await storage.createProfile('Миша');
+  await storage.migrateLegacyToProfile(pMigrate.id, stages, topics);
+
+  const pMigrateRaw = localStorageMock.getItem('vkat_p:' + pMigrate.id);
+  const pMigrateData = pMigrateRaw ? JSON.parse(pMigrateRaw) : null;
+  check('Миграция перенесла completed задания', pMigrateData && pMigrateData.completed.includes('variables_task1'));
+  check('Миграция перенесла черновики кода', pMigrateData && pMigrateData.drafts['variables_task1'] === 'a = 5');
+  check('Миграция преобразовала позицию в семантическую', pMigrateData && pMigrateData.position.topicId === 'variables');
+  check('Миграция создала резервную копию vkat_legacy_backup', Boolean(localStorageMock.getItem('vkat_legacy_backup')));
+  check('Старые плоские ключи удалены после миграции', localStorageMock.getItem('vkat_completed_tasks') === null);
+
+  // 10. Экспорт и импорт
+  const exportBundle = await storage.exportProfile(pMigrate.id);
+  check('exportProfile формирует бандл версии 1', exportBundle && exportBundle.vkat_export_version === 1 && exportBundle.profile.name === 'Миша');
+
+  const importedMeta = await storage.importProfile(JSON.stringify(exportBundle));
+  check('importProfile создаёт новый профиль с постфиксом (импорт)', importedMeta && importedMeta.name === 'Миша (импорт)' && importedMeta.id !== pMigrate.id);
+
+  const importedRaw = localStorageMock.getItem('vkat_p:' + importedMeta.id);
+  const importedData = importedRaw ? JSON.parse(importedRaw) : null;
+  check('Данные импортированного профиля восстановлены полностью', importedData && importedData.completed.includes('variables_task1'));
+
+  // 11. Удаление профиля
+  await storage.deleteProfile(importedMeta.id);
+  check('deleteProfile удаляет метаданные профиля', !(await storage.listProfiles()).some(p => p.id === importedMeta.id));
+  check('deleteProfile удаляет снимок данных vkat_p:<id>', localStorageMock.getItem('vkat_p:' + importedMeta.id) === null);
+
+  // 12. resetAll
+  await storage.resetAll();
+  check('resetAll полностью очищает все профили', (await storage.listProfiles()).length === 0);
+  check('resetAll очищает активный профиль сессии', storage.getActiveProfileSync() === null);
+
+  console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
+  if (failed > 0) process.exit(1);
+}
+
+runStorageValidation().catch(err => {
+  console.error('Непредвиденная ошибка в валидации хранилища:', err);
+  process.exit(1);
+});

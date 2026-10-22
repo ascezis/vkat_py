@@ -1,20 +1,34 @@
 /**
- * вкат.py — Логика приложения, навигация, состояние, редактор, типы элементов и хранилище
+ * вкат.py — Оркестратор приложения
+ *
+ * Этот файл — точка сборки. Он:
+ *   1. Хранит глобальное состояние (state) и кэш DOM (dom).
+ *   2. Строит структуру курса из window.COURSE_STAGES + window.COURSE_TOPICS.
+ *   3. Управляет навигацией: showScreen / startOrContinueStage / nextTask / selectTask.
+ *   4. Управляет хранилищем: loadStorage / saveStorage.
+ *   5. Инициализирует редактор кода и глобальные события.
+ *   6. Запускает приложение (startApp).
+ *
+ * Модули, подключаемые до этого файла (в index.html):
+ *   app/storage.js     → window.VkatStorage
+ *   app/checker.js     → window.CodeChecker
+ *   app/errors.js      → window.FriendlyErrors
+ *   app/highlighter.js → window.PythonHighlighter
+ *   app/autocomplete.js → window.CodeIntelliSense
+ *   app/glyphs.js      → window.Glyphs
+ *   app/profiles.js    → window.VkatProfiles
+ *   app/renderers.js   → window.VkatRenderers
+ *   app/checkers.js    → window.VkatCheckers
+ *
+ * Экспортирует window.VkatApp — объект с публичным API для дочерних модулей.
  */
 
 (function (window) {
   'use strict';
 
-  // Ключи LocalStorage
-  const STORAGE_KEYS = {
-    COMPLETED: 'vkat_completed_tasks',
-    DRAFTS: 'vkat_code_drafts',
-    POSITION: 'vkat_current_position',
-    SCHEMA: 'vkat_schema'
-  };
+  // ─── Состояние ───────────────────────────────────────────────────────────────
 
-  // Состояние
-  let state = {
+  const state = {
     stages: [],
     topics: [],
     currentTopicIndex: 0,
@@ -27,7 +41,8 @@
     selectedQuizOption: null
   };
 
-  // Элементы DOM
+  // ─── Кэш DOM-элементов ───────────────────────────────────────────────────────
+
   const dom = {};
 
   function initDom() {
@@ -170,8 +185,11 @@
     dom.versionResetLabel = document.getElementById('version-reset-label');
   }
 
+  // ─── Структура курса ──────────────────────────────────────────────────────────
+
   /**
-   * Построение плоского списка тем с привязкой к этапам
+   * Строит плоский массив тем с привязкой к этапам.
+   * Предупреждает в консоли о темах без этапа и об этапах с отсутствующими темами.
    */
   function buildCourseStructure() {
     state.stages = window.COURSE_STAGES || [];
@@ -195,7 +213,6 @@
       });
     });
 
-    // Проверка наличия тем, не вошедших ни в один этап
     rawTopics.forEach(t => {
       if (!usedTopicIds.has(t.id)) {
         console.warn(`Тема "${t.id}" зарегистрирована в COURSE_TOPICS, но не включена ни в один этап`);
@@ -205,9 +222,8 @@
     state.topics = flatTopics;
   }
 
-  /**
-   * Загрузка сохраненного прогресса активного профиля
-   */
+  // ─── Хранилище ───────────────────────────────────────────────────────────────
+
   async function loadStorage() {
     try {
       const data = await window.VkatStorage.load();
@@ -266,9 +282,8 @@
     });
   }
 
-  /**
-   * Определение, является ли элемент проверяемым и обязательным
-   */
+  // ─── Утилиты прогресса ────────────────────────────────────────────────────────
+
   function isGradable(item) {
     const type = item.type || 'code';
     return type === 'code' || type === 'predict' || type === 'quiz';
@@ -282,9 +297,6 @@
     return Boolean(item.optional || item.tier === 'star');
   }
 
-  /**
-   * Подсчёт прогресса по этапу
-   */
   function getStageProgress(stageId) {
     let totalRequired = 0;
     let completedRequired = 0;
@@ -306,9 +318,6 @@
     return { completed: completedRequired, total: totalRequired, percent };
   }
 
-  /**
-   * Обновление верхнего прогресс-бара по текущему этапу
-   */
   function updateCourseProgress() {
     const topic = state.topics[state.currentTopicIndex];
     if (!topic) return;
@@ -316,9 +325,8 @@
     dom.progressFill.style.width = progress.percent + '%';
   }
 
-  /**
-   * Обновление отображения бейджа пользователя в топбарах
-   */
+  // ─── Профиль: бейдж и смена ──────────────────────────────────────────────────
+
   function updateProfileBadges() {
     const profile = window.VkatStorage ? window.VkatStorage.getActiveProfileSync() : null;
     const name = profile ? profile.name : '';
@@ -328,9 +336,6 @@
     if (dom.startUserBadge) dom.startUserBadge.style.display = profile ? 'inline-flex' : 'none';
   }
 
-  /**
-   * Смена профиля: сброс буфера, очистка сессии текущей вкладки и перезагрузка
-   */
   function switchProfile() {
     if (window.VkatStorage) {
       window.VkatStorage.flushSync();
@@ -339,213 +344,8 @@
     window.location.reload();
   }
 
-  /**
-   * Рендер экрана профилей
-   */
-  async function renderProfilesScreen() {
-    if (!window.VkatStorage) return;
-    const profiles = await window.VkatStorage.listProfiles();
-    if (profiles.length === 0) {
-      showCreateProfileView(true);
-    } else {
-      showProfileListView(profiles);
-    }
-  }
+  // ─── Навигация экранов ────────────────────────────────────────────────────────
 
-  function showProfileListView(profiles) {
-    if (dom.profilesViewList) dom.profilesViewList.style.display = 'flex';
-    if (dom.profilesViewCreate) dom.profilesViewCreate.style.display = 'none';
-    if (!dom.profilesGrid) return;
-
-    dom.profilesGrid.innerHTML = '';
-    const lastId = window.VkatStorage ? window.VkatStorage.getLastProfileId() : null;
-
-    profiles.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'profile-card' + (p.id === lastId ? ' active-hint' : '');
-
-      const doneCount = window.VkatStorage ? window.VkatStorage.getProgressCount(p.id) : 0;
-
-      const initial = (p.name || '?').trim().charAt(0).toUpperCase();
-      const progressText = doneCount > 0 ? `${doneCount} ${pluralize(doneCount, 'шаг пройден', 'шага пройдено', 'шагов пройдено')}` : 'новый ученик';
-
-      card.innerHTML = `
-        ${p.id === lastId ? '<span class="profile-badge-last">последний вход</span>' : ''}
-        <div class="profile-card-actions">
-          <button type="button" class="profile-card-action-btn btn-export" title="Скачать профиль (.json)">↓ .json</button>
-          <button type="button" class="profile-card-action-btn btn-delete" title="Удалить профиль">✕</button>
-        </div>
-        <div class="profile-avatar">${escapeHtml(initial)}</div>
-        <div class="profile-card-name">${escapeHtml(p.name)}</div>
-        <div class="profile-card-progress">${progressText}</div>
-      `;
-
-      const exportBtn = card.querySelector('.btn-export');
-      if (exportBtn) {
-        exportBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          try {
-            await window.VkatStorage.exportProfile(p.id);
-          } catch (err) {
-            alert('Ошибка экспорта профиля: ' + err.message);
-          }
-        });
-      }
-
-      const deleteBtn = card.querySelector('.btn-delete');
-      if (deleteBtn) {
-        deleteBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (confirm(`Точно удалить профиль "${p.name}" и все его данные на этом компьютере?`)) {
-            await window.VkatStorage.deleteProfile(p.id);
-            await renderProfilesScreen();
-          }
-        });
-      }
-
-      card.addEventListener('click', () => {
-        handleProfileSelection(p);
-      });
-
-      dom.profilesGrid.appendChild(card);
-    });
-
-    // Карточка "+ Новый профиль"
-    const newCard = document.createElement('div');
-    newCard.className = 'profile-card profile-card-new';
-    newCard.id = 'btn-add-profile';
-    newCard.innerHTML = `
-      <div class="profile-new-icon">+</div>
-      <div class="profile-card-name">Новый профиль</div>
-      <div class="profile-card-progress">добавить ученика</div>
-    `;
-    newCard.addEventListener('click', () => {
-      showCreateProfileView(false);
-    });
-    dom.profilesGrid.appendChild(newCard);
-  }
-
-  function showCreateProfileView(isFirst) {
-    if (dom.profilesViewList) dom.profilesViewList.style.display = 'none';
-    if (dom.profilesViewCreate) dom.profilesViewCreate.style.display = 'flex';
-
-    if (dom.createProfileHeading) {
-      dom.createProfileHeading.textContent = isFirst ? 'вкат.py / добро пожаловать' : 'Как тебя зовут?';
-    }
-    if (dom.inputProfileName) dom.inputProfileName.value = '';
-    if (dom.inputProfilePin) dom.inputProfilePin.value = '';
-
-    if (dom.btnCancelCreateProfile) {
-      dom.btnCancelCreateProfile.style.display = isFirst ? 'none' : 'inline-block';
-    }
-
-    const hasLegacy = window.VkatStorage ? window.VkatStorage.checkLegacyData() : false;
-    if (dom.legacyMigrationBox) {
-      dom.legacyMigrationBox.style.display = hasLegacy ? 'block' : 'none';
-    }
-    if (dom.checkMigrateLegacy) {
-      dom.checkMigrateLegacy.checked = hasLegacy;
-    }
-
-    requestAnimationFrame(() => {
-      if (dom.inputProfileName) dom.inputProfileName.focus();
-    });
-  }
-
-  let currentPinTargetProfile = null;
-
-  function handleProfileSelection(profile) {
-    if (profile.pinHash) {
-      openPinModal(profile);
-    } else {
-      activateProfileAndStart(profile.id);
-    }
-  }
-
-  async function activateProfileAndStart(profileId, pin) {
-    try {
-      await window.VkatStorage.selectProfile(profileId, pin);
-      await loadStorage();
-      showScreen('start');
-    } catch (err) {
-      console.error('Ошибка входа в профиль:', err);
-      alert('Не удалось войти в профиль: ' + err.message);
-    }
-  }
-
-  function openPinModal(profile) {
-    currentPinTargetProfile = profile;
-    if (dom.pinModalTitle) dom.pinModalTitle.textContent = profile.name;
-    if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = '';
-    if (dom.inputModalPin) dom.inputModalPin.value = '';
-    updatePinDots('');
-    if (dom.pinModal) dom.pinModal.style.display = 'flex';
-    requestAnimationFrame(() => {
-      if (dom.inputModalPin) dom.inputModalPin.focus();
-    });
-  }
-
-  function closePinModal() {
-    if (dom.pinModal) dom.pinModal.style.display = 'none';
-    currentPinTargetProfile = null;
-    if (dom.inputModalPin) dom.inputModalPin.value = '';
-    updatePinDots('');
-  }
-
-  function updatePinDots(val) {
-    if (!dom.pinDots) return;
-    const dots = dom.pinDots.querySelectorAll('.pin-dot');
-    dots.forEach((dot, idx) => {
-      dot.classList.toggle('filled', idx < val.length);
-    });
-  }
-
-  async function submitPin() {
-    if (!currentPinTargetProfile) return;
-    const pin = dom.inputModalPin ? dom.inputModalPin.value : '';
-    try {
-      await window.VkatStorage.selectProfile(currentPinTargetProfile.id, pin);
-      closePinModal();
-      await loadStorage();
-      showScreen('start');
-    } catch (err) {
-      if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = 'Неверный PIN-код';
-      if (dom.inputModalPin) dom.inputModalPin.value = '';
-      updatePinDots('');
-      requestAnimationFrame(() => {
-        if (dom.inputModalPin) dom.inputModalPin.focus();
-      });
-    }
-  }
-
-  async function startAsGuest() {
-    try {
-      const profiles = await window.VkatStorage.listProfiles();
-      // Ищем гостевой профиль строго без PIN-кода (чтобы быстрый вход никогда не блокировался)
-      let guest = profiles.find(p => p.name.toLowerCase() === 'гость' && !p.pinHash);
-      if (!guest) {
-        guest = await window.VkatStorage.createProfile('Гость');
-      }
-      await window.VkatStorage.selectProfile(guest.id);
-      await loadStorage();
-      showScreen('start');
-    } catch (err) {
-      console.error('Ошибка быстрого старта:', err);
-      alert('Не удалось запустить гостевой режим: ' + err.message);
-    }
-  }
-
-  function openProfileHelp() {
-    if (dom.modalProfileHelp) dom.modalProfileHelp.style.display = 'flex';
-  }
-
-  function closeProfileHelp() {
-    if (dom.modalProfileHelp) dom.modalProfileHelp.style.display = 'none';
-  }
-
-  /**
-   * Переключение экранов
-   */
   function showScreen(screen) {
     if (dom.screenProfiles) dom.screenProfiles.classList.remove('active');
     dom.screenStart.classList.remove('active');
@@ -557,11 +357,11 @@
     if (screen === 'profiles') {
       if (dom.screenProfiles) dom.screenProfiles.classList.add('active');
       dom.topbar.style.display = 'none';
-      renderProfilesScreen();
+      window.VkatProfiles.renderProfilesScreen();
     } else if (screen === 'start') {
       dom.screenStart.classList.add('active');
       dom.topbar.style.display = 'none';
-      renderStartCards();
+      window.VkatRenderers.renderStartCards();
     } else if (screen === 'lesson') {
       dom.screenLesson.classList.add('active');
       dom.topbar.style.display = 'flex';
@@ -572,58 +372,70 @@
     }
   }
 
-  /**
-   * Рендер карточек этапов на стартовом экране
-   */
-  function renderStartCards() {
-    if (!dom.stageCards) return;
-    dom.stageCards.innerHTML = '';
+  // ─── Навигация по заданиям ────────────────────────────────────────────────────
 
-    state.stages.forEach(stage => {
-      const stageTopics = state.topics.filter(t => t.stageId === stage.id);
-      const topicsCount = stageTopics.length;
-      const progress = getStageProgress(stage.id);
-
-      const hasAnyCompleted = stageTopics.some(t => t.items.some(it => state.completedTasks.has(it.id)));
-      const isCompleted = progress.total > 0 && progress.completed === progress.total;
-      const btnText = !hasAnyCompleted ? 'Начать' : (isCompleted ? 'Повторить' : 'Продолжить');
-
-      const card = document.createElement('div');
-      card.className = 'stage-card';
-
-      card.innerHTML = `
-        <div class="stage-card-header">
-          <div class="stage-card-title">${stage.title}</div>
-          <div class="stage-card-progress-label">${isCompleted ? '✓ пройдено' : `${progress.completed} из ${progress.total}`}</div>
-        </div>
-        <p class="stage-card-desc">${stage.description}</p>
-        <div class="stage-card-meta">
-          <span>${topicsCount} ${pluralize(topicsCount, 'тема', 'темы', 'тем')}</span>
-          <span>${progress.total} ${pluralize(progress.total, 'задание', 'задания', 'заданий')}</span>
-        </div>
-        ${stage.note ? `<div class="stage-card-note">${stage.note}</div>` : ''}
-        <div class="stage-card-actions">
-          <button class="stage-card-btn" data-stage="${stage.id}">${btnText}</button>
-          <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">${progress.percent}%</span>
-        </div>
-      `;
-
-      const btn = card.querySelector('.stage-card-btn');
-      btn.addEventListener('click', () => {
-        startOrContinueStage(stage.id);
-      });
-
-      dom.stageCards.appendChild(card);
-    });
+  function getCurrentTask() {
+    const topic = state.topics[state.currentTopicIndex];
+    if (!topic || !topic.items) return null;
+    return topic.items[state.currentTaskIndex] || null;
   }
 
-  function pluralize(n, one, two, five) {
-    n = Math.abs(n) % 100;
-    const n1 = n % 10;
-    if (n > 10 && n < 20) return five;
-    if (n1 > 1 && n1 < 5) return two;
-    if (n1 === 1) return one;
-    return five;
+  function renderTask() {
+    const topic = state.topics[state.currentTopicIndex];
+    if (!topic) return;
+    const task = topic.items[state.currentTaskIndex];
+    if (!task) return;
+
+    const stage = state.stages.find(s => s.id === topic.stageId) || { title: 'Этап' };
+    const type = task.type || 'code';
+
+    dom.breadcrumb.innerHTML = `${stage.title.toLowerCase()} <b>·</b> ${topic.title.toLowerCase()} <b>·</b> шаг ${state.currentTaskIndex + 1} из ${topic.items.length}`;
+    dom.lessonTopic.textContent = `${stage.title.toLowerCase()} · ${topic.title.toLowerCase()}`;
+    dom.stepLabel.textContent = `шаг ${state.currentTaskIndex + 1} / ${topic.items.length}`;
+
+    if (type === 'theory') {
+      window.VkatRenderers.renderTheoryView(task);
+    } else if (type === 'predict') {
+      window.VkatRenderers.renderPredictView(task);
+    } else if (type === 'quiz') {
+      window.VkatRenderers.renderQuizView(task);
+    } else {
+      window.VkatRenderers.renderCodeView(task);
+    }
+
+    window.VkatRenderers.renderVisual(topic);
+    requestAnimationFrame(window.VkatRenderers.fitVisual);
+    window.VkatRenderers.renderStepDots(topic);
+
+    updateCourseProgress();
+    saveStorage();
+  }
+
+  function nextTask() {
+    const currentTopic = state.topics[state.currentTopicIndex];
+    if (state.currentTaskIndex + 1 < currentTopic.items.length) {
+      state.currentTaskIndex++;
+      renderTask();
+    } else {
+      if (state.currentTopicIndex + 1 < state.topics.length) {
+        const nextTopic = state.topics[state.currentTopicIndex + 1];
+        if (nextTopic.stageId === currentTopic.stageId) {
+          state.currentTopicIndex++;
+          state.currentTaskIndex = 0;
+          renderTask();
+          return;
+        }
+      }
+      showFinishScreenForStage(currentTopic.stageId);
+    }
+  }
+
+  function selectTask(topicIdx, taskIdx) {
+    state.currentTopicIndex = topicIdx;
+    state.currentTaskIndex = taskIdx;
+    showScreen('lesson');
+    renderTask();
+    closeTreeDrawer();
   }
 
   function startOrContinueStage(stageId) {
@@ -633,7 +445,6 @@
 
     if (stageTopics.length === 0) return;
 
-    // Ищем первый непройденный элемент любого типа (кроме необязательных)
     for (const st of stageTopics) {
       for (let k = 0; k < st.topic.items.length; k++) {
         const item = st.topic.items[k];
@@ -654,643 +465,8 @@
     renderTask();
   }
 
-  /**
-   * Получение текущего элемента
-   */
-  function getCurrentTask() {
-    const topic = state.topics[state.currentTopicIndex];
-    if (!topic || !topic.items) return null;
-    return topic.items[state.currentTaskIndex] || null;
-  }
+  // ─── Финальный экран ─────────────────────────────────────────────────────────
 
-  /**
-   * Рендер текущего элемента урока
-   */
-  function renderTask() {
-    const topic = state.topics[state.currentTopicIndex];
-    if (!topic) return;
-    const task = topic.items[state.currentTaskIndex];
-    if (!task) return;
-
-    const stage = state.stages.find(s => s.id === topic.stageId) || { title: 'Этап' };
-    const type = task.type || 'code';
-
-    // Breadcrumbs
-    dom.breadcrumb.innerHTML = `${stage.title.toLowerCase()} <b>·</b> ${topic.title.toLowerCase()} <b>·</b> шаг ${state.currentTaskIndex + 1} из ${topic.items.length}`;
-    dom.lessonTopic.textContent = `${stage.title.toLowerCase()} · ${topic.title.toLowerCase()}`;
-    dom.stepLabel.textContent = `шаг ${state.currentTaskIndex + 1} / ${topic.items.length}`;
-
-    // Переключение режимов отображения панелей
-    if (type === 'theory') {
-      renderTheoryView(task);
-    } else if (type === 'predict') {
-      renderPredictView(task);
-    } else if (type === 'quiz') {
-      renderQuizView(task);
-    } else {
-      renderCodeView(task);
-    }
-
-    // Схема к теме
-    renderVisual(topic);
-    requestAnimationFrame(fitVisual);
-
-    // Точки шагов
-    renderStepDots(topic);
-
-    // Прогресс и сохранение
-    updateCourseProgress();
-    saveStorage();
-  }
-
-  /**
-   * Схема-иллюстрация темы: в левой панели урока и в боковой колонке теории.
-   * Перерисовываем только при смене темы, чтобы анимация появления не мигала на каждом шаге.
-   */
-  function renderVisual(topic) {
-    const targets = [document.getElementById('visual'), document.getElementById('theory-visual')];
-    const html = window.Glyphs ? window.Glyphs.render(topic.id) : '';
-    const label = window.Glyphs ? window.Glyphs.caption(topic.id) : '';
-    targets.forEach(el => {
-      if (!el) return;
-      if (!html) { el.hidden = true; el.innerHTML = ''; delete el.dataset.topic; return; }
-      el.hidden = false;
-      el.setAttribute('aria-label', 'Схема: ' + label);
-      if (el.dataset.topic !== topic.id) {
-        el.innerHTML = html;
-        el.dataset.topic = topic.id;
-      }
-    });
-  }
-
-  /**
-   * Схема в левой панели урока
-   */
-  function fitVisual() {
-    const el = document.getElementById('visual');
-    if (!el || el.hidden) return;
-    el.style.display = '';
-  }
-  window.addEventListener('resize', fitVisual);
-  // Панель становится видимой/меняет размер уже после renderTask — пересчитываем
-  if (window.ResizeObserver) {
-    const paneEl = document.getElementById('visual') && document.getElementById('visual').parentElement;
-    if (paneEl) new ResizeObserver(fitVisual).observe(paneEl);
-  }
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitVisual);
-
-  /**
-   * Рендер режима: Теория
-   */
-  function renderTheoryView(task) {
-    dom.paneTheory.style.display = 'block';
-    dom.mainPanes.style.display = 'none';
-
-    dom.theoryTitle.textContent = task.title;
-
-    let html = '';
-    (task.blocks || []).forEach(block => {
-      if (block.type === 'p') {
-        html += `<p class="theory-block-p">${block.html}</p>`;
-      } else if (block.type === 'code') {
-        const highlighted = window.PythonHighlighter ? window.PythonHighlighter.highlightCode(block.code) : escapeHtml(block.code);
-        html += `<div class="theory-block-code">${highlighted}${block.output !== undefined ? `<span class="out">${escapeHtml(block.output)}</span>` : ''}</div>`;
-      } else if (block.type === 'list') {
-        html += `<ul class="theory-block-list">${(block.items || []).map(li => `<li>${li}</li>`).join('')}</ul>`;
-      } else if (block.type === 'table') {
-        const headHtml = (block.head || []).map(h => `<th>${h}</th>`).join('');
-        const rowsHtml = (block.rows || []).map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
-        html += `<table class="theory-block-table"><thead><tr>${headHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
-      } else if (block.type === 'note') {
-        html += `<div class="theory-block-note">${block.html}</div>`;
-      }
-    });
-
-    dom.theoryContent.innerHTML = html;
-  }
-
-  /**
-   * Рендер режима: Predict (предсказание вывода)
-   */
-  function renderPredictView(task) {
-    dom.paneTheory.style.display = 'none';
-    dom.mainPanes.style.display = 'grid';
-
-    dom.paneCode.style.display = 'none';
-    dom.paneQuiz.style.display = 'none';
-    dom.panePredict.style.display = 'block';
-
-    // Левая колонка
-    dom.explainLabel.textContent = 'предсказание вывода';
-    dom.explainTitle.textContent = task.title;
-    dom.taskBadge.style.display = 'none';
-
-    if (Array.isArray(task.explanation) && task.explanation.length > 0) {
-      dom.explainContent.innerHTML = task.explanation.map(p => `<p>${p}</p>`).join('');
-    } else {
-      dom.explainContent.innerHTML = '<p>Внимательно изучи код программы и определи точный текст, который будет выведен в консоль при запуске.</p>';
-    }
-
-    dom.exampleBox.style.display = 'none';
-    dom.taskBox.style.display = 'none';
-
-    // Правая колонка
-    const highlighted = window.PythonHighlighter ? window.PythonHighlighter.highlightCode(task.code) : escapeHtml(task.code);
-    dom.predictCodeView.innerHTML = highlighted;
-
-    // Восстанавливаем сохраненный черновик ответа
-    dom.predictInput.value = state.codeDrafts[task.id] || '';
-    dom.predictResultBox.classList.remove('visible');
-    dom.btnPredictNext.style.display = 'none';
-    dom.btnPredictCheck.disabled = false;
-    dom.btnPredictCheck.textContent = 'Проверить';
-
-    requestAnimationFrame(() => dom.predictInput.focus());
-  }
-
-  /**
-   * Рендер режима: Quiz (вопрос с вариантами)
-   */
-  function renderQuizView(task) {
-    dom.paneTheory.style.display = 'none';
-    dom.mainPanes.style.display = 'grid';
-
-    dom.paneCode.style.display = 'none';
-    dom.panePredict.style.display = 'none';
-    dom.paneQuiz.style.display = 'block';
-
-    // Левая колонка
-    dom.explainLabel.textContent = 'проверочный вопрос';
-    dom.explainTitle.textContent = task.title;
-    dom.taskBadge.style.display = 'none';
-    dom.explainContent.innerHTML = '<p>Выбери один верный вариант ответа из списка предложенных и нажми «Проверить».</p>';
-    dom.exampleBox.style.display = 'none';
-    dom.taskBox.style.display = 'none';
-
-    // Правая колонка
-    dom.quizQuestion.textContent = task.question;
-
-    if (task.code) {
-      dom.quizCodeView.style.display = 'block';
-      dom.quizCodeView.innerHTML = window.PythonHighlighter ? window.PythonHighlighter.highlightCode(task.code) : escapeHtml(task.code);
-    } else {
-      dom.quizCodeView.style.display = 'none';
-    }
-
-    state.selectedQuizOption = null;
-    dom.quizOptions.innerHTML = '';
-
-    (task.options || []).forEach((opt, idx) => {
-      const optEl = document.createElement('div');
-      optEl.className = 'quiz-option';
-      optEl.innerHTML = `
-        <span class="quiz-option-radio"></span>
-        <span>${escapeHtml(opt)}</span>
-      `;
-      optEl.addEventListener('click', () => {
-        state.selectedQuizOption = idx;
-        dom.quizOptions.querySelectorAll('.quiz-option').forEach((el, i) => {
-          el.classList.toggle('selected', i === idx);
-        });
-      });
-      dom.quizOptions.appendChild(optEl);
-    });
-
-    dom.quizResultBox.classList.remove('visible');
-    dom.btnQuizNext.style.display = 'none';
-    dom.btnQuizCheck.disabled = false;
-    dom.btnQuizCheck.textContent = 'Проверить';
-  }
-
-  /**
-   * Рендер режима: Code (редактор кода)
-   */
-  function renderCodeView(task) {
-    dom.paneTheory.style.display = 'none';
-    dom.mainPanes.style.display = 'grid';
-
-    dom.panePredict.style.display = 'none';
-    dom.paneQuiz.style.display = 'none';
-    dom.paneCode.style.display = 'flex';
-
-    // Левая панель
-    dom.explainLabel.textContent = 'объяснение';
-    dom.explainTitle.textContent = task.title;
-
-    // Метки tier / fix
-    let badgeHtml = '';
-    const tier = task.tier || 'main';
-    if (tier === 'warmup') {
-      badgeHtml += '<span class="badge-tier">разминка</span>';
-    } else if (tier === 'star') {
-      badgeHtml += '<span class="badge-tier">★ задача</span>';
-    }
-    if (task.kind === 'fix') {
-      badgeHtml += '<span class="badge-fix">найди ошибку</span>';
-    }
-
-    if (badgeHtml) {
-      dom.taskBadge.style.display = 'inline-block';
-      dom.taskBadge.outerHTML = `<span id="task-badge">${badgeHtml}</span>`;
-      dom.taskBadge = document.getElementById('task-badge');
-    } else {
-      dom.taskBadge.style.display = 'none';
-    }
-
-    dom.explainContent.innerHTML = (task.explanation || []).map(p => `<p>${p}</p>`).join('');
-
-    if (task.example) {
-      dom.exampleBox.style.display = 'block';
-      const highlightedCode = window.PythonHighlighter
-        ? window.PythonHighlighter.highlightCode(task.example.code)
-        : escapeHtml(task.example.code);
-      dom.exampleBox.innerHTML = `${highlightedCode}<span class="out">${escapeHtml(task.example.output)}</span>`;
-    } else {
-      dom.exampleBox.style.display = 'none';
-    }
-
-    dom.taskBox.style.display = 'block';
-    dom.taskContent.innerHTML = `<p>${task.assignment || ''}</p>`;
-
-    // Кнопка "Пропустить" для необязательных заданий (star / optional)
-    if (task.optional || task.tier === 'star') {
-      dom.btnSkip.style.display = 'inline-block';
-    } else {
-      dom.btnSkip.style.display = 'none';
-    }
-
-    // Редактор: подстановка черновика или начального кода
-    const savedCode = state.codeDrafts[task.id];
-    dom.editor.value = savedCode !== undefined ? savedCode : (task.starterCode || '');
-    if (dom.highlighter) {
-      dom.highlighter.update();
-    }
-    updateLineNumbers();
-
-    // Лестница подсказок hints[]
-    setupHints(task);
-
-    // Зона результата
-    dom.resultBox.classList.remove('visible');
-    dom.improveBox.classList.remove('visible');
-    dom.errorExplain.style.display = 'none';
-    dom.btnNext.style.display = 'none';
-
-    requestAnimationFrame(() => dom.editor.focus());
-  }
-
-  /**
-   * Настройка ступенчатых подсказок hints[]
-   */
-  function setupHints(task) {
-    const rawHints = task.hints || (task.hint ? [{ code: task.hint }] : []);
-    const hints = rawHints.map(h => typeof h === 'string' ? { text: h } : h);
-
-    state.revealedHintsCount = 0;
-    dom.hintContent.innerHTML = '';
-    dom.hintContent.classList.remove('visible');
-
-    if (hints.length === 0) {
-      dom.hintToggle.style.display = 'none';
-      return;
-    }
-
-    dom.hintToggle.style.display = 'inline-block';
-    dom.hintToggle.textContent = `показать подсказку (1 из ${hints.length})`;
-
-    dom.hintToggle.onclick = () => {
-      if (state.revealedHintsCount < hints.length) {
-        state.revealedHintsCount++;
-        renderHintsList(hints, state.revealedHintsCount);
-        dom.hintContent.classList.add('visible');
-
-        if (state.revealedHintsCount < hints.length) {
-          dom.hintToggle.textContent = `следующая подсказка (${state.revealedHintsCount + 1} из ${hints.length})`;
-        } else {
-          dom.hintToggle.textContent = 'скрыть подсказки';
-        }
-      } else {
-        const isVis = dom.hintContent.classList.toggle('visible');
-        dom.hintToggle.textContent = isVis ? 'скрыть подсказки' : 'показать подсказки';
-      }
-    };
-  }
-
-  function renderHintsList(hints, count) {
-    let html = '';
-    for (let i = 0; i < count; i++) {
-      const h = hints[i];
-      html += `<div style="margin-bottom: 12px; font-size: 13px; line-height: 1.6;">`;
-      html += `<div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-bottom: 4px;">подсказка ${i + 1} из ${hints.length}</div>`;
-      if (h.text) {
-        html += `<div>${h.text}</div>`;
-      }
-      if (h.code) {
-        const highlighted = window.PythonHighlighter ? window.PythonHighlighter.highlightCode(h.code) : escapeHtml(h.code);
-        html += `<pre class="hint-code">${highlighted}</pre>`;
-      }
-      html += `</div>`;
-    }
-    dom.hintContent.innerHTML = html;
-  }
-
-  /**
-   * Точки шагов темы в боттомбаре
-   */
-  function renderStepDots(topic) {
-    dom.stepDots.innerHTML = '';
-    (topic.items || []).forEach((item, idx) => {
-      const dot = document.createElement('span');
-      const isDone = state.completedTasks.has(item.id);
-      const isCurrent = idx === state.currentTaskIndex;
-      const type = item.type || 'code';
-
-      if (isDone) dot.classList.add('done');
-      if (isCurrent) dot.classList.add('current');
-
-      if (type === 'theory') {
-        dot.classList.add('theory-dot');
-        dot.title = `Теория: ${item.title}`;
-      } else if (item.tier === 'star') {
-        dot.classList.add('star-dot');
-        dot.title = `★ ${item.title}`;
-      } else {
-        dot.title = item.title;
-      }
-
-      dot.addEventListener('click', () => {
-        selectTask(state.currentTopicIndex, idx);
-      });
-
-      dom.stepDots.appendChild(dot);
-    });
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  function normalize(str) {
-    if (!str) return '';
-    return str
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map(line => line.trimEnd())
-      .join('\n')
-      .trim();
-  }
-
-  /**
-   * Проверка задания типа Predict
-   */
-  async function runPredictCheck() {
-    const task = getCurrentTask();
-    if (!task) return;
-
-    dom.btnPredictCheck.disabled = true;
-    dom.btnPredictCheck.textContent = 'Запускаем...';
-
-    try {
-      let actualVal = '';
-      if (typeof task.expectedOutput === 'string') {
-        actualVal = normalize(task.expectedOutput);
-      } else if (window.CodeChecker && typeof window.CodeChecker.runCode === 'function') {
-        const runRes = await window.CodeChecker.runCode(task.code);
-        actualVal = normalize(runRes.stdout);
-      }
-
-      const userVal = normalize(dom.predictInput.value);
-
-      // Сохраняем черновик ответа
-      state.codeDrafts[task.id] = dom.predictInput.value;
-
-      // Элемент считается пройденным после первой отправки (не блокирует!)
-      state.completedTasks.add(task.id);
-      saveStorage();
-      updateCourseProgress();
-      renderStepDots(state.topics[state.currentTopicIndex]);
-
-      dom.predictResultBox.classList.add('visible');
-
-      const isMatch = userVal === actualVal;
-      if (isMatch) {
-        dom.predictResultMark.className = 'result-mark ok';
-        dom.predictResultMark.textContent = '✓';
-        dom.predictResultTitle.className = 'result-title';
-        dom.predictResultTitle.textContent = 'Ответ совпал';
-        dom.predictResultSub.textContent = `Фактический вывод:\n${actualVal || '(пустая строка)'}`;
-      } else {
-        dom.predictResultMark.className = 'result-mark err';
-        dom.predictResultMark.textContent = '×';
-        dom.predictResultTitle.className = 'result-title err';
-        dom.predictResultTitle.textContent = 'Ответ отличается от фактического вывода';
-
-        let diffMsg = `Твой ответ:\n${userVal || '(пусто)'}\n\nФактический вывод программы:\n${actualVal || '(пусто)'}`;
-        if (actualVal.includes('\n') && !userVal.includes('\n')) {
-          diffMsg += '\n\nПодсказка: каждый вызов print() выводит значение с новой строки.';
-        } else if (
-          (userVal.startsWith('"') && userVal.endsWith('"')) ||
-          (userVal.startsWith("'") && userVal.endsWith("'"))
-        ) {
-          const stripped = userVal.slice(1, -1);
-          if (stripped === actualVal) {
-            diffMsg += '\n\nПодсказка: функция print() выводит текст строки без кавычек.';
-          }
-        }
-        dom.predictResultSub.textContent = diffMsg;
-      }
-
-      dom.predictExplainContent.textContent = task.explain || '';
-      dom.btnPredictNext.style.display = 'inline-block';
-      dom.btnPredictNext.focus();
-    } catch (err) {
-      console.error('Ошибка в predict:', err);
-      dom.predictResultBox.classList.add('visible');
-      dom.predictResultMark.className = 'result-mark err';
-      dom.predictResultMark.textContent = '×';
-      dom.predictResultTitle.className = 'result-title err';
-      dom.predictResultTitle.textContent = 'Ошибка при проверке';
-      dom.predictResultSub.textContent = err.message || String(err);
-      dom.btnPredictNext.style.display = 'inline-block';
-    } finally {
-      dom.btnPredictCheck.disabled = false;
-      dom.btnPredictCheck.textContent = 'Проверить';
-    }
-  }
-
-  /**
-   * Проверка задания типа Quiz
-   */
-  function runQuizCheck() {
-    const task = getCurrentTask();
-    if (!task) return;
-
-    if (state.selectedQuizOption === null) {
-      alert('Пожалуйста, выбери вариант ответа.');
-      return;
-    }
-
-    const isCorrect = state.selectedQuizOption === task.correct;
-
-    dom.quizResultBox.classList.add('visible');
-
-    if (isCorrect) {
-      dom.quizResultMark.className = 'result-mark ok';
-      dom.quizResultMark.textContent = '✓';
-      dom.quizResultTitle.className = 'result-title';
-      dom.quizResultTitle.textContent = 'Верно!';
-      dom.quizResultSub.textContent = 'Правильный вариант выбран.';
-      dom.quizExplainContent.textContent = task.explain || '';
-
-      state.completedTasks.add(task.id);
-      saveStorage();
-      updateCourseProgress();
-      renderStepDots(state.topics[state.currentTopicIndex]);
-
-      dom.btnQuizNext.style.display = 'inline-block';
-      dom.btnQuizNext.focus();
-    } else {
-      dom.quizResultMark.className = 'result-mark err';
-      dom.quizResultMark.textContent = '×';
-      dom.quizResultTitle.className = 'result-title err';
-      dom.quizResultTitle.textContent = 'Неверно';
-      dom.quizResultSub.textContent = 'Подумай ещё и выбери другой вариант ответа.';
-      dom.quizExplainContent.textContent = '';
-      dom.btnQuizNext.style.display = 'none';
-    }
-  }
-
-  /**
-   * Запуск проверки кода (Code)
-   */
-  async function runCheck() {
-    const task = getCurrentTask();
-    if (!task || state.isChecking) return;
-
-    state.isChecking = true;
-    dom.btnRun.disabled = true;
-    dom.btnRun.textContent = 'Проверяем...';
-
-    try {
-      const code = dom.editor.value;
-      const result = await window.CodeChecker.checkSolution(code, task);
-
-      dom.resultBox.classList.add('visible');
-
-      if (result.passed) {
-        // Успех
-        dom.resultMark.className = 'result-mark ok';
-        dom.resultMark.textContent = '✓';
-        dom.resultTitle.className = 'result-title';
-        dom.resultTitle.textContent = result.title;
-        dom.resultSub.textContent = result.sub;
-        dom.errorExplain.style.display = 'none';
-
-        // Отмечаем задачу выполненной
-        state.completedTasks.add(task.id);
-        saveStorage();
-        updateCourseProgress();
-        renderStepDots(state.topics[state.currentTopicIndex]);
-
-        // Консоль
-        if (result.stdout && result.stdout.trim().length > 0) {
-          dom.consoleOut.style.display = 'block';
-          dom.consoleOut.className = 'console';
-          dom.consoleOut.textContent = result.stdout;
-        } else {
-          dom.consoleOut.style.display = 'none';
-        }
-
-        // Блок "Как сделать лучше"
-        if (result.improveTips && result.improveTips.length > 0) {
-          dom.improveBox.classList.add('visible');
-          dom.improveContent.innerHTML = result.improveTips.map(tip => `<p>${tip}</p>`).join('');
-        } else {
-          dom.improveBox.classList.remove('visible');
-        }
-
-        // Кнопка перехода к следующему заданию
-        dom.btnNext.style.display = 'inline-block';
-        dom.btnNext.focus();
-      } else {
-        // Ошибка
-        dom.resultMark.className = 'result-mark err';
-        dom.resultMark.textContent = '×';
-        dom.resultTitle.className = 'result-title err';
-        dom.resultTitle.textContent = result.title;
-        dom.resultSub.textContent = result.sub;
-
-        // Понятное объяснение ошибки, если есть
-        if (result.friendlyExplain) {
-          dom.errorExplain.style.display = 'block';
-          dom.errorExplainText.textContent = result.friendlyExplain;
-        } else {
-          dom.errorExplain.style.display = 'none';
-        }
-
-        // Консоль с трассировкой ошибки
-        if (result.stdout && result.stdout.trim().length > 0) {
-          dom.consoleOut.style.display = 'block';
-          dom.consoleOut.className = 'console err';
-          dom.consoleOut.textContent = result.stdout;
-        } else {
-          dom.consoleOut.style.display = 'none';
-        }
-
-        dom.improveBox.classList.remove('visible');
-        dom.btnNext.style.display = 'none';
-      }
-    } catch (err) {
-      console.error('Ошибка проверки:', err);
-      dom.resultBox.classList.add('visible');
-      dom.resultMark.className = 'result-mark err';
-      dom.resultMark.textContent = '×';
-      dom.resultTitle.className = 'result-title err';
-      dom.resultTitle.textContent = 'Ошибка среды выполнения Python';
-      dom.resultSub.textContent = err.message || String(err);
-      dom.errorExplain.style.display = 'none';
-      dom.consoleOut.style.display = 'none';
-      dom.improveBox.classList.remove('visible');
-      dom.btnNext.style.display = 'none';
-    } finally {
-      state.isChecking = false;
-      dom.btnRun.disabled = false;
-      dom.btnRun.textContent = 'Проверить';
-    }
-  }
-
-  /**
-   * Переход к следующему элементу
-   */
-  function nextTask() {
-    const currentTopic = state.topics[state.currentTopicIndex];
-    if (state.currentTaskIndex + 1 < currentTopic.items.length) {
-      state.currentTaskIndex++;
-      renderTask();
-    } else {
-      // Последний шаг в теме: проверяем следующую тему того же этапа
-      if (state.currentTopicIndex + 1 < state.topics.length) {
-        const nextTopic = state.topics[state.currentTopicIndex + 1];
-        if (nextTopic.stageId === currentTopic.stageId) {
-          state.currentTopicIndex++;
-          state.currentTaskIndex = 0;
-          renderTask();
-          return;
-        }
-      }
-
-      // Все темы текущего этапа завершены!
-      showFinishScreenForStage(currentTopic.stageId);
-    }
-  }
-
-  /**
-   * Показ финального экрана для конкретного этапа
-   */
   function showFinishScreenForStage(stageId) {
     const stage = state.stages.find(s => s.id === stageId) || { title: 'Этап' };
     const finish = stage.finish || { title: 'Этап завершён!', text: 'Ты прошёл все темы этого этапа.' };
@@ -1299,7 +475,6 @@
     dom.finishSub.textContent = finish.text;
     dom.finishStageLabel.textContent = `${stage.title.toLowerCase()} · этап`;
 
-    // Кнопка перехода к следующему этапу (если есть)
     const stageIdx = state.stages.findIndex(s => s.id === stageId);
     if (stageIdx >= 0 && stageIdx + 1 < state.stages.length) {
       const nextStage = state.stages[stageIdx + 1];
@@ -1312,7 +487,6 @@
       dom.btnFinishNextStage.style.display = 'none';
     }
 
-    // Сброс только этого этапа
     dom.btnRestart.onclick = () => {
       if (confirm(`Повторить этап «${stage.title}»? Прогресс и черновики тем этого этапа будут очищены.`)) {
         restartStage(stageId);
@@ -1322,9 +496,6 @@
     showScreen('finish');
   }
 
-  /**
-   * Сброс прогресса и черновиков только указанного этапа
-   */
   function restartStage(stageId) {
     const stageTopics = state.topics.filter(t => t.stageId === stageId);
     stageTopics.forEach(topic => {
@@ -1343,11 +514,10 @@
     renderTask();
   }
 
-  /**
-   * Управление выдвижным деревом курса
-   */
+  // ─── Дерево курса ─────────────────────────────────────────────────────────────
+
   function openTreeDrawer() {
-    renderCourseTree();
+    window.VkatRenderers.renderCourseTree();
     dom.treeDrawer.classList.add('open');
     dom.treeBackdrop.classList.add('open');
     setTimeout(() => {
@@ -1363,119 +533,8 @@
     dom.treeBackdrop.classList.remove('open');
   }
 
-  function selectTask(topicIdx, taskIdx) {
-    state.currentTopicIndex = topicIdx;
-    state.currentTaskIndex = taskIdx;
-    showScreen('lesson');
-    renderTask();
-    closeTreeDrawer();
-  }
+  // ─── Редактор кода ────────────────────────────────────────────────────────────
 
-  function renderCourseTree() {
-    if (!dom.treeBody) return;
-
-    // Общий подсчет обязательных элементов курса
-    let allRequiredTotal = 0;
-    let allRequiredDone = 0;
-    state.topics.forEach(t => {
-      t.items.forEach(it => {
-        if (isRequired(it)) {
-          allRequiredTotal++;
-          if (state.completedTasks.has(it.id)) allRequiredDone++;
-        }
-      });
-    });
-
-    const allPercent = allRequiredTotal > 0 ? Math.round((allRequiredDone / allRequiredTotal) * 100) : 0;
-    if (dom.treeProgressSummary) {
-      dom.treeProgressSummary.textContent = `пройдено ${allRequiredDone} из ${allRequiredTotal} (${allPercent}%)`;
-    }
-
-    dom.treeBody.innerHTML = '<div class="tree-root-label">вкат-py/курс/</div>';
-
-    // Рендер по этапам
-    state.stages.forEach(stage => {
-      const stageTopics = state.topics
-        .map((t, idx) => ({ topic: t, globalIdx: idx }))
-        .filter(item => item.topic.stageId === stage.id);
-
-      if (stageTopics.length === 0) return;
-
-      const progress = getStageProgress(stage.id);
-
-      const stageHeader = document.createElement('div');
-      stageHeader.className = 'tree-stage-header';
-      stageHeader.innerHTML = `
-        <span>${stage.title}</span>
-        <span class="tree-stage-progress">${progress.completed}/${progress.total}</span>
-      `;
-      dom.treeBody.appendChild(stageHeader);
-
-      stageTopics.forEach(({ topic, globalIdx }, tIdx) => {
-        const topicEl = document.createElement('div');
-        topicEl.className = 'tree-topic';
-
-        const topicDoneCount = topic.items.filter(it => state.completedTasks.has(it.id)).length;
-        const isTopicAllDone = topicDoneCount === topic.items.length && topic.items.length > 0;
-        const isLastTopic = tIdx === stageTopics.length - 1;
-
-        const row = document.createElement('div');
-        row.className = 'tree-topic-row';
-        row.innerHTML = `
-          <div class="tree-topic-left">
-            <span style="color: var(--text-dim);">${isLastTopic ? '└──' : '├──'}</span>
-            <span>${topic.title.toLowerCase()}</span>
-          </div>
-          <span class="tree-topic-badge ${isTopicAllDone ? 'completed' : ''}">${isTopicAllDone ? '✓ ' : ''}${topicDoneCount}/${topic.items.length}</span>
-        `;
-
-        const tasksContainer = document.createElement('div');
-        tasksContainer.className = 'tree-tasks-container';
-
-        topic.items.forEach((task, kIdx) => {
-          const isDone = state.completedTasks.has(task.id);
-          const isCurrent = globalIdx === state.currentTopicIndex && kIdx === state.currentTaskIndex;
-          const isLastTask = kIdx === topic.items.length - 1;
-          const type = task.type || 'code';
-
-          let iconChar = isDone ? '✓' : (isCurrent ? '●' : '○');
-          let typeTag = '';
-          if (type === 'theory') {
-            typeTag = '<span class="tree-item-type-tag">теория</span>';
-          } else if (type === 'predict') {
-            typeTag = '<span class="tree-item-type-tag">прогноз</span>';
-          } else if (type === 'quiz') {
-            typeTag = '<span class="tree-item-type-tag">тест</span>';
-          } else if (task.tier === 'star') {
-            typeTag = '<span class="tree-item-type-tag">★</span>';
-          }
-
-          const taskNode = document.createElement('div');
-          taskNode.className = `tree-task-node ${isCurrent ? 'current' : ''} ${isDone ? 'completed' : ''}`;
-          taskNode.innerHTML = `
-            <span class="tree-task-branch">${isLastTask ? '└──' : '├──'}</span>
-            <span class="tree-task-icon ${isDone ? 'done' : (isCurrent ? 'current' : 'pending')}">${iconChar}</span>
-            <span class="tree-task-title">${kIdx + 1}. ${task.title}</span>
-            ${typeTag}
-          `;
-
-          taskNode.addEventListener('click', () => {
-            selectTask(globalIdx, kIdx);
-          });
-
-          tasksContainer.appendChild(taskNode);
-        });
-
-        topicEl.appendChild(row);
-        topicEl.appendChild(tasksContainer);
-        dom.treeBody.appendChild(topicEl);
-      });
-    });
-  }
-
-  /**
-   * Настройка редактора кода
-   */
   function setupEditor() {
     const popupEl = document.getElementById('autocomplete-popup');
     if (window.CodeIntelliSense && popupEl) {
@@ -1489,7 +548,7 @@
     dom.editor.addEventListener('keydown', function (e) {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        runCheck();
+        window.VkatCheckers.runCheck();
         return;
       }
 
@@ -1504,7 +563,6 @@
         const start = this.selectionStart;
         const end = this.selectionEnd;
         const val = this.value;
-
         this.value = val.substring(0, start) + '    ' + val.substring(end);
         this.selectionStart = this.selectionEnd = start + 4;
         onEditorChange();
@@ -1540,22 +598,11 @@
         window.VkatStorage.saveDraftDebounced(task.id, dom.editor.value);
       }
     }
-    updateLineNumbers();
+    window.VkatRenderers.updateLineNumbers();
   }
 
-  function updateLineNumbers() {
-    if (!dom.lineNumbers) return;
-    const lines = (dom.editor.value || '').split('\n').length;
-    let html = '';
-    for (let i = 1; i <= lines; i++) {
-      html += i + '\n';
-    }
-    dom.lineNumbers.textContent = html;
-  }
+  // ─── Глобальные события ──────────────────────────────────────────────────────
 
-  /**
-   * Настройка событий интерфейса
-   */
   function setupEvents() {
     dom.mark.addEventListener('click', () => {
       showScreen('start');
@@ -1569,11 +616,11 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         if (dom.modalProfileHelp && dom.modalProfileHelp.style.display !== 'none') {
-          closeProfileHelp();
+          window.VkatProfiles.closeProfileHelp();
           return;
         }
         if (dom.pinModal && dom.pinModal.style.display !== 'none') {
-          closePinModal();
+          window.VkatProfiles.closePinModal();
           return;
         }
         if (dom.treeDrawer && dom.treeDrawer.classList.contains('open')) {
@@ -1582,109 +629,14 @@
       }
     });
 
-    // Быстрый старт (гостевой режим в 1 клик)
-    if (dom.btnQuickStartList) dom.btnQuickStartList.addEventListener('click', startAsGuest);
-    if (dom.btnQuickStartCreate) dom.btnQuickStartCreate.addEventListener('click', startAsGuest);
-
-    // Справка о системе профилей
-    if (dom.btnShowProfileHelpList) dom.btnShowProfileHelpList.addEventListener('click', openProfileHelp);
-    if (dom.btnShowProfileHelpCreate) dom.btnShowProfileHelpCreate.addEventListener('click', openProfileHelp);
-    if (dom.btnCloseProfileHelpX) dom.btnCloseProfileHelpX.addEventListener('click', closeProfileHelp);
-    if (dom.btnCloseProfileHelpOk) dom.btnCloseProfileHelpOk.addEventListener('click', closeProfileHelp);
-    if (dom.modalProfileHelp) {
-      dom.modalProfileHelp.addEventListener('click', (e) => {
-        if (e.target === dom.modalProfileHelp) closeProfileHelp();
-      });
-    }
-
     // Кнопки смены профиля
     if (dom.btnAppSwitchProfile) dom.btnAppSwitchProfile.addEventListener('click', switchProfile);
     if (dom.btnStartSwitchProfile) dom.btnStartSwitchProfile.addEventListener('click', switchProfile);
 
-    // Создание профиля
-    if (dom.btnCancelCreateProfile) {
-      dom.btnCancelCreateProfile.addEventListener('click', () => renderProfilesScreen());
-    }
+    // Профили — события вынесены в profiles.js
+    window.VkatProfiles.setupProfileEvents();
 
-    if (dom.formCreateProfile) {
-      dom.formCreateProfile.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = dom.inputProfileName ? dom.inputProfileName.value.trim() : '';
-        const pin = dom.inputProfilePin ? dom.inputProfilePin.value.trim() : '';
-        if (!name) return;
-
-        if (name.toLowerCase() === 'гость' && pin) {
-          alert('Имя «Гость» зарезервировано для быстрого входа без PIN-кода. Пожалуйста, укажите другое имя или оставьте PIN пустым.');
-          return;
-        }
-
-        try {
-          const profile = await window.VkatStorage.createProfile(name, pin);
-          const shouldMigrate = dom.checkMigrateLegacy && dom.checkMigrateLegacy.checked;
-          if (shouldMigrate && window.VkatStorage.checkLegacyData()) {
-            await window.VkatStorage.migrateLegacyToProfile(profile.id);
-          }
-          await window.VkatStorage.selectProfile(profile.id, pin);
-          await loadStorage();
-          showScreen('start');
-        } catch (err) {
-          alert('Ошибка создания профиля: ' + err.message);
-        }
-      });
-    }
-
-    // Ввод PIN в модальном окне
-    if (dom.inputModalPin) {
-      dom.inputModalPin.addEventListener('input', () => {
-        dom.inputModalPin.value = dom.inputModalPin.value.replace(/\D/g, '').slice(0, 4);
-        const val = dom.inputModalPin.value;
-        updatePinDots(val);
-        if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = '';
-        if (val.length === 4) {
-          submitPin();
-        }
-      });
-
-      dom.inputModalPin.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          submitPin();
-        }
-      });
-    }
-
-    if (dom.btnModalPinSubmit) dom.btnModalPinSubmit.addEventListener('click', submitPin);
-    if (dom.btnModalPinCancel) dom.btnModalPinCancel.addEventListener('click', closePinModal);
-    if (dom.btnModalPinCloseX) dom.btnModalPinCloseX.addEventListener('click', closePinModal);
-    if (dom.pinModal) {
-      dom.pinModal.addEventListener('click', (e) => {
-        if (e.target === dom.pinModal) closePinModal();
-      });
-    }
-
-    // Импорт профиля из файла
-    if (dom.inputImportFile) {
-      dom.inputImportFile.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-          try {
-            const jsonStr = evt.target.result;
-            const importedMeta = await window.VkatStorage.importProfile(jsonStr);
-            await renderProfilesScreen();
-            alert(`Профиль "${importedMeta.name}" успешно импортирован!`);
-          } catch (err) {
-            alert('Ошибка импорта профиля: ' + err.message);
-          } finally {
-            dom.inputImportFile.value = '';
-          }
-        };
-        reader.readAsText(file);
-      });
-    }
-
-    // Защищённый сброс всех данных устройства (удержание 4 секунды)
+    // Защищённый сброс всех данных (удержание 4 секунды)
     if (dom.versionResetLabel) {
       let resetTimer = null;
       const startReset = () => {
@@ -1696,10 +648,7 @@
         }, 4000);
       };
       const cancelReset = () => {
-        if (resetTimer) {
-          clearTimeout(resetTimer);
-          resetTimer = null;
-        }
+        if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
       };
       dom.versionResetLabel.addEventListener('mousedown', startReset);
       dom.versionResetLabel.addEventListener('mouseup', cancelReset);
@@ -1710,12 +659,10 @@
 
     // Сброс буфера перед уходом со страницы
     window.addEventListener('beforeunload', () => {
-      if (window.VkatStorage) {
-        window.VkatStorage.flushSync();
-      }
+      if (window.VkatStorage) window.VkatStorage.flushSync();
     });
 
-    // Межвкладочная синхронизация прогресса одного и того же профиля
+    // Межвкладочная синхронизация прогресса
     window.addEventListener('storage', (e) => {
       if (!window.VkatStorage) return;
       const active = window.VkatStorage.getActiveProfileSync();
@@ -1723,19 +670,17 @@
         loadStorage().then(() => {
           updateCourseProgress();
           const cur = getCurrentTask();
-          if (cur) renderStepDots(state.topics[state.currentTopicIndex]);
+          if (cur) window.VkatRenderers.renderStepDots(state.topics[state.currentTopicIndex]);
         });
       }
     });
 
     // Кнопки урока
-    dom.btnRun.addEventListener('click', runCheck);
+    dom.btnRun.addEventListener('click', window.VkatCheckers.runCheck);
     dom.btnNext.addEventListener('click', nextTask);
-
-    // Кнопка пропустить (для star / optional)
     dom.btnSkip.addEventListener('click', nextTask);
 
-    // Кнопка теории
+    // Теория
     dom.btnTheoryNext.addEventListener('click', () => {
       const task = getCurrentTask();
       if (task) {
@@ -1746,13 +691,13 @@
     });
 
     // Predict
-    dom.btnPredictCheck.addEventListener('click', runPredictCheck);
+    dom.btnPredictCheck.addEventListener('click', window.VkatCheckers.runPredictCheck);
     dom.btnPredictNext.addEventListener('click', nextTask);
     dom.predictInput.addEventListener('keydown', (e) => {
       if (e.isComposing) return;
       if ((e.key === 'Enter' && !e.shiftKey) || ((e.ctrlKey || e.metaKey) && e.key === 'Enter')) {
         e.preventDefault();
-        runPredictCheck();
+        window.VkatCheckers.runPredictCheck();
       }
     });
     dom.predictInput.addEventListener('input', () => {
@@ -1766,20 +711,18 @@
     });
 
     // Quiz
-    dom.btnQuizCheck.addEventListener('click', runQuizCheck);
+    dom.btnQuizCheck.addEventListener('click', window.VkatCheckers.runQuizCheck);
     dom.btnQuizNext.addEventListener('click', nextTask);
   }
 
-  /**
-   * Запуск приложения
-   */
+  // ─── Запуск приложения ────────────────────────────────────────────────────────
+
   async function startApp() {
     initDom();
     buildCourseStructure();
     setupEditor();
     setupEvents();
 
-    // Проверяем наличие активного профиля в текущей вкладке
     const activeProfile = window.VkatStorage ? window.VkatStorage.getActiveProfileSync() : null;
 
     if (activeProfile) {
@@ -1801,6 +744,33 @@
       }
     }
   }
+
+  // ─── Публичный API для дочерних модулей ──────────────────────────────────────
+
+  window.VkatApp = {
+    // Состояние (read/write для модулей)
+    get state() { return state; },
+    get dom() { return dom; },
+
+    // Хранилище
+    loadStorage,
+    saveStorage,
+
+    // Навигация
+    showScreen,
+    getCurrentTask,
+    renderTask,
+    nextTask,
+    selectTask,
+    startOrContinueStage,
+
+    // Прогресс
+    getStageProgress,
+    updateCourseProgress,
+    isRequired,
+    isOptional,
+    isGradable
+  };
 
   window.addEventListener('DOMContentLoaded', startApp);
 

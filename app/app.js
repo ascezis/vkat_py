@@ -701,6 +701,10 @@
       renderCodeView(task);
     }
 
+    // Схема к теме
+    renderVisual(topic);
+    requestAnimationFrame(fitVisual);
+
     // Точки шагов
     renderStepDots(topic);
 
@@ -708,6 +712,42 @@
     updateCourseProgress();
     saveStorage();
   }
+
+  /**
+   * Схема-иллюстрация темы: в левой панели урока и в боковой колонке теории.
+   * Перерисовываем только при смене темы, чтобы анимация появления не мигала на каждом шаге.
+   */
+  function renderVisual(topic) {
+    const targets = [document.getElementById('visual'), document.getElementById('theory-visual')];
+    const html = window.Glyphs ? window.Glyphs.render(topic.id) : '';
+    const label = window.Glyphs ? window.Glyphs.caption(topic.id) : '';
+    targets.forEach(el => {
+      if (!el) return;
+      if (!html) { el.hidden = true; el.innerHTML = ''; delete el.dataset.topic; return; }
+      el.hidden = false;
+      el.setAttribute('aria-label', 'Схема: ' + label);
+      if (el.dataset.topic !== topic.id) {
+        el.innerHTML = html;
+        el.dataset.topic = topic.id;
+      }
+    });
+  }
+
+  /**
+   * Схема в левой панели урока
+   */
+  function fitVisual() {
+    const el = document.getElementById('visual');
+    if (!el || el.hidden) return;
+    el.style.display = '';
+  }
+  window.addEventListener('resize', fitVisual);
+  // Панель становится видимой/меняет размер уже после renderTask — пересчитываем
+  if (window.ResizeObserver) {
+    const paneEl = document.getElementById('visual') && document.getElementById('visual').parentElement;
+    if (paneEl) new ResizeObserver(fitVisual).observe(paneEl);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitVisual);
 
   /**
    * Рендер режима: Теория

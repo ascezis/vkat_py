@@ -22,7 +22,8 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
@@ -43,6 +44,7 @@ body {
   flex: 1;
   flex-direction: column;
 }
+
 .screen.active {
   display: flex;
 }
@@ -255,6 +257,12 @@ body {
 
 .pane-explain {
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.pane-explain > * {
+  flex-shrink: 0;
 }
 
 @media (max-width: 860px) {
@@ -280,7 +288,8 @@ body {
 
 .pane-explain p {
   color: var(--text-muted);
-  max-width: 52ch;
+  font-size: 16px;
+  max-width: 60ch;
   margin-bottom: 14px;
 }
 
@@ -298,6 +307,7 @@ body {
   white-space: pre;
   overflow-x: auto;
   background: var(--bg-panel-alt);
+  flex-shrink: 0;
 }
 
 .example .out {
@@ -312,6 +322,7 @@ body {
   margin-top: 30px;
   padding-top: 26px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .task-label {
@@ -323,7 +334,8 @@ body {
 
 .task p {
   color: var(--text);
-  max-width: 52ch;
+  font-size: 16px;
+  max-width: 60ch;
 }
 
 /* ПАНЕЛЬ РЕДАКТОРА */
@@ -334,7 +346,8 @@ body {
 }
 
 .editor-wrapper {
-  flex: 1;
+  flex: 0 0 auto;
+  height: clamp(240px, 46vh, 460px);
   display: flex;
   flex-direction: row;
   min-height: 220px;
@@ -359,6 +372,7 @@ body {
   user-select: none;
   pointer-events: none;
   overflow: hidden;
+  white-space: pre;
   padding-right: 10px;
   border-right: 1px solid var(--border);
   box-sizing: border-box;
@@ -386,17 +400,65 @@ body {
 }
 
 /* Палитра синтаксиса Python (VS Code Dark+) */
-.hl-keyword-control { color: #c586c0; font-weight: 500; } /* if, for, while, return */
-.hl-keyword { color: #569cd6; font-weight: 500; }         /* def, in, and, or, not */
-.hl-constant { color: #569cd6; }                          /* True, False, None */
-.hl-builtin { color: #dcdcaa; }                           /* print, range, len, int */
-.hl-func-call { color: #dcdcaa; }                         /* вызовы функций */
-.hl-string { color: #ce9178; }                            /* строки "..." */
-.hl-fstring-prefix { color: #569cd6; font-weight: 600; }  /* префикс f */
-.hl-number { color: #b5cea8; }                            /* числа 123 */
-.hl-comment { color: #6a9955; font-style: italic; }       /* # комментарии */
-.hl-variable { color: #9cdcfe; }                          /* имена переменных */
-.hl-punct { color: #d4d4d4; }                             /* скобки, двоеточия */
+.hl-keyword-control {
+  color: #c586c0;
+  font-weight: 500;
+}
+
+/* if, for, while, return */
+.hl-keyword {
+  color: #569cd6;
+  font-weight: 500;
+}
+
+/* def, in, and, or, not */
+.hl-constant {
+  color: #569cd6;
+}
+
+/* True, False, None */
+.hl-builtin {
+  color: #dcdcaa;
+}
+
+/* print, range, len, int */
+.hl-func-call {
+  color: #dcdcaa;
+}
+
+/* вызовы функций */
+.hl-string {
+  color: #ce9178;
+}
+
+/* строки "..." */
+.hl-fstring-prefix {
+  color: #569cd6;
+  font-weight: 600;
+}
+
+/* префикс f */
+.hl-number {
+  color: #b5cea8;
+}
+
+/* числа 123 */
+.hl-comment {
+  color: #6a9955;
+  font-style: italic;
+}
+
+/* # комментарии */
+.hl-variable {
+  color: #9cdcfe;
+}
+
+/* имена переменных */
+.hl-punct {
+  color: #d4d4d4;
+}
+
+/* скобки, двоеточия */
 
 /* Окно автодополнения (IntelliSense) */
 .autocomplete-popup {
@@ -409,7 +471,7 @@ body {
   z-index: 1000;
   max-width: 320px;
   min-width: 200px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 .autocomplete-item {
@@ -425,7 +487,8 @@ body {
   border-bottom: none;
 }
 
-.autocomplete-item:hover, .autocomplete-item.selected {
+.autocomplete-item:hover,
+.autocomplete-item.selected {
   background: #04395e;
   color: #fff;
 }
@@ -442,9 +505,20 @@ body {
   color: #569cd6;
 }
 
-.autocomplete-badge.badge-fn { color: #dcdcaa; border-color: #dcdcaa; }
-.autocomplete-badge.badge-kw { color: #c586c0; border-color: #c586c0; }
-.autocomplete-badge.badge-var { color: #9cdcfe; border-color: #9cdcfe; }
+.autocomplete-badge.badge-fn {
+  color: #dcdcaa;
+  border-color: #dcdcaa;
+}
+
+.autocomplete-badge.badge-kw {
+  color: #c586c0;
+  border-color: #c586c0;
+}
+
+.autocomplete-badge.badge-var {
+  color: #9cdcfe;
+  border-color: #9cdcfe;
+}
 
 .autocomplete-name {
   font-weight: 500;
@@ -571,7 +645,8 @@ body {
   cursor: not-allowed;
 }
 
-.btn-run:focus-visible, .btn-next:focus-visible {
+.btn-run:focus-visible,
+.btn-next:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 3px;
 }
@@ -1192,7 +1267,7 @@ body {
 
 .theory-wrapper {
   max-width: 68ch;
-  margin: 0 auto;
+  min-width: 0;
 }
 
 .theory-wrapper h1 {
@@ -1265,7 +1340,8 @@ body {
   font-family: var(--font-mono);
 }
 
-.theory-block-table th, .theory-block-table td {
+.theory-block-table th,
+.theory-block-table td {
   border: 1px solid var(--border);
   padding: 10px 14px;
   text-align: left;
@@ -2020,4 +2096,210 @@ body {
   color: var(--text);
 }
 
+/* ==========================================================================
+   ВИЗУАЛЫ: схемы к темам, «терминал» результата, сетка, анимации
+   Правило: только токены палитры, линия 1px, без скруглений и теней.
+   ========================================================================== */
 
+/* --- Схема (figure) --- */
+
+.visual[hidden] { display: none; }
+
+.visual {
+  margin: auto 0 0 0;               /* в левой панели прижата к низу */
+  border: 1px solid var(--border);
+  background-color: var(--bg-panel-alt);
+  /* точечная сетка «миллиметровки» */
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: 7px 7px;
+  display: flex;
+  flex-direction: column;
+  max-width: 520px;
+  width: 100%;
+}
+
+.pane-explain .visual {
+  margin-top: auto;
+}
+.pane-explain .task + .visual,
+.pane-explain .example + .visual {
+  margin-top: 32px;
+}
+/* когда контента мало, схема всё равно прижата к низу панели */
+.pane-explain > .visual { flex-shrink: 0; }
+
+.visual-canvas {
+  padding: 22px 24px 8px;
+}
+
+.glyph {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.visual-cap {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel-alt);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.visual-cap span { color: var(--text-dim); flex-shrink: 0; }
+
+/* элементы схемы */
+.glyph rect, .glyph path, .glyph circle { fill: none; stroke-width: 1; stroke-linecap: square; }
+.glyph .gl { stroke: var(--border-strong); }
+.glyph .gm { stroke: var(--text); }
+.glyph .gf { fill: var(--fill); stroke: var(--fill); }
+.glyph .dash { stroke-dasharray: 3 4; }
+.glyph text { font-family: var(--font-mono); font-size: 13px; }
+.glyph text.gt { fill: var(--text-muted); }
+.glyph text.gT { fill: var(--text); }
+.glyph text.gi { fill: var(--fill-text); }
+.glyph text.big { font-size: 22px; }
+.glyph text.small { font-size: 11px; }
+.glyph path.gf { stroke: none; }
+
+/* --- Теория: две колонки на широком экране --- */
+
+.theory-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 68ch);
+  justify-content: center;
+  gap: 56px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.theory-aside { display: none; min-width: 0; }
+
+@media (min-width: 1120px) {
+  .theory-layout { grid-template-columns: minmax(0, 68ch) minmax(300px, 400px); }
+  .theory-aside { display: block; }
+  .theory-aside .visual {
+    position: sticky;
+    top: 40px;
+    margin-top: 74px;               /* на уровне заголовка */
+  }
+}
+/* на узких экранах схема в теории не нужна — текст важнее */
+
+/* --- «Терминал» вместо пустого места под редактором --- */
+
+.result-idle {
+  margin-top: 22px;
+  flex: 1 1 auto;
+  min-height: 112px;
+  border: 1px dashed var(--border);
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.result.visible + .result-idle { display: none; }
+.result-idle-label { font-size: 12px; margin-bottom: 8px; }
+.result-idle .prompt { color: var(--text-muted); margin-right: 8px; }
+.result-idle .cursor { animation: blink 1.1s steps(1) infinite; margin-left: 2px; }
+
+/* --- Стартовый экран: сетка и курсор --- */
+
+#screen-start { position: relative; }
+#screen-start::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, #000 15%, transparent 80%);
+          mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, #000 15%, transparent 80%);
+  pointer-events: none;
+}
+#screen-start > * { position: relative; }
+.start-center h1::after {
+  content: "_";
+  display: inline-block;
+  width: 0;                 /* курсор не влияет на перенос строк заголовка */
+  overflow: visible;
+  margin-left: 4px;
+  color: var(--text-muted);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+/* --- Анимации --- */
+
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes g-draw { to { stroke-dashoffset: 0; } }
+@keyframes g-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes screen-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes hop {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(36px); }
+  40%  { transform: translateX(72px); }
+  60%  { transform: translateX(108px); }
+  80%  { transform: translateX(144px); }
+  100% { transform: translateX(0); }
+}
+@keyframes pop { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.glyph .d {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: g-draw .7s cubic-bezier(.2, .7, .2, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+/* штриховые линии не должны терять рисунок штриха после появления */
+.glyph .d.dash { stroke-dasharray: 3 4; stroke-dashoffset: 0; animation-name: g-fade; }
+.glyph .f {
+  opacity: 0;
+  animation: g-fade .5s ease forwards;
+  animation-delay: calc(var(--i, 0) * 60ms + 200ms);
+}
+.glyph .hop { animation: hop 5s steps(1, end) 1.2s infinite; }
+
+.screen.active { animation: screen-in .22s ease-out; }
+.result.visible { animation: pop .2s ease-out; }
+.result-mark.ok { animation: pop .3s ease-out; }
+
+/* --- Высота экрана: панели скроллятся сами, как в IDE (десктоп) --- */
+
+@media (min-width: 861px) {
+  html, body { height: 100vh; height: 100dvh; min-height: 0; }
+  body { overflow: hidden; }
+  .screen { min-height: 0; }
+  #screen-start, #screen-finish, #screen-profiles { overflow-y: auto; }
+  .main-panes { grid-template-rows: minmax(0, 1fr); }
+  .pane-theory { min-height: 0; }
+}
+
+/* --- Адаптив --- */
+
+@media (max-width: 860px) {
+  .pane { padding: 28px 20px; }
+  .topbar { padding: 14px 20px; }
+  .pane-explain .visual { display: none; }   /* на телефоне редактор важнее схемы */
+  .visual { max-width: none; }
+  .editor, .predict-input { font-size: 16px; }   /* iOS не зумит поле при фокусе */
+  .editor-wrapper { height: 260px; }
+}
+
+/* --- Уважение к настройке «меньше движения» --- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .glyph .d { stroke-dashoffset: 0; }
+  .glyph .f { opacity: 1; }
+}
+
+/* --- Скроллбары в цвет интерфейса --- */
+
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }

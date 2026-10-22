@@ -320,6 +320,26 @@ async function runStorageValidation() {
   }
   check('Изоляция VkatStorage: нет прямого localStorage/sessionStorage в app/*.js кроме storage.js', directStorageLeaks.length === 0, directStorageLeaks.join('; '));
 
+  // 14. Валидация экранирования строк Python внутри template literal в app/checker.js
+  const checkerFile = fs.readFileSync(path.join(appDir, 'checker.js'), 'utf8');
+  const startMarker = 'await pyodide.runPythonAsync(`';
+  const endMarker = '`);';
+  const sIdx = checkerFile.indexOf(startMarker);
+  let bootstrapSyntaxOk = false;
+  if (sIdx !== -1) {
+    const eIdx = checkerFile.indexOf(endMarker, sIdx);
+    const lit = checkerFile.substring(sIdx + startMarker.length - 1, eIdx + 1);
+    const evaluated = eval(lit);
+    const pyLines = evaluated.split('\n');
+    const brokenLine = pyLines.find(l => {
+      const trimmed = l.trim();
+      return (trimmed.startsWith("return '") && trimmed.length === 8) ||
+             (trimmed.includes("[line + '") && !trimmed.includes("' for line"));
+    });
+    bootstrapSyntaxOk = !brokenLine;
+  }
+  check('Python bootstrap в checker.js не содержит незакрытых строковых литералов (экранирование \\n)', bootstrapSyntaxOk);
+
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);
 }

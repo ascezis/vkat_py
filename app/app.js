@@ -521,7 +521,8 @@
   async function startAsGuest() {
     try {
       const profiles = await window.VkatStorage.listProfiles();
-      let guest = profiles.find(p => p.name.toLowerCase() === 'гость');
+      // Ищем гостевой профиль строго без PIN-кода (чтобы быстрый вход никогда не блокировался)
+      let guest = profiles.find(p => p.name.toLowerCase() === 'гость' && !p.pinHash);
       if (!guest) {
         guest = await window.VkatStorage.createProfile('Гость');
       }
@@ -1611,6 +1612,11 @@
         const name = dom.inputProfileName ? dom.inputProfileName.value.trim() : '';
         const pin = dom.inputProfilePin ? dom.inputProfilePin.value.trim() : '';
         if (!name) return;
+
+        if (name.toLowerCase() === 'гость' && pin) {
+          alert('Имя «Гость» зарезервировано для быстрого входа без PIN-кода. Пожалуйста, укажите другое имя или оставьте PIN пустым.');
+          return;
+        }
 
         try {
           const profile = await window.VkatStorage.createProfile(name, pin);

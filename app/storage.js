@@ -459,7 +459,16 @@
    */
   function checkLegacyData() {
     const hasCompleted = Boolean(storageGet(KEYS.LEGACY_COMPLETED));
-    const hasProfiles = Boolean(storageGet(KEYS.PROFILES));
+    const rawProfiles = storageGet(KEYS.PROFILES);
+    let hasProfiles = false;
+    if (rawProfiles) {
+      try {
+        const parsed = JSON.parse(rawProfiles);
+        hasProfiles = Array.isArray(parsed) && parsed.length > 0;
+      } catch (e) {
+        hasProfiles = false;
+      }
+    }
     return hasCompleted && !hasProfiles;
   }
 

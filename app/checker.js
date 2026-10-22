@@ -254,7 +254,7 @@ def _clean_tb(tb):
             in_student = True
         if in_student or l.startswith('Traceback'):
             cleaned.append(l)
-    return '\n'.join(cleaned) if cleaned else tb
+    return '\\n'.join(cleaned) if cleaned else tb
 
 def _inject_loop_guard(code_str, max_iters=5000000):
     """Внедряет счётчик итераций в каждый цикл for/while для защиты от бесконечных циклов."""
@@ -279,7 +279,7 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
         linecache.cache['<student>'] = (
             len(code_str),
             None,
-            [line + '\n' for line in code_str.splitlines()],
+            [line + '\\n' for line in code_str.splitlines()],
             '<student>'
         )
         try:

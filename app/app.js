@@ -1054,9 +1054,15 @@
     dom.btnPredictCheck.textContent = 'Запускаем...';
 
     try {
-      const runRes = await window.CodeChecker.runCode(task.code);
+      let actualVal = '';
+      if (typeof task.expectedOutput === 'string') {
+        actualVal = normalize(task.expectedOutput);
+      } else if (window.CodeChecker && typeof window.CodeChecker.runCode === 'function') {
+        const runRes = await window.CodeChecker.runCode(task.code);
+        actualVal = normalize(runRes.stdout);
+      }
+
       const userVal = normalize(dom.predictInput.value);
-      const actualVal = normalize(runRes.stdout);
 
       // Сохраняем черновик ответа
       state.codeDrafts[task.id] = dom.predictInput.value;
@@ -1085,6 +1091,14 @@
         let diffMsg = `Твой ответ:\n${userVal || '(пусто)'}\n\nФактический вывод программы:\n${actualVal || '(пусто)'}`;
         if (actualVal.includes('\n') && !userVal.includes('\n')) {
           diffMsg += '\n\nПодсказка: каждый вызов print() выводит значение с новой строки.';
+        } else if (
+          (userVal.startsWith('"') && userVal.endsWith('"')) ||
+          (userVal.startsWith("'") && userVal.endsWith("'"))
+        ) {
+          const stripped = userVal.slice(1, -1);
+          if (stripped === actualVal) {
+            diffMsg += '\n\nПодсказка: функция print() выводит текст строки без кавычек.';
+          }
         }
         dom.predictResultSub.textContent = diffMsg;
       }
@@ -1094,6 +1108,13 @@
       dom.btnPredictNext.focus();
     } catch (err) {
       console.error('Ошибка в predict:', err);
+      dom.predictResultBox.classList.add('visible');
+      dom.predictResultMark.className = 'result-mark err';
+      dom.predictResultMark.textContent = '×';
+      dom.predictResultTitle.className = 'result-title err';
+      dom.predictResultTitle.textContent = 'Ошибка при проверке';
+      dom.predictResultSub.textContent = err.message || String(err);
+      dom.btnPredictNext.style.display = 'inline-block';
     } finally {
       dom.btnPredictCheck.disabled = false;
       dom.btnPredictCheck.textContent = 'Проверить';
@@ -1722,7 +1743,8 @@
     dom.btnPredictCheck.addEventListener('click', runPredictCheck);
     dom.btnPredictNext.addEventListener('click', nextTask);
     dom.predictInput.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (e.isComposing) return;
+      if ((e.key === 'Enter' && !e.shiftKey) || ((e.ctrlKey || e.metaKey) && e.key === 'Enter')) {
         e.preventDefault();
         runPredictCheck();
       }

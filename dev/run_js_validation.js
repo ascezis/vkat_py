@@ -44,15 +44,15 @@ function loadScript(relPath) {
 
 console.log('=== Загрузка JS скриптов ===');
 loadScript('content/stages.js');
-loadScript('content/01-variables.js');
-loadScript('content/02-conditions.js');
-loadScript('content/03-loops.js');
-loadScript('content/04-functions.js');
-loadScript('content/05-lists-dicts.js');
-loadScript('content/06-strings.js');
-loadScript('content/l1-04-functions.js');
-loadScript('content/l1-05-dicts.js');
-loadScript('content/l1-03-lists.js');
+loadScript('content/start/01-variables.js');
+loadScript('content/start/02-conditions.js');
+loadScript('content/start/03-loops.js');
+loadScript('content/start/04-functions.js');
+loadScript('content/start/05-lists-dicts.js');
+loadScript('content/start/06-strings.js');
+loadScript('content/core/l1-04-functions.js');
+loadScript('content/core/l1-05-dicts.js');
+loadScript('content/core/l1-03-lists.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');

@@ -106,13 +106,8 @@
     styles.css            — общие стили по design-system.md
   /content/
     stages.js             — конфигурация этапов курса (start, core)
-    01-variables.js       — этап 1: переменные и вывод
-    02-conditions.js      — этап 1: ветвления
-    03-loops.js           — этап 1: циклы
-    04-functions.js       — этап 1: функции (базовые)
-    05-lists-dicts.js     — этап 1: списки и словари
-    06-strings.js         — этап 1: строки
-    l1-04-functions.js    — этап 2: функции (углублённая практика)
+    /start/               — этап 1: базовые темы (01-variables.js .. 06-strings.js)
+    /core/                — этап 2: углублённая практика (l1-03-lists.js .. l1-05-dicts.js)
   /dev/
     selftest.html         — автономная страница валидации и прогона эталонов
     selftest/             — эталонные и ошибочные решения для автопроверки

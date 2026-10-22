@@ -73,12 +73,12 @@ window.COURSE_CATALOG = [
     category: "basics",
     scripts: [
       "content/stages.js",
-      "content/01-variables.js",
-      "content/02-conditions.js",
-      "content/03-loops.js",
-      "content/04-functions.js",
-      "content/05-lists-dicts.js",
-      "content/06-strings.js"
+      "content/start/01-variables.js",
+      "content/start/02-conditions.js",
+      "content/start/03-loops.js",
+      "content/start/04-functions.js",
+      "content/start/05-lists-dicts.js",
+      "content/start/06-strings.js"
     ]
   },
   {
@@ -86,9 +86,9 @@ window.COURSE_CATALOG = [
     title: "Основной курс",
     category: "core",
     scripts: [
-      "content/l1-03-lists.js",
-      "content/l1-04-functions.js",
-      "content/l1-05-dicts.js"
+      "content/core/l1-03-lists.js",
+      "content/core/l1-04-functions.js",
+      "content/core/l1-05-dicts.js"
     ]
   },
   {

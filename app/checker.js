@@ -155,6 +155,12 @@ def analyze_ast(code_str, requirements_json):
     if reqs.get("require_if") and ast.If not in node_types:
         errors.append("В коде должно использоваться ветвление с условием if.")
 
+    if reqs.get("require_try") and ast.Try not in node_types:
+        errors.append("В коде должна использоваться конструкция try/except.")
+
+    if reqs.get("require_raise") and ast.Raise not in node_types:
+        errors.append("В коде должен использоваться оператор raise.")
+
     # Новые флаги AST
     forbid_calls = reqs.get("forbid_calls", [])
     if forbid_calls:

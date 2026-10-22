@@ -275,6 +275,10 @@ async function runStorageValidation() {
 
   check('checkLegacyData обнаруживает устаревшие данные при отсутствии профилей', storage.checkLegacyData() === true);
 
+  localStorageMock.setItem('vkat_profiles', '[]');
+  check('checkLegacyData корректно возвращает true при vkat_profiles: "[]"', storage.checkLegacyData() === true);
+  localStorageMock.removeItem('vkat_profiles');
+
   const pMigrate = await storage.createProfile('Миша');
   await storage.migrateLegacyToProfile(pMigrate.id, stages, topics);
 
@@ -339,6 +343,13 @@ async function runStorageValidation() {
     bootstrapSyntaxOk = !brokenLine;
   }
   check('Python bootstrap в checker.js не содержит незакрытых строковых литералов (экранирование \\n)', bootstrapSyntaxOk);
+
+  // 15. Проверка логики быстрого гостевого входа при наличии профиля Гость с PIN
+  const pGuestWithPin = await storage.createProfile('Гость', '4321');
+  const allProfs = await storage.listProfiles();
+  const safeGuest = allProfs.find(p => p.name.toLowerCase() === 'гость' && !p.pinHash);
+  check('Быстрый старт: профиль Гость с PIN игнорируется при поиске гостевого профиля', safeGuest === undefined);
+  await storage.deleteProfile(pGuestWithPin.id);
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);

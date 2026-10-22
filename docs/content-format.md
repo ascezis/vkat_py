@@ -66,7 +66,7 @@ window.COURSE_STAGES = [
 
 ## 3. Модель темы (`topic`)
 
-Файл темы (например, `content/l1-04-functions.js`) регистрирует тему в глобальном массиве `window.COURSE_TOPICS`:
+Файл темы (например, `content/core/l1-04-functions.js`) регистрирует тему в глобальном массиве `window.COURSE_TOPICS`:
 
 ```javascript
 window.COURSE_TOPICS = window.COURSE_TOPICS || [];

@@ -59,7 +59,7 @@ python3 -m http.server 8085
 index.html          точка входа
 run.bat             запуск локального сервера (Windows)
 app/                логика: редактор, подсветка, автодополнение, чекер, дружелюбные ошибки
-content/            учебные этапы и темы (stages.js, темы этапа 1 и 2)
+content/            учебные этапы и темы (stages.js, start/, core/)
 assets/
 ├── pyodide/        интерпретатор Python (WebAssembly)
 └── fonts/          шрифты

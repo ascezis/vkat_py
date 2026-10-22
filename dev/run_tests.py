@@ -537,6 +537,7 @@ for tid, tinfo in tasks_data.items():
 
 # Проверка predict
 predict_tests = [
+    ("l1_list_p1", 'print("python"[::-1])', "nohtyp"),
     ("l1_fn_p1", "def square(x):\n    return x * x\n\nprint(square(2) + square(3))", "13"),
     ("l1_fn_p2", "def g(x):\n    print(x * 2)\n\ny = g(4)\nprint(y)", "8\nNone"),
     ("l1_dict_p1", "d = {'a': 1, 'b': 2}\nd['c'] = d['a'] + d['b']\nd['a'] = 10\nprint(d['a'], d['c'])", "10 3"),
@@ -595,6 +596,29 @@ if 'line 5, in buggy' in err_tb:
     passed_tests += 1
 else:
     print(f"  × [regression_lineno] ОШИБКА: ожидалась строка 5 в traceback, получено:\n{err_tb}")
+    failed_tests += 1
+
+# Регрессия 3: Python bootstrap из app/checker.js не содержит SyntaxError (unterminated string literal)
+import subprocess
+node_script = (
+    "const fs = require('fs');\n"
+    "const content = fs.readFileSync('app/checker.js', 'utf8');\n"
+    "const start = content.indexOf('await pyodide.runPythonAsync(`');\n"
+    "const end = content.indexOf('`);', start);\n"
+    "const lit = content.substring(start + 'await pyodide.runPythonAsync(`'.length - 1, end + 1);\n"
+    "process.stdout.write(eval(lit));"
+)
+try:
+    n_res = subprocess.run(['node', '-e', node_script], capture_output=True, text=True, encoding='utf-8')
+    if n_res.returncode == 0:
+        ast.parse(n_res.stdout)
+        print("  ✓ [regression_bootstrap_ast] Встроенный код Python в app/checker.js синтаксически корректен")
+        passed_tests += 1
+    else:
+        print(f"  × [regression_bootstrap_ast] Ошибка извлечения bootstrap через Node: {n_res.stderr}")
+        failed_tests += 1
+except Exception as e:
+    print(f"  × [regression_bootstrap_ast] Исключение при синтаксическом разборе bootstrap: {e}")
     failed_tests += 1
 
 print(f"\nИТОГ: {passed_tests} пройдено, {failed_tests} ошибок.")

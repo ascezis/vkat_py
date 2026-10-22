@@ -249,6 +249,8 @@ async function runStorageValidation() {
   check('Данные профиля Даша сохранены и загружены', dataP2.completed.includes('l1_fn_c1'));
   check('Семантическая позиция { topicId, itemId } сохранена', dataP2.position.topicId === 'l1_functions' && dataP2.position.itemId === 'l1_fn_c1');
   check('Снимок данных профиля сохранён в ключе vkat_p:<id>', Boolean(localStorageMock.getItem('vkat_p:' + p2.id)));
+  check('getProgressCount возвращает количество завершенных шагов (1)', storage.getProgressCount(p2.id) === 1);
+  check('getProgressCount для пустого профиля возвращает 0', storage.getProgressCount(p1.id) === 0);
 
   // 7. Debounced черновики и flushSync
   storage.saveDraftDebounced('l1_fn_c2', 'print("test")');
@@ -304,6 +306,19 @@ async function runStorageValidation() {
   await storage.resetAll();
   check('resetAll полностью очищает все профили', (await storage.listProfiles()).length === 0);
   check('resetAll очищает активный профиль сессии', storage.getActiveProfileSync() === null);
+
+  // 13. Валидация изоляции VkatStorage (отсутствие прямого localStorage/sessionStorage в app/*.js)
+  const appDir = path.join(__dirname, '..', 'app');
+  const appFiles = fs.readdirSync(appDir).filter(f => f.endsWith('.js') && f !== 'storage.js');
+  let directStorageLeaks = [];
+  for (const file of appFiles) {
+    const content = fs.readFileSync(path.join(appDir, file), 'utf8');
+    const matches = content.match(/\b(localStorage|sessionStorage)\b/g);
+    if (matches && matches.length > 0) {
+      directStorageLeaks.push(`${file} (${matches.join(', ')})`);
+    }
+  }
+  check('Изоляция VkatStorage: нет прямого localStorage/sessionStorage в app/*.js кроме storage.js', directStorageLeaks.length === 0, directStorageLeaks.join('; '));
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);

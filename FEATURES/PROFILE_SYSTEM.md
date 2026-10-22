@@ -39,6 +39,10 @@ interface ProfileMeta {
 }
 ```
 
+> [!NOTE]
+> **Уровень защиты PIN-кода:**
+> Хэширование PIN-кода (SHA-256 с солью `id`) спроектировано как защита от **случайного входа соседа по парте** на общем учебном компьютере в классе. Так как 4-значный PIN имеет всего 10 000 комбинаций, в локальном офлайн-окружении он не предназначен для защиты от целенаправленного перебора. При необходимости усиления возможен переход на PBKDF2 через `crypto.subtle.deriveBits`.
+
 #### Формат `ProfileData` (`vkat_p:<id>`):
 ```typescript
 interface ProfileData {
@@ -87,6 +91,8 @@ window.VkatStorage = {
   selectProfile(id: string, pin?: string): Promise<ProfileData>,
   getActiveProfile(): ProfileMeta | null,
   clearActiveProfile(): void,
+  getLastProfileId(): string | null,
+  getProgressCount(id: string): number,
   
   // === Чтение и запись данных активного профиля ===
   load(): Promise<ProfileData>,

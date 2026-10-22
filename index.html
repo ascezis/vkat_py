@@ -430,9 +430,13 @@
   </div>
   <div id="tree-backdrop" class="tree-backdrop"></div>
 
-  <!-- Скрипты: рантайм Pyodide, встроенные бинарники, дружелюбные ошибки, чекер -->
-  <script src="assets/pyodide/wasm_binary.js"></script>
-  <script src="assets/pyodide/stdlib_binary.js"></script>
+  <!-- Базовые бинарники для запуска без сервера через file:// (обход ограничений CORS) -->
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.write('<script src="assets/pyodide/wasm_binary.js"><\/script>');
+      document.write('<script src="assets/pyodide/stdlib_binary.js"><\/script>');
+    }
+  </script>
   <script src="assets/pyodide/pyodide.asm.js"></script>
   <script src="assets/pyodide/pyodide.js"></script>
   <script src="app/storage.js"></script>

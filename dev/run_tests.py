@@ -87,12 +87,7 @@ def analyze_ast(code_str, requirements_json):
         "variables": names
     })
 
-def _inject_loop_guard(code_str, max_iters=100000):
-    try:
-        tree = ast.parse(code_str)
-    except SyntaxError:
-        return code_str
-
+def _inject_loop_guard_ast(tree, max_iters=5000000):
     counter_id = 0
     class LoopGuardInjector(ast.NodeTransformer):
         def _inject(self, node):
@@ -101,15 +96,15 @@ def _inject_loop_guard(code_str, max_iters=100000):
             var = f"_lc{counter_id}"
             init = ast.Assign(
                 targets=[ast.Name(id=var, ctx=ast.Store())],
-                value=ast.Constant(value=0),
-                lineno=node.lineno, col_offset=0
+                value=ast.Constant(value=0)
             )
+            ast.copy_location(init, node)
             inc = ast.AugAssign(
                 target=ast.Name(id=var, ctx=ast.Store()),
                 op=ast.Add(),
-                value=ast.Constant(value=1),
-                lineno=node.lineno, col_offset=0
+                value=ast.Constant(value=1)
             )
+            ast.copy_location(inc, node)
             check = ast.If(
                 test=ast.Compare(
                     left=ast.Name(id=var, ctx=ast.Load()),
@@ -124,9 +119,9 @@ def _inject_loop_guard(code_str, max_iters=100000):
                     ),
                     cause=None
                 )],
-                orelse=[],
-                lineno=node.lineno, col_offset=0
+                orelse=[]
             )
+            ast.copy_location(check, node)
             node.body = [inc, check] + node.body
             self.generic_visit(node)
             return [init, node]
@@ -138,7 +133,42 @@ def _inject_loop_guard(code_str, max_iters=100000):
 
     tree = LoopGuardInjector().visit(tree)
     ast.fix_missing_locations(tree)
-    return ast.unparse(tree)
+    return tree
+
+def _clean_tb(tb):
+    lines = tb.splitlines()
+    cleaned = []
+    in_student = False
+    for l in lines:
+        if '<student>' in l:
+            in_student = True
+        if in_student or l.startswith('Traceback'):
+            cleaned.append(l)
+    return '\n'.join(cleaned) if cleaned else tb
+
+def _inject_loop_guard(code_str, max_iters=5000000):
+    """Внедряет счётчик итераций в каждый цикл for/while для защиты от бесконечных циклов."""
+    try:
+        tree = ast.parse(code_str)
+        tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
+        return ast.unparse(tree)
+    except SyntaxError:
+        return code_str
+
+def _compile_user_code(code_str, filename='<student>', max_iters=5000000):
+    import linecache
+    linecache.cache[filename] = (
+        len(code_str),
+        None,
+        [line + '\n' for line in code_str.splitlines()],
+        filename
+    )
+    try:
+        tree = ast.parse(code_str, filename=filename)
+        tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
+        return compile(tree, filename, 'exec')
+    except SyntaxError:
+        return compile(code_str, filename, 'exec')
 
 def _run_task_tests(tests_json, user_ns):
     tests = json.loads(tests_json)
@@ -165,9 +195,9 @@ def _run_task_tests(tests_json, user_ns):
             if fn and f"name '{fn}' is not defined" in str(ne):
                 func_not_found = fn
             else:
-                call_err = traceback.format_exc()
+                call_err = _clean_tb(traceback.format_exc())
         except Exception:
-            call_err = traceback.format_exc()
+            call_err = _clean_tb(traceback.format_exc())
         finally:
             sys.stdout = old_out
             captured_stdout = buf.getvalue()
@@ -247,10 +277,10 @@ def check_solution(user_code, task):
     sys.stdout = buf
     runtime_err = None
     try:
-        guarded = _inject_loop_guard(user_code)
-        exec(guarded, user_ns)
+        code_obj = _compile_user_code(user_code)
+        exec(code_obj, user_ns)
     except Exception:
-        runtime_err = traceback.format_exc()
+        runtime_err = _clean_tb(traceback.format_exc())
     finally:
         sys.stdout = old_stdout
         out = buf.getvalue()
@@ -527,6 +557,45 @@ for pid, pcode, pexp in predict_tests:
     else:
         print(f"  × [{pid}] Predict не совпадает: {actual} != {pexp}")
         failed_tests += 1
+
+# Проверка регрессий: защита от ложных срабатываний и точность строк в ошибках
+# Регрессия 1: цикл на 150 000 итераций не должен падать
+large_loop_code = """
+n = 0
+while n < 150000:
+    n += 1
+print('Done:', n)
+"""
+large_res = check_solution(large_loop_code, {"expectedOutput": "Done: 150000"})
+if large_res["passed"]:
+    print("  ✓ [regression_loop_guard] Цикл на 150 000 итераций успешно выполнен")
+    passed_tests += 1
+else:
+    print(f"  × [regression_loop_guard] ОШИБКА: {large_res}")
+    failed_tests += 1
+
+# Регрессия 2: номер строки в ошибке совпадает со строкой в коде с комментариями
+commented_error_code = """# line 1
+# line 2
+def buggy():
+    # line 4
+    return 1 / 0
+
+buggy()
+"""
+err_tb = ""
+try:
+    c_obj = _compile_user_code(commented_error_code)
+    exec(c_obj, {})
+except Exception:
+    err_tb = _clean_tb(traceback.format_exc())
+
+if 'line 5, in buggy' in err_tb:
+    print("  ✓ [regression_lineno] Номер строки с ошибкой в коде с комментариями точно указывает на строку 5")
+    passed_tests += 1
+else:
+    print(f"  × [regression_lineno] ОШИБКА: ожидалась строка 5 в traceback, получено:\n{err_tb}")
+    failed_tests += 1
 
 print(f"\nИТОГ: {passed_tests} пройдено, {failed_tests} ошибок.")
 if failed_tests > 0:

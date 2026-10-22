@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>вкат.py — интерактивный тренажёр по Python</title>
   <link rel="stylesheet" href="app/styles.css">
 </head>
+
 <body>
 
   <!-- ТОПБАР (общий для экранов урока и финала) -->
@@ -22,7 +24,9 @@
       <div id="app-breadcrumb" class="breadcrumb">тема <b>·</b> задание 1 из 5</div>
     </div>
   </div>
-  <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+  <div class="progress-track">
+    <div id="progress-fill" class="progress-fill"></div>
+  </div>
 
   <!-- ЭКРАН 0: ВЫБОР ИЛИ СОЗДАНИЕ ПРОФИЛЯ -->
   <div id="screen-profiles" class="screen">
@@ -39,7 +43,8 @@
       <p class="start-sub">Прогресс и черновики кода сохраняются отдельно для каждого ученика.</p>
 
       <div class="profiles-quick-bar">
-        <button type="button" id="btn-quick-start-list" class="btn-ghost-sm" title="Начать мгновенно без создания профиля">
+        <button type="button" id="btn-quick-start-list" class="btn-ghost-sm"
+          title="Начать мгновенно без создания профиля">
           Быстрый старт (продолжить как гость) →
         </button>
       </div>
@@ -69,7 +74,8 @@
       <form id="form-create-profile" class="profile-form">
         <div class="form-group">
           <label for="input-profile-name">Твоё имя или никнейм</label>
-          <input type="text" id="input-profile-name" class="profile-input" placeholder="Например, Артём" maxlength="30" required autocomplete="off">
+          <input type="text" id="input-profile-name" class="profile-input" placeholder="Например, Артём" maxlength="30"
+            required autocomplete="off">
         </div>
 
         <div class="form-group form-group-pin">
@@ -77,7 +83,8 @@
             <label for="input-profile-pin">PIN-код для защиты</label>
             <span class="form-label-badge">необязательно</span>
           </div>
-          <input type="password" id="input-profile-pin" class="profile-input" placeholder="4 цифры (защита от соседа)" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
+          <input type="password" id="input-profile-pin" class="profile-input" placeholder="4 цифры (защита от соседа)"
+            maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
         </div>
 
         <div id="legacy-migration-box" class="form-group-checkbox" style="display: none;">
@@ -89,8 +96,10 @@
 
         <div class="profile-form-actions">
           <button type="submit" id="btn-submit-create-profile" class="btn-start">Создать профиль</button>
-          <button type="button" id="btn-quick-start-create" class="btn-ghost" title="Войти сразу без создания профиля">Быстрый старт (гость) →</button>
-          <button type="button" id="btn-cancel-create-profile" class="btn-ghost" style="display: none;">Назад к списку</button>
+          <button type="button" id="btn-quick-start-create" class="btn-ghost"
+            title="Войти сразу без создания профиля">Быстрый старт (гость) →</button>
+          <button type="button" id="btn-cancel-create-profile" class="btn-ghost" style="display: none;">Назад к
+            списку</button>
         </div>
       </form>
 
@@ -109,15 +118,16 @@
           <div id="pin-modal-title" class="pin-modal-name">Имя</div>
           <p class="pin-modal-sub">Введи 4-значный PIN-код</p>
         </div>
-        
+
         <div class="pin-dots" id="pin-dots">
           <span class="pin-dot"></span>
           <span class="pin-dot"></span>
           <span class="pin-dot"></span>
           <span class="pin-dot"></span>
         </div>
-        
-        <input type="password" id="input-modal-pin" class="pin-hidden-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
+
+        <input type="password" id="input-modal-pin" class="pin-hidden-input" maxlength="4" pattern="[0-9]*"
+          inputmode="numeric" autocomplete="off">
         <div id="pin-error-alert" class="pin-error-alert"></div>
 
         <div class="pin-modal-actions">
@@ -137,27 +147,34 @@
         <div class="info-modal-body">
           <div class="help-item">
             <div class="help-item-title">1. Полная автономность (всё на твоём компьютере)</div>
-            <p>Тренажёр не отправляет твои решения на сервер. Все задачи, черновики кода и прогресс сохраняются локально в твоём браузере. Никаких аккаунтов, паролей от почты или интернета.</p>
+            <p>Тренажёр не отправляет твои решения на сервер. Все задачи, черновики кода и прогресс сохраняются локально
+              в твоём браузере. Никаких аккаунтов, паролей от почты или интернета.</p>
           </div>
           <div class="help-item">
             <div class="help-item-title">2. Занятия в классе за одним компьютером</div>
-            <p>Если за этим же компьютером по очереди занимаются несколько учеников, каждый выбирает своё имя. Твой прогресс и черновики в редакторе изолированы от других.</p>
+            <p>Если за этим же компьютером по очереди занимаются несколько учеников, каждый выбирает своё имя. Твой
+              прогресс и черновики в редакторе изолированы от других.</p>
           </div>
           <div class="help-item">
             <div class="help-item-title">3. Быстрый старт (режим гостя)</div>
-            <p>Если ты открыл тренажёр дома или по ссылке в интернете, нажми <b>«Быстрый старт»</b> — можно сразу писать код без ввода имени.</p>
+            <p>Если ты открыл тренажёр дома или по ссылке в интернете, нажми <b>«Быстрый старт»</b> — можно сразу писать
+              код без ввода имени.</p>
           </div>
           <div class="help-item">
             <div class="help-item-title">4. PIN-код (защита от соседа)</div>
-            <p>При создании профиля можно задать 4 цифры. Это необязательно, но защитит твой профиль от случайного клика соседа по парте.</p>
+            <p>При создании профиля можно задать 4 цифры. Это необязательно, но защитит твой профиль от случайного клика
+              соседа по парте.</p>
           </div>
           <div class="help-item">
             <div class="help-item-title">5. Перенос между компьютерами (Экспорт и Импорт)</div>
-            <p>Наведи курсор на карточку своего профиля и нажми кнопку скачивания <b>↓</b>. Сохрани файл <code>.json</code> на флешку, а на следующем уроке загрузи через кнопку <b>«Импортировать профиль из файла»</b>.</p>
+            <p>Наведи курсор на карточку своего профиля и нажми кнопку скачивания <b>↓</b>. Сохрани файл
+              <code>.json</code> на флешку, а на следующем уроке загрузи через кнопку <b>«Импортировать профиль из
+                файла»</b>.</p>
           </div>
           <div class="help-item">
             <div class="help-item-title">6. Независимые вкладки браузера</div>
-            <p>Если открыть тренажёр в двух вкладках с разными профилями, они работают полностью независимо и не конфликтуют.</p>
+            <p>Если открыть тренажёр в двух вкладках с разными профилями, они работают полностью независимо и не
+              конфликтуют.</p>
           </div>
         </div>
         <div class="info-modal-footer">
@@ -168,7 +185,8 @@
 
     <div class="bottombar">
       <span>профили · изоляция сессий</span>
-      <span id="version-reset-label" class="version-label" title="Удерживай 4 секунды для сброса всех профилей">v2.1</span>
+      <span id="version-reset-label" class="version-label"
+        title="Удерживай 4 секунды для сброса всех профилей">v2.1</span>
     </div>
   </div>
 
@@ -187,7 +205,8 @@
     <div class="start-center">
       <div class="kicker">до первого занятия с группой</div>
       <h1>Ты пришёл чуть позже — здесь быстро наверстаешь</h1>
-      <p class="start-sub">Одно-два занятия, темы с реальной проверкой кода. Без лекций — сразу пишешь и сразу видишь результат.</p>
+      <p class="start-sub">Одно-два занятия, темы с реальной проверкой кода. Без лекций — сразу пишешь и сразу видишь
+        результат.</p>
 
       <!-- Карточки этапов курса (генерируются динамически из COURSE_STAGES) -->
       <div id="stage-cards" class="stage-cards"></div>
@@ -205,13 +224,18 @@
   <div id="screen-lesson" class="screen">
     <!-- Для теории: полноэкранная панель чтения -->
     <div id="pane-theory" class="pane-theory" style="display: none;">
-      <div class="theory-wrapper">
-        <div class="pane-label">теория</div>
-        <h1 id="theory-title">Заголовок теории</h1>
-        <div id="theory-content"></div>
-        <div class="theory-footer">
-          <button id="btn-theory-next" class="btn-start">Дальше</button>
+      <div class="theory-layout">
+        <div class="theory-wrapper">
+          <div class="pane-label">теория</div>
+          <h1 id="theory-title">Заголовок теории</h1>
+          <div id="theory-content"></div>
+          <div class="theory-footer">
+            <button id="btn-theory-next" class="btn-start">Дальше</button>
+          </div>
         </div>
+        <aside class="theory-aside">
+          <figure id="theory-visual" class="visual" role="img" hidden></figure>
+        </aside>
       </div>
     </div>
 
@@ -236,6 +260,9 @@
             <p>Условие задачи.</p>
           </div>
         </div>
+
+        <!-- Схема к теме (декоративно-поясняющая, см. app/glyphs.js) -->
+        <figure id="visual" class="visual" role="img" hidden></figure>
       </div>
 
       <!-- Правая панель для code -->
@@ -244,7 +271,8 @@
         <div class="editor-wrapper">
           <div id="line-numbers" class="line-numbers" aria-hidden="true">1</div>
           <pre id="editor-highlight" class="editor-highlight" aria-hidden="true"></pre>
-          <textarea id="code-editor" class="editor" spellcheck="false" placeholder="# Напиши решение здесь..."></textarea>
+          <textarea id="code-editor" class="editor" spellcheck="false"
+            placeholder="# Напиши решение здесь..."></textarea>
           <div id="autocomplete-popup" class="autocomplete-popup"></div>
         </div>
 
@@ -282,6 +310,12 @@
             <div id="improve-content"></div>
           </div>
         </div>
+
+        <!-- Пока проверки не было: «терминал» вместо пустоты -->
+        <div id="result-idle" class="result-idle">
+          <div class="result-idle-label">вывод</div>
+          <div class="result-idle-text"><span class="prompt">›</span> результат проверки появится здесь<span class="cursor">_</span></div>
+        </div>
       </div>
 
       <!-- Правая панель для predict -->
@@ -290,7 +324,8 @@
         <pre id="predict-code-view" class="predict-code"></pre>
 
         <div class="task-label" style="margin-top: 20px;">что выведет программа?</div>
-        <textarea id="predict-input" class="predict-input" placeholder="Введи ожидаемый вывод (например: 13)..."></textarea>
+        <textarea id="predict-input" class="predict-input"
+          placeholder="Введи ожидаемый вывод (например: 13)..."></textarea>
 
         <div class="editor-footer" style="padding: 0; margin-top: 10px;">
           <div></div>
@@ -310,7 +345,8 @@
           </div>
           <div id="predict-explain-box" class="explain-box" style="margin-top: 14px;">
             <div class="task-label">разбор</div>
-            <div id="predict-explain-content" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;"></div>
+            <div id="predict-explain-content" style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+            </div>
           </div>
         </div>
       </div>
@@ -361,7 +397,8 @@
     <div class="finish-center">
       <div class="finish-mark">✓</div>
       <h1 id="finish-title">Базовый разрыв закрыт!</h1>
-      <p id="finish-sub" class="finish-sub">Ты прошёл все ключевые темы. Теперь ты готов подключиться к занятиям группы на равных.</p>
+      <p id="finish-sub" class="finish-sub">Ты прошёл все ключевые темы. Теперь ты готов подключиться к занятиям группы
+        на равных.</p>
 
       <div class="finish-actions">
         <button id="btn-finish-next-stage" class="btn-start" style="display: none; margin-bottom: 12px;">Дальше</button>
@@ -418,6 +455,8 @@
 
   <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
   <script src="app/autocomplete.js"></script>
+  <!-- Схемы-иллюстрации к темам -->
+  <script src="app/glyphs.js"></script>
   <!-- Подсветка синтаксиса Python (VS Code Dark+) -->
   <script src="app/highlighter.js"></script>
 
@@ -425,4 +464,5 @@
   <script src="app/app.js"></script>
 
 </body>
+
 </html>

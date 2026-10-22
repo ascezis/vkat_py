@@ -309,6 +309,24 @@
   }
 
   /**
+   * Получение количества пройденных шагов для конкретного профиля
+   */
+  function getProgressCount(id) {
+    if (!id) return 0;
+    if (activeProfileCache && activeProfileCache.id === id && activeDataCache && Array.isArray(activeDataCache.completed)) {
+      return activeDataCache.completed.length;
+    }
+    const raw = storageGet(KEYS.PROFILE_PREFIX + id);
+    if (!raw) return 0;
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed.completed) ? parsed.completed.length : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /**
    * Загрузка данных активного профиля
    */
   async function load() {
@@ -636,6 +654,7 @@
     getActiveProfileSync,
     clearActiveProfile,
     getLastProfileId,
+    getProgressCount,
     load,
     save,
     saveDraftDebounced,

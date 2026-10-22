@@ -364,18 +364,7 @@
       const card = document.createElement('div');
       card.className = 'profile-card' + (p.id === lastId ? ' active-hint' : '');
 
-      let doneCount = 0;
-      try {
-        const raw = localStorage.getItem('vkat_p:' + p.id);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed.completed)) {
-            doneCount = parsed.completed.length;
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
+      const doneCount = window.VkatStorage ? window.VkatStorage.getProgressCount(p.id) : 0;
 
       const initial = (p.name || '?').trim().charAt(0).toUpperCase();
       const progressText = doneCount > 0 ? `${doneCount} ${pluralize(doneCount, 'шаг пройден', 'шага пройдено', 'шагов пройдено')}` : 'новый ученик';

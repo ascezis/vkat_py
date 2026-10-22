@@ -197,13 +197,7 @@ def analyze_ast(code_str, requirements_json):
         "variables": names
     })
 
-def _inject_loop_guard(code_str, max_iters=100000):
-    """Внедряет счётчик итераций в каждый цикл for/while для защиты от бесконечных циклов."""
-    try:
-        tree = ast.parse(code_str)
-    except SyntaxError:
-        return code_str
-
+def _inject_loop_guard_ast(tree, max_iters=5000000):
     counter_id = 0
     class LoopGuardInjector(ast.NodeTransformer):
         def _inject(self, node):
@@ -212,15 +206,15 @@ def _inject_loop_guard(code_str, max_iters=100000):
             var = f"_lc{counter_id}"
             init = ast.Assign(
                 targets=[ast.Name(id=var, ctx=ast.Store())],
-                value=ast.Constant(value=0),
-                lineno=node.lineno, col_offset=0
+                value=ast.Constant(value=0)
             )
+            ast.copy_location(init, node)
             inc = ast.AugAssign(
                 target=ast.Name(id=var, ctx=ast.Store()),
                 op=ast.Add(),
-                value=ast.Constant(value=1),
-                lineno=node.lineno, col_offset=0
+                value=ast.Constant(value=1)
             )
+            ast.copy_location(inc, node)
             check = ast.If(
                 test=ast.Compare(
                     left=ast.Name(id=var, ctx=ast.Load()),
@@ -235,9 +229,9 @@ def _inject_loop_guard(code_str, max_iters=100000):
                     ),
                     cause=None
                 )],
-                orelse=[],
-                lineno=node.lineno, col_offset=0
+                orelse=[]
             )
+            ast.copy_location(check, node)
             node.body = [inc, check] + node.body
             self.generic_visit(node)
             return [init, node]
@@ -249,7 +243,60 @@ def _inject_loop_guard(code_str, max_iters=100000):
 
     tree = LoopGuardInjector().visit(tree)
     ast.fix_missing_locations(tree)
-    return ast.unparse(tree)
+    return tree
+
+def _clean_tb(tb):
+    lines = tb.splitlines()
+    cleaned = []
+    in_student = False
+    for l in lines:
+        if '<student>' in l:
+            in_student = True
+        if in_student or l.startswith('Traceback'):
+            cleaned.append(l)
+    return '\n'.join(cleaned) if cleaned else tb
+
+def _inject_loop_guard(code_str, max_iters=5000000):
+    """Внедряет счётчик итераций в каждый цикл for/while для защиты от бесконечных циклов."""
+    try:
+        tree = ast.parse(code_str)
+        tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
+        return ast.unparse(tree)
+    except SyntaxError:
+        return code_str
+
+def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
+    global _user_ns, _captured_output, _runtime_err
+    import sys, io, ast, linecache, traceback
+
+    buf = io.StringIO()
+    old_out = sys.stdout
+    sys.stdout = buf
+
+    _runtime_err = None
+    target_ns = {}
+    try:
+        linecache.cache['<student>'] = (
+            len(code_str),
+            None,
+            [line + '\n' for line in code_str.splitlines()],
+            '<student>'
+        )
+        try:
+            tree = ast.parse(code_str, filename='<student>')
+            tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
+            code_obj = compile(tree, '<student>', 'exec')
+        except SyntaxError:
+            code_obj = compile(code_str, '<student>', 'exec')
+
+        exec(code_obj, target_ns)
+        if save_user_ns:
+            _user_ns = target_ns
+    except Exception:
+        _runtime_err = _clean_tb(traceback.format_exc())
+    finally:
+        sys.stdout = old_out
+        _captured_output = buf.getvalue()
 
 def _run_task_tests(tests_json):
     tests = json.loads(tests_json)
@@ -276,9 +323,9 @@ def _run_task_tests(tests_json):
             if fn and f"name '{fn}' is not defined" in str(ne):
                 func_not_found = fn
             else:
-                call_err = traceback.format_exc()
+                call_err = _clean_tb(traceback.format_exc())
         except Exception:
-            call_err = traceback.format_exc()
+            call_err = _clean_tb(traceback.format_exc())
         finally:
             sys.stdout = old_out
             captured_stdout = buf.getvalue()
@@ -434,37 +481,14 @@ def _run_task_tests(tests_json):
     let error = null;
 
     try {
-      const guardedCodeJson = await pyodide.runPythonAsync(
-        `_inject_loop_guard(${JSON.stringify(code)})`
+      await pyodide.runPythonAsync(
+        `_exec_user_code(${JSON.stringify(code)}, save_user_ns=False)`
       );
-      const guardedCode = guardedCodeJson || code;
-
-      const runnerCode = `
-import sys
-import io
-
-_stdout_buffer = io.StringIO()
-_old_stdout = sys.stdout
-sys.stdout = _stdout_buffer
-
-_runtime_err = None
-try:
-    _run_ns = {}
-    exec(${JSON.stringify(guardedCode)}, _run_ns)
-except Exception as e:
-    import traceback
-    _runtime_err = traceback.format_exc()
-finally:
-    sys.stdout = _old_stdout
-
-_captured_output = _stdout_buffer.getvalue()
-`;
-      await pyodide.runPythonAsync(runnerCode);
       stdout = pyodide.globals.get('_captured_output') || '';
       const rawErr = pyodide.globals.get('_runtime_err');
       if (rawErr) {
         error = rawErr.split('\n')
-          .filter(l => !l.includes('pyodide') && !l.includes('_captured_output'))
+          .filter(l => !l.includes('pyodide') && !l.includes('_captured_output') && !l.includes('_exec_user_code'))
           .join('\n')
           .trim() || rawErr;
       }
@@ -522,34 +546,9 @@ _captured_output = _stdout_buffer.getvalue()
     let runtimeError = null;
 
     try {
-      // Внедряем защиту от бесконечных циклов через AST-препроцессинг
-      const guardedCodeJson = await pyodide.runPythonAsync(
-        `_inject_loop_guard(${JSON.stringify(userCode)})`
+      await pyodide.runPythonAsync(
+        `_exec_user_code(${JSON.stringify(userCode)}, save_user_ns=True)`
       );
-      const guardedCode = guardedCodeJson || userCode;
-
-      // Изолированный запуск с перехватом stdout и сохранением _user_ns
-      const runnerCode = `
-import sys
-import io
-
-_stdout_buffer = io.StringIO()
-_old_stdout = sys.stdout
-sys.stdout = _stdout_buffer
-
-_runtime_err = None
-try:
-    _user_ns = {}
-    exec(${JSON.stringify(guardedCode)}, _user_ns)
-except Exception as e:
-    import traceback
-    _runtime_err = traceback.format_exc()
-finally:
-    sys.stdout = _old_stdout
-
-_captured_output = _stdout_buffer.getvalue()
-`;
-      await pyodide.runPythonAsync(runnerCode);
       stdout = pyodide.globals.get('_captured_output') || '';
       runtimeError = pyodide.globals.get('_runtime_err');
     } catch (e) {
@@ -560,7 +559,7 @@ _captured_output = _stdout_buffer.getvalue()
     if (runtimeError) {
       const cleanErr = runtimeError
         .split('\n')
-        .filter(l => !l.includes('pyodide') && !l.includes('_captured_output'))
+        .filter(l => !l.includes('pyodide') && !l.includes('_captured_output') && !l.includes('_exec_user_code'))
         .join('\n')
         .trim();
 

@@ -3,6 +3,7 @@ name: Release and Package
 on:
   push:
     branches: [ 'main' ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 permissions:
@@ -36,35 +37,74 @@ jobs:
 
       - name: Determine Next Semantic Version & Tag
         id: tag_version
+        if: startsWith(github.ref, 'refs/heads/')
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: false
           tag_prefix: v
-          initial_version: 2.1.0
+
+      - name: Resolve Release Tag
+        id: resolve_tag
+        run: |
+          TAG=""
+          CHANGELOG=""
+
+          # 1. Если триггер был по push тега:
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            CHANGELOG="Релиз $TAG"
+          # 2. Если tag_action вычислил новый тег из коммитов:
+          elif [ -n "${{ steps.tag_version.outputs.new_tag }}" ]; then
+            TAG="${{ steps.tag_version.outputs.new_tag }}"
+            CHANGELOG="${{ steps.tag_version.outputs.changelog }}"
+          # 3. Если коммит уже пришёл с тегом на HEAD:
+          else
+            HEAD_TAG=$(git tag --points-at HEAD | grep '^v' | head -n 1 || true)
+            if [ -n "$HEAD_TAG" ]; then
+              # Проверяем, существует ли уже опубликованный GitHub Release:
+              RELEASE_EXISTS=$(gh release view "$HEAD_TAG" --json tagName -q .tagName 2>/dev/null || true)
+              if [ -z "$RELEASE_EXISTS" ]; then
+                TAG="$HEAD_TAG"
+                CHANGELOG="Релиз $TAG"
+              fi
+            fi
+          fi
+
+          if [ -n "$TAG" ]; then
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+            echo "Resolved release tag: $TAG"
+          else
+            echo "tag=" >> $GITHUB_OUTPUT
+            echo "No new release tag required for this build."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Standalone Offline ZIP
-        if: steps.tag_version.outputs.new_tag != ''
+        if: steps.resolve_tag.outputs.tag != ''
         run: |
-          TAG="${{ steps.tag_version.outputs.new_tag }}"
+          TAG="${{ steps.resolve_tag.outputs.tag }}"
           ZIP_NAME="vkat_py-${TAG}-standalone.zip"
           zip -r "$ZIP_NAME" . \
             -x ".git/*" \
             -x ".github/*" \
             -x "dev/*" \
-            -x "AI-promts/*" \
+            -x "AI-PROMPTS/*" \
+            -x "ai-prompts/*" \
             -x "*.patch" \
             -x ".gitignore" \
             -x "*.zip"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Create GitHub Release
-        if: steps.tag_version.outputs.new_tag != ''
+        if: steps.resolve_tag.outputs.tag != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          name: Релиз ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
+          tag_name: ${{ steps.resolve_tag.outputs.tag }}
+          name: Релиз ${{ steps.resolve_tag.outputs.tag }}
+          body: ${{ steps.resolve_tag.outputs.changelog }}
           files: ${{ env.ZIP_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

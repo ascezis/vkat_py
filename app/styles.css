@@ -1899,8 +1899,9 @@ body {
 .profile-form-actions .btn-ghost {
   flex: 1 1 0;
   min-width: 0;
-  padding-left: 12px;
-  padding-right: 12px;
+  font-size: 13px;
+  padding: 13px 8px;
+  white-space: nowrap;
 }
 
 .profiles-footer-actions {

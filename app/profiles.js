@@ -50,6 +50,22 @@
     }
   }
 
+  /**
+   * Карточки профилей — div с click. Делаем их доступными с клавиатуры:
+   * Tab — фокус, Enter / пробел — выбор (вложенные кнопки экспорта/удаления не затрагиваются).
+   */
+  function makeKeyboardActivatable(el) {
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('role', 'button');
+    el.addEventListener('keydown', (e) => {
+      if (e.target !== el) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        el.click();
+      }
+    });
+  }
+
   function showProfileListView(profiles) {
     const dom = window.VkatApp.dom;
     if (dom.profilesViewList) dom.profilesViewList.style.display = 'flex';
@@ -105,6 +121,7 @@
       card.addEventListener('click', () => {
         handleProfileSelection(p);
       });
+      makeKeyboardActivatable(card);
 
       dom.profilesGrid.appendChild(card);
     });
@@ -121,6 +138,7 @@
     newCard.addEventListener('click', () => {
       showCreateProfileView(false);
     });
+    makeKeyboardActivatable(newCard);
     dom.profilesGrid.appendChild(newCard);
   }
 

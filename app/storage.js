@@ -564,6 +564,7 @@
 
     const exportBundle = {
       vkat_export_version: 1,
+      vkat_app_version: (typeof window !== 'undefined' && window.VKAT_VERSION) ? window.VKAT_VERSION : '2.2.0',
       exportedAt: new Date().toISOString(),
       profile: {
         id: profile.id,

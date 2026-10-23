@@ -183,6 +183,10 @@
     dom.startUserName = document.getElementById('start-user-name');
     dom.btnStartSwitchProfile = document.getElementById('btn-start-switch-profile');
     dom.versionResetLabel = document.getElementById('version-reset-label');
+    if (dom.versionResetLabel && window.VKAT_VERSION) {
+      dom.versionResetLabel.textContent = `v${window.VKAT_VERSION}`;
+      dom.versionResetLabel.title = `Версия ${window.VKAT_VERSION}. Удерживай 4 секунды для сброса всех профилей`;
+    }
   }
 
   // ─── Структура курса ──────────────────────────────────────────────────────────

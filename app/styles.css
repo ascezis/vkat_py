@@ -11,6 +11,7 @@
   --border-strong: #454545;
   --fill: #ececec;
   --fill-text: #0a0a0a;
+  --fill-hover: #d8d8d8;
   --error: #e05555;
   --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
@@ -211,7 +212,7 @@ body {
 }
 
 .btn-start:hover {
-  background: #d8d8d8;
+  background: var(--fill-hover);
 }
 
 .btn-start:focus-visible {
@@ -635,7 +636,7 @@ body {
 }
 
 .btn-run:hover {
-  background: #d8d8d8;
+  background: var(--fill-hover);
 }
 
 .btn-run:disabled {
@@ -1190,7 +1191,7 @@ body {
 }
 
 .stage-card-btn:hover {
-  background: #d8d8d8;
+  background: var(--fill-hover);
 }
 
 .stage-card-btn:focus-visible {
@@ -1719,8 +1720,8 @@ body {
 }
 
 .profile-card-action-btn.btn-delete:hover {
-  color: #f87171;
-  border-color: #f87171;
+  color: var(--error);
+  border-color: var(--error);
 }
 
 /* Карточка "+ Новый профиль" */
@@ -1968,10 +1969,9 @@ body {
 }
 
 .pin-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-strong);
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-strong);
   background: transparent;
   transition: all 0.15s ease;
 }
@@ -1992,7 +1992,7 @@ body {
 .pin-error-alert {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #f87171;
+  color: var(--error);
   min-height: 18px;
   margin-bottom: 16px;
 }
@@ -2303,3 +2303,84 @@ body {
 /* --- Скроллбары в цвет интерфейса --- */
 
 * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+
+/* ==========================================================================
+   ПОЛИРОВКА: кнопки, состояния, отступы, микро-UI
+   (блок добавлен поверх существующих правил; токены — из :root)
+   ========================================================================== */
+
+/* --- Вторичная кнопка. Раньше у класса .btn-ghost вообще не было стилей:
+       «Быстрый старт», «Назад к списку», «Отмена» в PIN-окне были браузерными. --- */
+
+.btn-ghost {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  padding: 14px 24px;          /* та же высота, что у .btn-start */
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--text);
+  border-color: var(--text);
+  background: var(--bg-panel-alt);
+}
+
+.btn-start:disabled {
+  background: var(--border-strong);
+  color: var(--text-muted);
+  border-color: var(--border-strong);
+  cursor: not-allowed;
+}
+
+/* --- Нажатие: смещение на 1px у всех кнопок --- */
+
+.btn-start:active,
+.btn-run:active,
+.btn-next:active,
+.btn-skip:active,
+.btn-restart:active,
+.btn-ghost:active,
+.btn-ghost-sm:active,
+.stage-card-btn:active {
+  transform: translateY(1px);
+}
+
+.btn-start:disabled:active,
+.btn-run:disabled:active {
+  transform: none;
+}
+
+/* --- Фокус с клавиатуры: единый контур у всех интерактивных элементов --- */
+
+.btn-ghost:focus-visible,
+.btn-ghost-sm:focus-visible,
+.btn-restart:focus-visible,
+.btn-switch-profile:focus-visible,
+.profiles-help-btn:focus-visible,
+.modal-close-icon:focus-visible,
+.profile-card:focus-visible,
+.profile-card-action-btn:focus-visible,
+.hint-toggle:focus-visible,
+.quiz-option:focus-visible,
+.tree-task-node:focus-visible,
+.tree-topic-row:focus-visible,
+.version-label:focus-visible,
+.mark:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.btn-import-label:focus-within {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* фокус редактора был почти неразличим (#2a2a2a → #454545) */
+.editor-wrapper:focus-within {
+  border-color: var(--text-muted);
+}

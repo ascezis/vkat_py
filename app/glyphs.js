@@ -181,7 +181,11 @@
     'lists-dicts': { draw: listsDicts, cap: 'список — по номеру, словарь — по ключу' },
     'l1_lists':    { draw: lists,      cap: 'список — упорядоченный ряд элементов с прямыми и обратными индексами' },
     'l1_dicts':    { draw: dicts,      cap: 'словарь: по ключу находим значение' },
-    'strings':     { draw: strings,    cap: 'строка — ряд символов с индексами' }
+    'strings':     { draw: strings,    cap: 'строка — ряд символов с индексами' },
+    'l1_tuples':   { draw: lists,      cap: 'кортеж — неизменяемый список' },
+    'l1_strings':  { draw: strings,    cap: 'строка — методы и срезы' },
+    'l1_loops_adv':{ draw: loops,      cap: 'циклы: while, break, continue' },
+    'l1_nested_structures': { draw: listsDicts, cap: 'вложенные структуры: списки словарей и словари списков' }
   };
 
   function render(topicId) {

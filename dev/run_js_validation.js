@@ -57,6 +57,7 @@ loadScript('content/core/04-tuples.js');
 loadScript('content/core/05-strings-adv.js');
 loadScript('content/core/06-loops-adv.js');
 loadScript('content/core/07-nested-structures.js');
+loadScript('app/version.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');
@@ -209,6 +210,7 @@ check('После прочтения теории core переходит к к�
 
 async function runStorageValidation() {
   console.log('\n=== Валидация системы профилей и VkatStorage ===');
+  check('VKAT_VERSION экспортирован в формате SemVer', typeof context.window.VKAT_VERSION === 'string' && /^\d+\.\d+\.\d+$/.test(context.window.VKAT_VERSION));
   const storage = context.window.VkatStorage;
   check('VkatStorage экспортирован', Boolean(storage && typeof storage.listProfiles === 'function'));
 
@@ -296,7 +298,7 @@ async function runStorageValidation() {
 
   // 10. Экспорт и импорт
   const exportBundle = await storage.exportProfile(pMigrate.id);
-  check('exportProfile формирует бандл версии 1', exportBundle && exportBundle.vkat_export_version === 1 && exportBundle.profile.name === 'Миша');
+  check('exportProfile формирует бандл версии 1 с vkat_app_version', exportBundle && exportBundle.vkat_export_version === 1 && exportBundle.vkat_app_version === context.window.VKAT_VERSION && exportBundle.profile.name === 'Миша');
 
   const importedMeta = await storage.importProfile(JSON.stringify(exportBundle));
   check('importProfile создаёт новый профиль с постфиксом (импорт)', importedMeta && importedMeta.name === 'Миша (импорт)' && importedMeta.id !== pMigrate.id);

@@ -1604,21 +1604,36 @@ body {
   max-width: 860px;
   margin: 0 auto;
   width: 100%;
+  text-align: center;
+}
+
+/* заголовки экранов профиля: тот же ритм, что у стартового экрана */
+.profiles-center h1 {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 14px;
+}
+
+.profiles-center .start-sub {
+  margin-bottom: 8px;
 }
 
 .profiles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
   width: 100%;
-  margin: 32px 0;
+  margin: 28px 0;
 }
 
 .profile-card {
   position: relative;
+  flex: 0 1 240px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  padding: 20px;
+  padding: 40px 20px 22px;     /* сверху место под бейдж и кнопки действий */
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1633,8 +1648,12 @@ body {
   transform: translateY(-2px);
 }
 
+.profile-card:active {
+  transform: none;
+}
+
 .profile-card.active-hint {
-  border-color: var(--fill);
+  border-color: var(--border-strong);
 }
 
 .profile-avatar {
@@ -1688,7 +1707,7 @@ body {
 /* Действия на карточке профиля (экспорт и удаление) */
 .profile-card-actions {
   position: absolute;
-  bottom: 8px;
+  top: 8px;
   right: 8px;
   display: flex;
   align-items: center;
@@ -1729,7 +1748,8 @@ body {
   border-style: dashed;
   background: transparent;
   justify-content: center;
-  min-height: 160px;
+  padding: 20px;
+  min-height: 170px;
 }
 
 .profile-card-new:hover {
@@ -1857,8 +1877,19 @@ body {
 .profile-form-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   margin-top: 24px;
+}
+
+.profile-form-actions .btn-start {
+  flex: 1 1 100%;
+}
+
+.profile-form-actions .btn-ghost {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .profiles-footer-actions {
@@ -1992,8 +2023,9 @@ body {
 .pin-error-alert {
   font-family: var(--font-mono);
   font-size: 12px;
+  line-height: 20px;
   color: var(--error);
-  min-height: 18px;
+  min-height: 20px;
   margin-bottom: 16px;
 }
 
@@ -2001,6 +2033,13 @@ body {
   display: flex;
   gap: 10px;
   justify-content: center;
+}
+
+.pin-modal-actions .btn-start,
+.pin-modal-actions .btn-ghost {
+  flex: 1 1 0;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 /* Информационное модальное окно (Как устроена система профилей) */

@@ -528,6 +528,7 @@
       if (!el) return;
       if (!html) { el.hidden = true; el.innerHTML = ''; delete el.dataset.topic; return; }
       el.hidden = false;
+      el.classList.remove('is-open');            // на каждом шаге начинаем со «свёрнуто, если не влезло»
       el.setAttribute('aria-label', 'Схема: ' + label);
       if (el.dataset.topic !== topic.id) {
         el.innerHTML = html;
@@ -536,11 +537,71 @@
     });
   }
 
+  /**
+   * Схема в левой панели либо помещается целиком, либо сворачивается в одну строку
+   * (подпись + «показать»). Никаких обрезанных наполовину фигур под сгибом панели.
+   * Ученик может раскрыть её вручную — тогда панель просто прокручивается.
+   */
+  function visualFits(el, pane) {
+    // нижняя граница схемы в координатах содержимого панели; допускаем заезд в нижний отступ панели
+    const bottom = el.getBoundingClientRect().bottom - pane.getBoundingClientRect().top + pane.scrollTop;
+    return bottom <= pane.clientHeight - 16;
+  }
+
   function fitVisual() {
     const el = document.getElementById('visual');
     if (!el || el.hidden) return;
-    el.style.display = '';
+    const pane = el.parentElement;
+    if (!pane || pane.offsetParent === null) return;   // панель сейчас не на экране
+    if (el.classList.contains('is-open')) return;      // раскрыта вручную
+    el.classList.remove('is-collapsed', 'is-fit-hidden');
+    if (!visualFits(el, pane)) {
+      el.classList.add('is-collapsed');                // целиком не влезла — одна строка
+      if (!visualFits(el, pane)) el.classList.add('is-fit-hidden');   // и строка не влезла — прячем
+    }
+    syncVisualToggle(el);
   }
+
+  function syncVisualToggle(el) {
+    const cap = el.querySelector('.visual-cap');
+    if (!cap) return;
+    const toggleable = (el.classList.contains('is-collapsed') && !el.classList.contains('is-fit-hidden'))
+      || el.classList.contains('is-open');
+    if (toggleable) {
+      cap.setAttribute('role', 'button');
+      cap.setAttribute('tabindex', '0');
+      cap.setAttribute('aria-expanded', el.classList.contains('is-open') ? 'true' : 'false');
+    } else {
+      cap.removeAttribute('role');
+      cap.removeAttribute('tabindex');
+      cap.removeAttribute('aria-expanded');
+    }
+  }
+
+  function toggleVisual(el) {
+    if (el.classList.contains('is-collapsed')) {
+      el.classList.remove('is-collapsed');
+      el.classList.add('is-open');
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      requestAnimationFrame(() => el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }));
+    } else if (el.classList.contains('is-open')) {
+      el.classList.remove('is-open');
+      el.classList.add('is-collapsed');
+    }
+    syncVisualToggle(el);
+  }
+
+  (function bindVisualToggle() {
+    const el = document.getElementById('visual');
+    if (!el) return;
+    el.addEventListener('click', (e) => { if (e.target.closest('.visual-cap')) toggleVisual(el); });
+    el.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.visual-cap')) {
+        e.preventDefault();
+        toggleVisual(el);
+      }
+    });
+  })();
 
   function updateLineNumbers() {
     const dom = window.VkatApp.dom;

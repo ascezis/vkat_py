@@ -2303,14 +2303,14 @@ body {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation: g-draw .7s cubic-bezier(.2, .7, .2, 1) forwards;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation-delay: calc(min(var(--i, 0), 14) * 60ms);   /* сложные схемы не рисуются по 3 секунды */
 }
 /* штриховые линии не должны терять рисунок штриха после появления */
 .glyph .d.dash { stroke-dasharray: 3 4; stroke-dashoffset: 0; animation-name: g-fade; }
 .glyph .f {
   opacity: 0;
   animation: g-fade .5s ease forwards;
-  animation-delay: calc(var(--i, 0) * 60ms + 200ms);
+  animation-delay: calc(min(var(--i, 0), 14) * 60ms + 200ms);
 }
 .glyph .hop { animation: hop 5s steps(1, end) 1.2s infinite; }
 
@@ -2464,4 +2464,45 @@ body {
   .profiles-grid { margin: 18px 0; }
   .profile-form { margin-top: 16px; padding: 22px 24px; }
   .form-group { margin-bottom: 14px; }
+}
+
+
+/* --- Схема в левой панели: свёрнутое состояние («показать / скрыть») --- */
+
+.visual.is-fit-hidden {
+  display: none;
+}
+
+.visual.is-collapsed .visual-canvas {
+  display: none;
+}
+
+.visual.is-collapsed .visual-cap {
+  border-top: 0;
+}
+
+.visual.is-collapsed .visual-cap,
+.visual.is-open .visual-cap {
+  cursor: pointer;
+  user-select: none;
+}
+
+.visual.is-collapsed .visual-cap::after,
+.visual.is-open .visual-cap::after {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.visual.is-collapsed .visual-cap::after { content: "показать"; }
+.visual.is-open .visual-cap::after { content: "скрыть"; }
+
+.visual.is-collapsed .visual-cap:hover,
+.visual.is-open .visual-cap:hover {
+  color: var(--text);
+}
+
+.visual-cap:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
 }

@@ -50,9 +50,14 @@ loadScript('content/start/03-loops.js');
 loadScript('content/start/04-functions.js');
 loadScript('content/start/05-lists-dicts.js');
 loadScript('content/start/06-strings.js');
-loadScript('content/core/l1-04-functions.js');
-loadScript('content/core/l1-05-dicts.js');
-loadScript('content/core/l1-03-lists.js');
+loadScript('content/core/01-functions.js');
+loadScript('content/core/02-dicts.js');
+loadScript('content/core/03-lists.js');
+loadScript('content/core/04-tuples.js');
+loadScript('content/core/05-strings-adv.js');
+loadScript('content/core/06-loops-adv.js');
+loadScript('content/core/07-nested-structures.js');
+loadScript('app/version.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');
@@ -162,7 +167,7 @@ topics.forEach(t => {
     allIds.add(it.id);
   });
 });
-check('Все ID элементов курса уникальны (89 элементов)', !hasDuplicates && allIds.size >= 65);
+check(`Все ID элементов курса уникальны (${allIds.size} элементов)`, !hasDuplicates && allIds.size >= 65);
 
 
 console.log('\n=== Валидация дружелюбных ошибок (FriendlyErrors) ===');
@@ -205,6 +210,7 @@ check('После прочтения теории core переходит к к�
 
 async function runStorageValidation() {
   console.log('\n=== Валидация системы профилей и VkatStorage ===');
+  check('VKAT_VERSION экспортирован в формате SemVer', typeof context.window.VKAT_VERSION === 'string' && /^\d+\.\d+\.\d+$/.test(context.window.VKAT_VERSION));
   const storage = context.window.VkatStorage;
   check('VkatStorage экспортирован', Boolean(storage && typeof storage.listProfiles === 'function'));
 
@@ -292,7 +298,7 @@ async function runStorageValidation() {
 
   // 10. Экспорт и импорт
   const exportBundle = await storage.exportProfile(pMigrate.id);
-  check('exportProfile формирует бандл версии 1', exportBundle && exportBundle.vkat_export_version === 1 && exportBundle.profile.name === 'Миша');
+  check('exportProfile формирует бандл версии 1 с vkat_app_version', exportBundle && exportBundle.vkat_export_version === 1 && exportBundle.vkat_app_version === context.window.VKAT_VERSION && exportBundle.profile.name === 'Миша');
 
   const importedMeta = await storage.importProfile(JSON.stringify(exportBundle));
   check('importProfile создаёт новый профиль с постфиксом (импорт)', importedMeta && importedMeta.name === 'Миша (импорт)' && importedMeta.id !== pMigrate.id);

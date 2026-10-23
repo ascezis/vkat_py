@@ -69,11 +69,13 @@ dev/                инструменты самопроверки курса (
 
 ## Документация
 
+- [CONTRIBUTING.md](./docs/CONTRIBUTING.md): руководство по разработке, веткам, коммитам и деплою
+- [ROADMAP.md](./docs/ROADMAP.md): дорожная карта развития проекта (v2.0 Final и v3.0)
+- [ADDING-TOPICS.md](./docs/ADDING-TOPICS.md): подробный гайд по добавлению новых тем и заданий
 - [content-format.md](./docs/content-format.md): спецификация формата этапов, тем, элементов и правила авторинга
 - [architecture.md](./docs/architecture.md): устройство приложения и эволюция архитектуры
 - [design-system.md](./docs/design-system.md): дизайн-система
-- [lessons/functions.md](./docs/lessons/functions.md): конспект урока по функциям
-- [lesson-mockup.html](./docs/lesson-mockup.html), [start-mockup.html](./docs/start-mockup.html): макеты экранов
+- [mockups/lesson-mockup.html](./mockups/lesson-mockup.html), [mockups/start-mockup.html](./mockups/start-mockup.html): макеты экранов
 
 ## Планы
 

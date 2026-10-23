@@ -23,6 +23,19 @@
 (function (window) {
   'use strict';
 
+  // ─── Утилита: показать результат на экране ──────────────────────────────────
+  // На ноутбуках 1366×768 результат проверки оказывался ниже видимой области панели.
+  // Показываем блок целиком, если он помещается (иначе — хотя бы строку результата),
+  // чтобы кнопки «Проверить / Следующее» остались на виду.
+  function revealResult(box) {
+    if (!box || !box.scrollIntoView) return;
+    const pane = box.closest('.pane');
+    const fits = pane && box.offsetHeight < pane.clientHeight - 100;
+    const target = fits ? box : (box.querySelector('.result-row') || box);
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => target.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }));
+  }
+
   // ─── Утилита: нормализация строки вывода ────────────────────────────────────
 
   function normalize(str) {
@@ -57,6 +70,7 @@
       const result = await window.CodeChecker.checkSolution(code, task);
 
       dom.resultBox.classList.add('visible');
+      revealResult(dom.resultBox);
 
       if (result.passed) {
         // Успех
@@ -177,6 +191,7 @@
       window.VkatRenderers.renderStepDots(state.topics[state.currentTopicIndex]);
 
       dom.predictResultBox.classList.add('visible');
+      revealResult(dom.predictResultBox);
 
       const isMatch = userVal === actualVal;
       if (isMatch) {
@@ -245,6 +260,7 @@
     const isCorrect = state.selectedQuizOption === task.correct;
 
     dom.quizResultBox.classList.add('visible');
+    revealResult(dom.quizResultBox);
 
     if (isCorrect) {
       dom.quizResultMark.className = 'result-mark ok';

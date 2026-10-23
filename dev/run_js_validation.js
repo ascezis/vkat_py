@@ -56,6 +56,7 @@ loadScript('content/core/03-lists.js');
 loadScript('content/core/04-tuples.js');
 loadScript('content/core/05-strings-adv.js');
 loadScript('content/core/06-loops-adv.js');
+loadScript('content/core/07-nested-structures.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('dev/selftest/l1-functions.js');

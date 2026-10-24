@@ -1,0 +1,115 @@
+--- a/context/glyphs.js	2026-10-24 15:40:12.101536388 +0700
++++ b/context/glyphs.js	2026-10-24 15:40:12.103888011 +0700
+@@ -170,6 +170,97 @@
+     );
+   }
+ 
++  function tuples() {
++    n = 0;
++    const row = (y, vals) => vals.map((v, i) =>
++      rect(24 + i * 64, y, 64, 36, 'gm') + tx(56 + i * 64, y + 23, String(v), 'gT', mid)
++    ).join('');
++    return svg(
++      // список: менять можно
++      tx(24, 24, 'list', 'gt small') +
++      row(32, [10, 5, 30]) +
++      tx(278, 52, 'a[1] = 5', 'gT') + tx(278, 70, '→ можно', 'gt') +
++      // кортеж: двойная рамка и замок
++      tx(24, 120, 'tuple', 'gt small') +
++      rect(20, 126, 200, 44, 'gm') +
++      row(130, [10, 20, 30]) +
++      path('M242 144 V136 H262 V144', 'gm') +
++      rect(236, 144, 32, 24, 'gf') +
++      tx(278, 152, 't[1] = 5', 'gT') + tx(278, 170, '→ ошибка', 'gt'),
++      200
++    );
++  }
++
++  function whileLoop() {
++    n = 0;
++    return svg(
++      // вход -> условие
++      path('M20 100 H52 M46 94 L52 100 L46 106', 'gm') +
++      path('M52 100 L100 68 L148 100 L100 132 Z', 'gm') +
++      tx(100, 105, 'while', 'gT', mid) +
++      // True: тело цикла
++      path('M148 100 H196 M190 94 L196 100 L190 106', 'gm') +
++      tx(152, 92, 'True', 'gt small') +
++      rect(196, 80, 112, 40, 'gf') + tx(252, 105, 'тело', 'gi', mid) +
++      // конец тела / continue: назад к проверке
++      path('M252 120 V156 H100 V132 M94 140 L100 132 L106 140', 'gm') +
++      tx(176, 176, 'конец круга или continue', 'gt small', mid) +
++      // False и break: выход
++      path('M100 68 V44 M94 52 L100 44 L106 52', 'gm') +
++      tx(108, 62, 'False', 'gt small') +
++      rect(60, 16, 80, 28, 'gm') + tx(100, 35, 'выход', 'gT', mid) +
++      path('M252 80 V30 H140 M148 24 L140 30 L148 36', 'gm') +
++      tx(260, 60, 'break', 'gT') +
++      tx(24, 208, 'условие проверяется перед каждым кругом', 'gt small'),
++      224
++    );
++  }
++
++  function nested() {
++    n = 0;
++    const cells = [0, 1, 2].map(i =>
++      tx(54 + i * 60, 42, String(i), 'gt small', mid) +
++      rect(24 + i * 60, 48, 60, 32, 'gm') + tx(54 + i * 60, 69, '{ }', 'gT', mid)
++    ).join('');
++    return svg(
++      tx(24, 24, 'data', 'gt small') + cells +
++      // шаг 1: data[0]
++      path('M54 80 V100 M48 94 L54 100 L60 94', 'gm') +
++      tx(68, 96, 'data[0]', 'gT') +
++      // шаг 2: ключ внутри словаря
++      rect(24, 104, 96, 28, 'gm') + rect(120, 104, 112, 28, 'gf') +
++      tx(34, 123, '"имя"', 'gt') + tx(130, 123, '"Аня"', 'gi') +
++      rect(24, 132, 96, 28, 'gm') + rect(120, 132, 112, 28, 'gm') +
++      tx(34, 151, '"баллы"', 'gt') + tx(130, 151, '[7, 9]', 'gT') +
++      tx(244, 123, '["имя"]', 'gT') +
++      tx(24, 198, 'data[0]["имя"]  →  "Аня"', 'gT'),
++      216
++    );
++  }
++
++  function stringsMethods() {
++    n = 0;
++    const words = ['один', 'два', 'три'];
++    const cells = words.map((w, i) =>
++      rect(24 + i * 56, 116, 56, 36, i === 1 ? 'gf' : 'gm') +
++      tx(52 + i * 56, 139, '"' + w + '"', i === 1 ? 'gi small' : 'gT small', mid)
++    ).join('');
++    return svg(
++      // строка с «швами» на месте пробелов
++      tx(204, 60, 'str', 'gt small') +
++      rect(24, 36, 168, 36, 'gm') +
++      path('M80 36 V72 M136 36 V72', 'gl dash') +
++      tx(52, 59, 'один', 'gT', mid) + tx(108, 59, 'два', 'gT', mid) + tx(164, 59, 'три', 'gT', mid) +
++      // split вниз, join вверх
++      path('M60 76 V112 M54 106 L60 112 L66 106', 'gm') + tx(68, 98, 'split()', 'gT') +
++      path('M156 112 V76 M150 82 L156 76 L162 82', 'gm') + tx(164, 98, 'join()', 'gT') +
++      // список слов
++      tx(204, 140, 'list', 'gt small') + cells +
++      tx(24, 188, 'join: разделитель стоит между словами', 'gt small'),
++      200
++    );
++  }
++
+   // ---------- Реестр ----------
+ 
+   const REGISTRY = {
+@@ -182,10 +273,10 @@
+     'l1_lists':    { draw: lists,      cap: 'список — упорядоченный ряд элементов с прямыми и обратными индексами' },
+     'l1_dicts':    { draw: dicts,      cap: 'словарь: по ключу находим значение' },
+     'strings':     { draw: strings,    cap: 'строка — ряд символов с индексами' },
+-    'l1_tuples':   { draw: lists,      cap: 'кортеж — неизменяемый список' },
+-    'l1_strings':  { draw: strings,    cap: 'строка — методы и срезы' },
+-    'l1_loops_adv':{ draw: loops,      cap: 'циклы: while, break, continue' },
+-    'l1_nested_structures': { draw: listsDicts, cap: 'вложенные структуры: списки словарей и словари списков' }
++    'l1_tuples':   { draw: tuples,     cap: 'кортеж — запечатанный ряд: значения менять нельзя' },
++    'l1_strings':  { draw: stringsMethods, cap: 'split режет строку в список, join склеивает обратно' },
++    'l1_loops_adv':{ draw: whileLoop,  cap: 'while: условие перед кругом; break — выход, continue — дальше' },
++    'l1_nested_structures': { draw: nested, cap: 'вложенность: к значению идём по шагам — индекс, затем ключ' }
+   };
+ 
+   function render(topicId) {

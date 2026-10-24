@@ -2353,7 +2353,30 @@ body {
 
 /* --- Скроллбары в цвет интерфейса --- */
 
-* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+/* Chromium 121+ игнорирует ::-webkit-scrollbar, если задан scrollbar-width/color,
+   поэтому стандартные свойства оставлены только для Firefox (там нет ::-webkit-scrollbar). */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 0;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
 
 /* ==========================================================================
    ПОЛИРОВКА: кнопки, состояния, отступы, микро-UI
@@ -2505,4 +2528,17 @@ body {
 .visual-cap:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: -2px;
+}
+
+/* --- Инлайн-код в условии задачи: та же плашка, что в теории --- */
+
+.pane-explain p code,
+.pane-explain li code,
+.task-content code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg);
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  color: var(--text);
 }

@@ -55,9 +55,9 @@ jobs:
             TAG="${{ github.ref_name }}"
             CHANGELOG="Релиз $TAG"
           # 2. Если tag_action вычислил новый тег из коммитов:
-          elif [ -n "${{ steps.tag_version.outputs.new_tag }}" ]; then
-            TAG="${{ steps.tag_version.outputs.new_tag }}"
-            CHANGELOG="${{ steps.tag_version.outputs.changelog }}"
+          elif [ -n "$TAG_VERSION_NEW_TAG" ]; then
+            TAG="$TAG_VERSION_NEW_TAG"
+            CHANGELOG="$TAG_VERSION_CHANGELOG"
           # 3. Если коммит уже пришёл с тегом на HEAD:
           else
             HEAD_TAG=$(git tag --points-at HEAD | grep '^v' | head -n 1 || true)
@@ -72,15 +72,22 @@ jobs:
           fi
 
           if [ -n "$TAG" ]; then
-            echo "tag=$TAG" >> $GITHUB_OUTPUT
-            echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
             echo "Resolved release tag: $TAG"
+            DELIMITER="EOF_CHANGELOG_$(date +%s)"
+            {
+              echo "changelog<<${DELIMITER}"
+              echo "$CHANGELOG"
+              echo "${DELIMITER}"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "tag=" >> $GITHUB_OUTPUT
+            echo "tag=" >> "$GITHUB_OUTPUT"
             echo "No new release tag required for this build."
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_VERSION_NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
+          TAG_VERSION_CHANGELOG: ${{ steps.tag_version.outputs.changelog }}
 
       - name: Build Standalone Offline ZIP
         if: steps.resolve_tag.outputs.tag != ''
@@ -93,6 +100,9 @@ jobs:
             -x "dev/*" \
             -x "AI-PROMPTS/*" \
             -x "ai-prompts/*" \
+            -x "CLAUDE-DESIGN/*" \
+            -x "claude-design/*" \
+            -x "patches/*" \
             -x "*.patch" \
             -x ".gitignore" \
             -x "*.zip"

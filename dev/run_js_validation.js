@@ -357,6 +357,74 @@ async function runStorageValidation() {
   check('Быстрый старт: профиль Гость с PIN игнорируется при поиске гостевого профиля', safeGuest === undefined);
   await storage.deleteProfile(pGuestWithPin.id);
 
+  // === Валидация модуля Справочника (Cheat Sheet) ===
+  console.log('\n=== Валидация модуля Справочника (Cheat Sheet) ===');
+  const csCtx = { window: {}, document: { readyState: 'loading', addEventListener: () => {} }, navigator: {} };
+  vm.createContext(csCtx);
+  const csContentFile = path.join(__dirname, '..', 'content', 'cheatsheet.js');
+  const csEngineFile = path.join(__dirname, '..', 'app', 'cheatsheet.js');
+
+  check('Файл content/cheatsheet.js существует', fs.existsSync(csContentFile));
+  check('Файл app/cheatsheet.js существует', fs.existsSync(csEngineFile));
+
+  vm.runInContext(fs.readFileSync(csContentFile, 'utf8'), csCtx);
+  vm.runInContext(fs.readFileSync(csEngineFile, 'utf8'), csCtx);
+
+  const csSections = csCtx.window.CHEATSHEET_SECTIONS;
+  check('window.CHEATSHEET_SECTIONS экспортирован и является массивом', Array.isArray(csSections));
+  check('window.CHEATSHEET_SECTIONS содержит ровно 7 разделов', csSections && csSections.length === 7);
+
+  const requiredSectionIds = ['basics', 'control', 'strings', 'lists_tuples', 'dicts_sets', 'functions', 'errors'];
+  const actualSectionIds = csSections ? csSections.map(s => s.id) : [];
+  check('Все 7 обязательных разделов присутствуют с правильными ID', requiredSectionIds.every(id => actualSectionIds.includes(id)));
+
+  const validCourseTopics = new Set(['variables', 'conditions', 'loops', 'functions', 'lists-dicts', 'strings', 'l1_functions', 'l1_dicts', 'l1_lists', 'l1_tuples', 'l1_strings', 'l1_loops_adv', 'l1_nested_structures']);
+  const cardIds = new Set();
+  let duplicateCardIds = [];
+  let missingCardFields = [];
+  let invalidTopics = [];
+  let totalCards = 0;
+
+  if (csSections) {
+    csSections.forEach(sec => {
+      if (Array.isArray(sec.items)) {
+        sec.items.forEach(card => {
+          totalCards++;
+          if (cardIds.has(card.id)) duplicateCardIds.push(card.id);
+          cardIds.add(card.id);
+
+          ['id', 'title', 'syntax', 'desc', 'code'].forEach(field => {
+            if (!card[field] || typeof card[field] !== 'string') missingCardFields.push(`${card.id}.${field}`);
+          });
+          if (!Array.isArray(card.tags) || card.tags.length === 0) missingCardFields.push(`${card.id}.tags`);
+
+          if (Array.isArray(card.topics)) {
+            card.topics.forEach(t => {
+              if (!validCourseTopics.has(t)) invalidTopics.push(`${card.id}->${t}`);
+            });
+          }
+        });
+      }
+    });
+  }
+
+  check(`Все карточки справочника имеют уникальные ID (${totalCards} карточек)`, duplicateCardIds.length === 0, duplicateCardIds.join(', '));
+  check('Все карточки содержат обязательные поля (title, syntax, desc, code, tags)', missingCardFields.length === 0, missingCardFields.join(', '));
+  check('Все темы карточек topics соответствуют реальным ID тем курса', invalidTopics.length === 0, invalidTopics.join(', '));
+
+  const csEngine = csCtx.window.Cheatsheet;
+  check('window.Cheatsheet экспортирован', csEngine && typeof csEngine === 'object');
+  check('window.Cheatsheet содержит методы init, open, openForTopic, close, toggle, isOpen, copyCode',
+    csEngine &&
+    typeof csEngine.init === 'function' &&
+    typeof csEngine.open === 'function' &&
+    typeof csEngine.openForTopic === 'function' &&
+    typeof csEngine.close === 'function' &&
+    typeof csEngine.toggle === 'function' &&
+    typeof csEngine.isOpen === 'function' &&
+    typeof csEngine.copyCode === 'function'
+  );
+
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);
 }

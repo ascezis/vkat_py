@@ -15,6 +15,7 @@
     <div class="topbar-brand">
       <div id="app-mark" class="mark" title="На стартовый экран">вкат<span class="dot">·</span>py</div>
       <button id="btn-tree-toggle" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
+      <button id="btn-cheatsheet-toggle" class="btn-tree-toggle" title="Справочник по синтаксису (F1 или Ctrl+/)">справочник</button>
     </div>
     <div class="topbar-right">
       <div id="app-user-badge" class="topbar-user" title="Активный профиль">
@@ -196,6 +197,7 @@
       <div class="topbar-brand">
         <div class="mark">вкат<span class="dot">·</span>py</div>
         <button id="btn-tree-start" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
+        <button id="btn-cheatsheet-start" class="btn-tree-toggle" title="Справочник по синтаксису (F1 или Ctrl+/)">справочник</button>
       </div>
       <div id="start-user-badge" class="topbar-user" title="Активный профиль">
         <span id="start-user-name" class="user-name"></span>
@@ -430,6 +432,44 @@
   </div>
   <div id="tree-backdrop" class="tree-backdrop"></div>
 
+  <!-- ВСТРОЕННЫЙ СПРАВОЧНИК ПО PYTHON (ПРАВАЯ ШТОРКА) -->
+  <div id="cheatsheet-drawer" class="cheatsheet-drawer" aria-label="Справочник по Python">
+    <div class="cheatsheet-header">
+      <div class="cheatsheet-header-info">
+        <div class="cheatsheet-title">вкат.py <span class="cheatsheet-slash">/</span> справочник</div>
+        <div id="cheatsheet-cards-count" class="cheatsheet-count">54 записей</div>
+      </div>
+      <button id="btn-cheatsheet-close" class="btn-cheatsheet-close" title="Закрыть (Esc)">✕</button>
+    </div>
+
+    <div class="cheatsheet-search-bar">
+      <div class="cheatsheet-search-wrap">
+        <span class="cheatsheet-search-icon">🔍</span>
+        <input type="text" id="cheatsheet-search-input" class="cheatsheet-search-input" placeholder="Поиск: split, get, KeyError, срез..." autocomplete="off">
+        <button type="button" id="cheatsheet-search-clear" class="cheatsheet-search-clear" title="Очистить поиск" style="display: none;">✕</button>
+      </div>
+    </div>
+
+    <div id="cheatsheet-topic-badge" class="cheatsheet-topic-badge" style="display: none;">
+      <span id="cheatsheet-topic-badge-text">По теме урока</span>
+      <button type="button" id="cheatsheet-topic-badge-reset" class="cheatsheet-badge-reset" title="Показать все карточки">✕ сбросить</button>
+    </div>
+
+    <div id="cheatsheet-tabs" class="cheatsheet-tabs">
+      <!-- Табы категорий генерируются динамически -->
+    </div>
+
+    <div id="cheatsheet-cards" class="cheatsheet-cards">
+      <!-- Карточки рендерятся динамически -->
+    </div>
+
+    <div class="cheatsheet-footer">
+      <span>F1 или Ctrl+/ — открыть/закрыть</span>
+      <span class="cheatsheet-footer-key">Esc</span>
+    </div>
+  </div>
+  <div id="cheatsheet-backdrop" class="cheatsheet-backdrop"></div>
+
   <!-- Базовые бинарники для запуска без сервера через file:// (обход ограничений CORS) -->
   <script>
     if (window.location.protocol === 'file:') {
@@ -464,6 +504,9 @@
   <script src="content/core/06-loops-adv.js"></script>
   <script src="content/core/07-nested-structures.js"></script>
 
+  <!-- База данных встроенного справочника (Cheat Sheet) -->
+  <script src="content/cheatsheet.js"></script>
+
   <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
   <script src="app/autocomplete.js"></script>
   <!-- Схемы-иллюстрации к темам -->
@@ -473,6 +516,8 @@
 
   <!-- Экран профилей и система входа -->
   <script src="app/profiles.js"></script>
+  <!-- Встроенный справочник по Python (движок правой шторки) -->
+  <script src="app/cheatsheet.js"></script>
   <!-- Рендереры типов учебных элементов и UI курса -->
   <script src="app/renderers.js"></script>
   <!-- Логика проверки заданий (code / predict / quiz) -->

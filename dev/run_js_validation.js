@@ -57,6 +57,8 @@ loadScript('content/core/04-tuples.js');
 loadScript('content/core/05-strings-adv.js');
 loadScript('content/core/06-loops-adv.js');
 loadScript('content/core/07-nested-structures.js');
+loadScript('content/cheatsheet.js');
+loadScript('app/code-hints.js');
 loadScript('app/version.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
@@ -67,6 +69,8 @@ const stages = context.window.COURSE_STAGES;
 const topics = context.window.COURSE_TOPICS;
 const errors = context.window.FriendlyErrors;
 const selftest = context.window.COURSE_SELFTEST;
+const cheatsheet = context.window.CHEATSHEET_SECTIONS;
+const codeHints = context.window.CodeHints;
 
 let passed = 0;
 let failed = 0;
@@ -207,6 +211,95 @@ check('На пустом прогрессе этап core начинает с п
 const theoryDone = new Set(['l1_fn_t1']);
 const secondCoreItem = findFirstUncompleted('core', theoryDone);
 check('После прочтения теории core переходит к квизу (l1_fn_q1)', secondCoreItem && secondCoreItem.id === 'l1_fn_q1');
+
+console.log('\n=== Валидация базы конструкций и CodeHints ===');
+check('CHEATSHEET_SECTIONS объявлен как массив', Array.isArray(cheatsheet));
+
+const allCardIds = new Set();
+let allCardsValid = true;
+let invalidCardReason = '';
+const triggerMap = new Map();
+let triggersValid = true;
+let invalidTriggerReason = '';
+
+(cheatsheet || []).forEach(sec => {
+  (sec.items || []).forEach(item => {
+    if (!item.id || allCardIds.has(item.id)) {
+      allCardsValid = false;
+      invalidCardReason = `Дубликат или пустой ID: ${item.id}`;
+    }
+    allCardIds.add(item.id);
+
+    const hasFields = item.title && typeof item.title === 'string' &&
+      item.syntax && typeof item.syntax === 'string' &&
+      item.desc && typeof item.desc === 'string' &&
+      item.code && typeof item.code === 'string' &&
+      Array.isArray(item.tags) && item.tags.length > 0;
+
+    if (!hasFields) {
+      allCardsValid = false;
+      invalidCardReason = `Карточка ${item.id} содержит пустые обязательные поля`;
+    }
+
+    if (Array.isArray(item.triggers)) {
+      item.triggers.forEach(tr => {
+        const isValidFmt = /^\.[a-zA-Z_]\w*$/.test(tr) || /^[a-zA-Z_]\w*$/.test(tr);
+        if (!isValidFmt) {
+          triggersValid = false;
+          invalidTriggerReason = `Неверный формат триггера '${tr}' в карточке ${item.id}`;
+        }
+        if (triggerMap.has(tr)) {
+          triggersValid = false;
+          invalidTriggerReason = `Коллизия триггера '${tr}' между ${triggerMap.get(tr)} и ${item.id}`;
+        }
+        triggerMap.set(tr, item.id);
+      });
+    }
+  });
+});
+
+check('Все карточки имеют уникальные ID и обязательные поля (title, syntax, desc, code, tags)', allCardsValid, invalidCardReason);
+check('Все триггеры имеют валидный формат (.method или bare token) и ведут строго на одну карточку', triggersValid, invalidTriggerReason);
+
+check('CodeHints экспортирован и содержит методы register, attach, find, close',
+  Boolean(
+    codeHints &&
+    typeof codeHints.register === 'function' &&
+    typeof codeHints.attach === 'function' &&
+    typeof codeHints.find === 'function' &&
+    typeof codeHints.close === 'function'
+  )
+);
+
+// Тесты CodeHints.find()
+const resDot = codeHints.find('d.get("a")');
+check('CodeHints.find: d.get("a") находит токен .get', Array.isArray(resDot) && resDot.length === 1 && resDot[0].token === '.get' && resDot[0].cardId === 'dict_get');
+
+const resBareAssign = codeHints.find('get = 1');
+check('CodeHints.find: get = 1 не находит .get', Array.isArray(resBareAssign) && resBareAssign.length === 0);
+
+const resStr = codeHints.find('s = "range"');
+check('CodeHints.find: слово "range" внутри строки не размечается', Array.isArray(resStr) && resStr.length === 0);
+
+const resComment = codeHints.find('# for i in range(5):');
+check('CodeHints.find: слово внутри комментария # range не размечается', Array.isArray(resComment) && resComment.length === 0);
+
+const resForRange = codeHints.find('for i in range(5):');
+const foundRange = Array.isArray(resForRange) && resForRange.some(x => x.token === 'range' && x.cardId === 'ctrl_range');
+check('CodeHints.find: for i in range(5): находит токен range', foundRange);
+
+let emptyNoCrash = true;
+try {
+  const rEmpty = codeHints.find('');
+  const rNull = codeHints.find(null);
+  const rUndef = codeHints.find(undefined);
+  if (!Array.isArray(rEmpty) || !Array.isArray(rNull) || !Array.isArray(rUndef)) {
+    emptyNoCrash = false;
+  }
+} catch (e) {
+  emptyNoCrash = false;
+}
+check('CodeHints.find: пустой код и null/undefined не вызывают падения', emptyNoCrash);
 
 async function runStorageValidation() {
   console.log('\n=== Валидация системы профилей и VkatStorage ===');

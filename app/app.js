@@ -627,6 +627,10 @@
           window.VkatProfiles.closePinModal();
           return;
         }
+        if (window.Cheatsheet && window.Cheatsheet.isOpen()) {
+          window.Cheatsheet.close();
+          return;
+        }
         if (dom.treeDrawer && dom.treeDrawer.classList.contains('open')) {
           closeTreeDrawer();
         }

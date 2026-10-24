@@ -262,30 +262,37 @@
       html += `
         <article class="cheatsheet-card" id="cs-card-${escapeHtml(item.id)}">
           <div class="cheatsheet-card-head">
-            <div class="cheatsheet-card-title">${escapeHtml(item.title)}</div>
-            <span class="cheatsheet-section-badge">${escapeHtml(section.title)}</span>
+            <span class="cheatsheet-kicker">${escapeHtml(section.title)}</span>
+            <span class="cheatsheet-card-id">${escapeHtml(item.id)}</span>
           </div>
 
-          <div class="cheatsheet-syntax"><code>${escapeHtml(item.syntax)}</code></div>
+          <div class="cheatsheet-card-title">${escapeHtml(item.title)}</div>
+
+          <div class="cheatsheet-syntax">
+            <code>${escapeHtml(item.syntax)}</code>
+          </div>
 
           <p class="cheatsheet-desc">${escapeHtml(item.desc)}</p>
 
           <div class="cheatsheet-code-wrap">
-            <button type="button" class="cheatsheet-copy-btn" data-code-idx="${idx}" title="Скопировать пример">копировать</button>
+            <div class="cheatsheet-code-header">
+              <span class="cheatsheet-code-label">пример</span>
+              <button type="button" class="cheatsheet-copy-btn" data-code-idx="${idx}" title="Скопировать пример">копировать</button>
+            </div>
             <pre class="cheatsheet-code"><code>${escapeHtml(item.code)}</code></pre>
           </div>
 
           ${item.pitfall ? `
-            <div class="cheatsheet-callout cheatsheet-pitfall">
-              <span class="callout-icon">⚠️</span>
-              <div class="callout-content"><strong>Ловушка:</strong> ${escapeHtml(item.pitfall)}</div>
+            <div class="cheatsheet-box cheatsheet-box-pitfall">
+              <div class="cheatsheet-box-label">[ловушка]</div>
+              <div class="cheatsheet-box-text">${escapeHtml(item.pitfall)}</div>
             </div>
           ` : ''}
 
           ${item.style ? `
-            <div class="cheatsheet-callout cheatsheet-style">
-              <span class="callout-icon">💡</span>
-              <div class="callout-content"><strong>PEP 8:</strong> ${escapeHtml(item.style)}</div>
+            <div class="cheatsheet-box cheatsheet-box-style">
+              <div class="cheatsheet-box-label">[pep 8]</div>
+              <div class="cheatsheet-box-text">${escapeHtml(item.style)}</div>
             </div>
           ` : ''}
 

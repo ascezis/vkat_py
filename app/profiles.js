@@ -304,6 +304,12 @@
         const pin = dom.inputProfilePin ? dom.inputProfilePin.value.trim() : '';
         if (!name) return;
 
+        if (pin && !/^\d{4}$/.test(pin)) {
+          alert('PIN-код должен состоять ровно из 4 цифр или быть пустым');
+          if (dom.inputProfilePin) dom.inputProfilePin.focus();
+          return;
+        }
+
         if (name.toLowerCase() === 'гость' && pin) {
           alert('Имя «Гость» зарезервировано для быстрого входа без PIN-кода. Пожалуйста, укажите другое имя или оставьте PIN пустым.');
           return;
@@ -321,6 +327,12 @@
         } catch (err) {
           alert('Ошибка создания профиля: ' + err.message);
         }
+      });
+    }
+
+    if (dom.inputProfilePin) {
+      dom.inputProfilePin.addEventListener('input', () => {
+        dom.inputProfilePin.value = dom.inputProfilePin.value.replace(/\D/g, '').slice(0, 4);
       });
     }
 

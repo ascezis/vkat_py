@@ -2649,17 +2649,19 @@ body {
   align-items: center;
 }
 
-.cheatsheet-search-icon {
+.cheatsheet-search-prompt {
   position: absolute;
-  left: 12px;
-  font-size: 13px;
+  left: 14px;
+  font-family: var(--font-mono);
+  font-size: 14px;
   color: var(--text-dim);
   pointer-events: none;
+  font-weight: 600;
 }
 
 .cheatsheet-search-input {
   width: 100%;
-  padding: 8px 34px 8px 34px;
+  padding: 8px 34px 8px 32px;
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
@@ -2771,11 +2773,11 @@ body {
 
 .cheatsheet-card {
   border: 1px solid var(--border);
-  background: var(--bg);
-  padding: 14px 16px;
+  background: var(--bg-panel);
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   transition: border-color 0.15s ease;
 }
 
@@ -2785,61 +2787,82 @@ body {
 
 .cheatsheet-card-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
 
-.cheatsheet-card-title {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+.cheatsheet-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
 }
 
-.cheatsheet-section-badge {
+.cheatsheet-card-id {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 1px 6px;
+}
+
+.cheatsheet-card-title {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  margin: 0;
 }
 
 .cheatsheet-syntax {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text);
-  background: var(--bg-panel);
-  border-left: 2px solid var(--text-muted);
-  padding: 4px 8px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
   word-break: break-all;
 }
 
 .cheatsheet-desc {
   font-family: var(--font-sans);
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.6;
   color: var(--text-muted);
   margin: 0;
 }
 
 /* Блок кода со сниппетом */
 .cheatsheet-code-wrap {
-  position: relative;
   background: var(--bg-panel-alt);
   border: 1px solid var(--border);
 }
 
+.cheatsheet-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.cheatsheet-code-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .cheatsheet-copy-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: var(--bg);
+  background: transparent;
   border: 1px solid var(--border);
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 11px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   cursor: pointer;
   border-radius: 0;
   transition: all 0.15s ease;
@@ -2848,6 +2871,7 @@ body {
 .cheatsheet-copy-btn:hover {
   border-color: var(--text-dim);
   color: var(--text);
+  background: var(--bg-hover);
 }
 
 .cheatsheet-copy-btn.copied {
@@ -2858,41 +2882,71 @@ body {
 
 .cheatsheet-code {
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   font-family: var(--font-mono);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.6;
   color: var(--text);
   overflow-x: auto;
 }
 
-/* Коллауты: Ловушка и PEP 8 */
-.cheatsheet-callout {
+/* Монохромные плашки: Ловушка и PEP 8 */
+.cheatsheet-box {
+  padding: 12px 14px;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  line-height: 1.4;
-  border-left: 2px solid;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.cheatsheet-pitfall {
-  background: rgba(255, 100, 100, 0.05);
-  border-color: var(--border-strong);
+.cheatsheet-box-pitfall {
+  border-left: 2px solid var(--text);
+  background: var(--bg-panel-alt);
+}
+
+.cheatsheet-box-pitfall .cheatsheet-box-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--text);
 }
 
-.cheatsheet-style {
-  background: var(--bg-panel);
-  border-color: var(--border);
+.cheatsheet-box-style {
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-panel-alt);
+}
+
+.cheatsheet-box-style .cheatsheet-box-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
+}
+
+.cheatsheet-box-text {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.cheatsheet-box-text code,
+.cheatsheet-desc code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  color: var(--text);
 }
 
 .cheatsheet-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
   margin-top: 2px;
 }
 
@@ -2900,8 +2954,9 @@ body {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-dim);
-  background: var(--bg-panel);
-  padding: 1px 5px;
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  background: transparent;
 }
 
 .cheatsheet-empty {

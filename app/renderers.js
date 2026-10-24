@@ -57,6 +57,10 @@
    *   { type: 'note',  html }           — плашка-предупреждение
    */
   function renderTheoryView(task) {
+    if (window.CodeHints && typeof window.CodeHints.close === 'function') {
+      window.CodeHints.close();
+    }
+
     const dom = window.VkatApp.dom;
     dom.paneTheory.style.display = 'block';
     dom.mainPanes.style.display = 'none';
@@ -82,6 +86,10 @@
     });
 
     dom.theoryContent.innerHTML = html;
+
+    if (window.CodeHints && typeof window.CodeHints.attach === 'function') {
+      window.CodeHints.attach(dom.theoryContent);
+    }
   }
 
   // ─── Рендер: Predict (предсказание вывода) ────────────────────────────────────
@@ -91,6 +99,10 @@
    * Поля задания: title, explanation[], code, expectedOutput?
    */
   function renderPredictView(task) {
+    if (window.CodeHints && typeof window.CodeHints.close === 'function') {
+      window.CodeHints.close();
+    }
+
     const dom = window.VkatApp.dom;
     const state = window.VkatApp.state;
 
@@ -135,6 +147,10 @@
    * Поля задания: title, question, code?, options[], correct (0-indexed)
    */
   function renderQuizView(task) {
+    if (window.CodeHints && typeof window.CodeHints.close === 'function') {
+      window.CodeHints.close();
+    }
+
     const dom = window.VkatApp.dom;
     const state = window.VkatApp.state;
 
@@ -195,6 +211,10 @@
    *               starterCode?, example?, hints[], optional?
    */
   function renderCodeView(task) {
+    if (window.CodeHints && typeof window.CodeHints.close === 'function') {
+      window.CodeHints.close();
+    }
+
     const dom = window.VkatApp.dom;
     const state = window.VkatApp.state;
 

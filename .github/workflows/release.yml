@@ -35,15 +35,6 @@ jobs:
       - name: Run Python Evaluation Tests
         run: python dev/run_tests.py
 
-      - name: Determine Next Semantic Version & Tag
-        id: tag_version
-        if: startsWith(github.ref, 'refs/heads/')
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: false
-          tag_prefix: v
-
       - name: Resolve Release Tag
         id: resolve_tag
         run: |
@@ -54,19 +45,22 @@ jobs:
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG="${{ github.ref_name }}"
             CHANGELOG="Релиз $TAG"
-          # 2. Если tag_action вычислил новый тег из коммитов:
-          elif [ -n "$TAG_VERSION_NEW_TAG" ]; then
-            TAG="$TAG_VERSION_NEW_TAG"
-            CHANGELOG="$TAG_VERSION_CHANGELOG"
-          # 3. Если коммит уже пришёл с тегом на HEAD:
           else
-            HEAD_TAG=$(git tag --points-at HEAD | grep '^v' | head -n 1 || true)
-            if [ -n "$HEAD_TAG" ]; then
+            # 2. Читаем версию из app/version.js (единый источник истины проекта):
+            APP_VER=$(node -e "const vm = require('vm'); const ctx = { window: {} }; vm.createContext(ctx); vm.runInContext(require('fs').readFileSync('app/version.js', 'utf8'), ctx); console.log(ctx.window.VKAT_VERSION || '');")
+            if [ -n "$APP_VER" ]; then
+              CANDIDATE_TAG="v$APP_VER"
               # Проверяем, существует ли уже опубликованный GitHub Release:
-              RELEASE_EXISTS=$(gh release view "$HEAD_TAG" --json tagName -q .tagName 2>/dev/null || true)
+              RELEASE_EXISTS=$(gh release view "$CANDIDATE_TAG" --json tagName -q .tagName 2>/dev/null || true)
               if [ -z "$RELEASE_EXISTS" ]; then
-                TAG="$HEAD_TAG"
-                CHANGELOG="Релиз $TAG"
+                TAG="$CANDIDATE_TAG"
+                PREV_TAG=$(gh release view --json tagName -q .tagName 2>/dev/null || true)
+                if [ -n "$PREV_TAG" ]; then
+                  CHANGELOG=$(git log "$PREV_TAG"..HEAD --pretty=format:"* %s (%h)" || true)
+                fi
+                if [ -z "$CHANGELOG" ]; then
+                  CHANGELOG="Релиз $TAG"
+                fi
               fi
             fi
           fi
@@ -86,8 +80,6 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_VERSION_NEW_TAG: ${{ steps.tag_version.outputs.new_tag }}
-          TAG_VERSION_CHANGELOG: ${{ steps.tag_version.outputs.changelog }}
 
       - name: Build Standalone Offline ZIP
         if: steps.resolve_tag.outputs.tag != ''

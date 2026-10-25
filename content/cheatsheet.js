@@ -198,6 +198,18 @@ window.CHEATSHEET_SECTIONS = [
         triggers: ["continue"],
         topics: ["l1_loops_adv"],
         tags: ["continue","пропустить","итерация","цикл","skip","loop","следующая"]
+      },
+      {
+        id: "ctrl_is_none",
+        title: "Сравнение с None: is / is not",
+        syntax: "x is None   x is not None",
+        desc: "Оператор is проверяет, что два имени указывают на один и тот же объект. None существует в единственном экземпляре, поэтому его сравнивают через is, а не через ==.",
+        code: "x = None\nprint(x is None)      # True\nprint(x is not None)  # False\nprint([] is None)      # False",
+        pitfall: "Не используй is для сравнения чисел и строк: is сравнивает объекты, а не значения, и результат может оказаться неожиданным. Для значений нужен оператор ==.",
+        style: "Проверяй None через is None или is not None, а не через == None (рекомендация PEP 8).",
+        triggers: ["is"],
+        topics: ["l1_code_style"],
+        tags: ["is","is not","None","сравнение","тождество","оператор"]
       }
     ]
   },
@@ -634,6 +646,63 @@ window.CHEATSHEET_SECTIONS = [
     ]
   },
   /* ================================================================== */
+  /* 6. ИСКЛЮЧЕНИЯ И ОБРАБОТКА ОШИБОК
+  /* ================================================================== */
+  {
+    id: "exceptions",
+    title: "Исключения и обработка ошибок",
+    items: [
+      {
+        id: "exc_try_except",
+        title: "Обработка ошибок: try / except",
+        syntax: "try:\n    ...\nexcept ErrorType:\n    ...",
+        desc: "Позволяет перехватить ошибку во время работы программы и не дать ей упасть. Необязательные блоки else и finally добавляются после except.",
+        code: "try:\n    n = int(\"abc\")\nexcept ValueError:\n    n = 0  # ошибка перехвачена\nprint(n)  # 0",
+        pitfall: "Никогда не пиши голый except: без типа ошибки. Он заглушит даже опечатки в именах переменных, и настоящую причину сбоя будет трудно найти.",
+        style: "Перехватывай только конкретные типы ошибок, которые реально ожидаешь, и держи блок try узким.",
+        triggers: ["try", "except"],
+        topics: ["l1_exceptions"],
+        tags: ["try", "except", "ошибка", "исключение", "перехват", "else"]
+      },
+      {
+        id: "exc_finally",
+        title: "Блок finally",
+        syntax: "try:\n    ...\nfinally:\n    ...",
+        desc: "Выполняется всегда: и после успешного try, и после перехваченной ошибки, и даже если в try стоит return.",
+        code: "try:\n    print(\"try\")  # try\nfinally:\n    print(\"finally\")  # выполнится всегда",
+        pitfall: "Не пиши return внутри finally: он молча заменит результат из try и спрячет возникшую ошибку.",
+        style: "Используй finally только для действий, которые нужны при любом исходе, например для освобождения ресурса.",
+        triggers: ["finally"],
+        topics: ["l1_exceptions"],
+        tags: ["finally", "всегда", "очистка", "исключение"]
+      },
+      {
+        id: "exc_raise",
+        title: "Выбросить ошибку: raise",
+        syntax: "raise ErrorType(\"сообщение\")",
+        desc: "Останавливает выполнение функции и сообщает вызывающему коду, что данные неподходящие.",
+        code: "def set_age(age):\n    if age < 0:\n        raise ValueError(\"возраст отрицательный\")\n    return age\nprint(set_age(5))  # 5",
+        pitfall: "Выбирай тип ошибки по смыслу: ValueError для неподходящего значения, TypeError для неподходящего типа. Общий Exception ничего не говорит тому, кто будет ловить ошибку.",
+        style: "Пиши в сообщении, что именно не так и какое значение пришло.",
+        triggers: ["raise"],
+        topics: ["l1_exceptions"],
+        tags: ["raise", "выбросить", "ошибка", "исключение", "ValueError"]
+      },
+      {
+        id: "exc_value_error",
+        title: "ValueError: неподходящее значение",
+        syntax: "int(\"abc\")  # ValueError",
+        desc: "Возникает, когда тип значения подходит, а содержание нет. Самый частый случай: превращение строки в число.",
+        code: "try:\n    n = int(\"3.5\")\nexcept ValueError:\n    print(\"не число\")  # не число",
+        pitfall: "int(\"3.5\") падает: int принимает только запись целого числа. Для дробной строки сначала вызови float(), затем int().",
+        style: "Для ввода пользователя перехватывай именно ValueError, а не любые ошибки.",
+        triggers: ["ValueError"],
+        topics: ["l1_exceptions"],
+        tags: ["ValueError", "int", "преобразование", "ошибка значения"]
+      }
+    ]
+  },
+  /* ================================================================== */
   /* 7. СКОРАЯ ПОМОЩЬ ПРИ ОШИБКАХ
   /* ================================================================== */
   {
@@ -685,7 +754,7 @@ window.CHEATSHEET_SECTIONS = [
         pitfall: "В списке из n элементов допустимы индексы от 0 до n - 1 (и от -n до -1). Частая ошибка «на единицу»: range(len(lst) + 1) или lst[len(lst)]. Пустой список: lst[0] — IndexError. Срезы за границы ошибок не дают.",
         style: "Не нужен индекс — перебирай элементы: for x in lst:. Последний элемент бери как lst[-1], но убедись, что список не пуст: if lst:.",
         triggers: ["IndexError"],
-        topics: [],
+        topics: ["l1_exceptions"],
         tags: ["IndexError","индекс","index","out of range","список","строка","диапазон","ошибка"]
       },
       {
@@ -697,7 +766,7 @@ window.CHEATSHEET_SECTIONS = [
         pitfall: "Ключ должен совпасть буква в букву и по типу: \"Name\" и \"name\" — разные, 1 и \"1\" — разные, лишний пробел «a » тоже ломает ключ. d[k] = v ошибки не даёт, а d[k] += 1 для нового ключа — KeyError.",
         style: "Если ключ может отсутствовать — .get(k, значение). Если его отсутствие — ошибка данных, оставь d[k], пусть падает громко.",
         triggers: ["KeyError"],
-        topics: [],
+        topics: ["l1_exceptions"],
         tags: ["KeyError","ключ","словарь","get","dict","отсутствует","ошибка","in"]
       },
       {
@@ -709,7 +778,7 @@ window.CHEATSHEET_SECTIONS = [
         pitfall: "Самый частый источник None — функция без return или .sort()/.append(), результат которых присвоили: lst = lst.sort(). input() возвращает строку — не забывай int(). «Not callable» часто значит, что имя функции перекрыли переменной: sum = 10, а потом sum([1, 2]).",
         style: "Приводи типы явно (int(), str()) или используй f-строки. Читай сообщение целиком: оно называет оба типа.",
         triggers: ["TypeError"],
-        topics: [],
+        topics: ["l1_exceptions"],
         tags: ["TypeError","тип","NoneType","str","int","несовместимые","callable","None"]
       },
       {
@@ -721,7 +790,7 @@ window.CHEATSHEET_SECTIONS = [
         pitfall: "Ноль часто приходит из данных: пустой список (sum(lst) / len(lst) при len(lst) == 0), счётчик, который не успел увеличиться, ввод пользователя. Деление на 0.0 — тоже ошибка.",
         style: "Проверяй делитель заранее: if count != 0: или if count:. Для среднего: avg = sum(lst) / len(lst) if lst else 0.",
         triggers: ["ZeroDivisionError"],
-        topics: [],
+        topics: ["l1_exceptions"],
         tags: ["ZeroDivisionError","деление","ноль","zero","division","modulo","остаток","ошибка"]
       }
     ]

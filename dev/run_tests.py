@@ -47,6 +47,12 @@ def analyze_ast(code_str, requirements_json):
     if reqs.get("require_if") and ast.If not in node_types:
         errors.append("В коде должно использоваться ветвление с условием if.")
 
+    if reqs.get("require_try") and ast.Try not in node_types:
+        errors.append("В коде должна использоваться конструкция try/except.")
+
+    if reqs.get("require_raise") and ast.Raise not in node_types:
+        errors.append("В коде должен использоваться оператор raise.")
+
     forbid_calls = reqs.get("forbid_calls", [])
     if forbid_calls:
         for n in nodes:
@@ -509,6 +515,194 @@ tasks_data = {
             ("перезаписывает вместо append", "def group_by_length(words):\n    result = {}\n    for word in words:\n        result[len(word)] = [word]\n    return result"),
             ("возвращает число слов", "def group_by_length(words):\n    return len(words)")
         ]
+    },
+    "l1_exc_f1": {
+        "astRequirements": {},
+        "tests": [
+            {"call": 'to_number("12")', "returns": 12},
+            {"call": 'to_number("abc")', "returns": 0},
+            {"call": 'to_number("")', "returns": 0, "hidden": True},
+            {"call": 'to_number("-7")', "returns": -7, "hidden": True}
+        ],
+        "ref": "def to_number(text):\n    try:\n        return int(text)\n    except ValueError:\n        return 0",
+        "wrong": [
+            ("код не изменён", "def to_number(text):\n    try:\n        return int(text)\n    except ZeroDivisionError:\n        return 0")
+        ]
+    },
+    "l1_exc_c1": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_try": True, "forbid_methods": ["isdigit", "isnumeric"]},
+        "tests": [
+            {"call": 'safe_int("42")', "returns": 42},
+            {"call": 'safe_int("abc")', "returns": 0},
+            {"call": 'safe_int("3.5", -1)', "returns": -1},
+            {"call": 'safe_int("")', "returns": 0},
+            {"call": 'safe_int(" 7 ")', "returns": 7, "hidden": True},
+            {"call": 'safe_int("-5")', "returns": -5, "hidden": True}
+        ],
+        "ref": "def safe_int(text, default=0):\n    try:\n        return int(text)\n    except ValueError:\n        return default",
+        "wrong": [
+            ("без try", "def safe_int(text, default=0):\n    return int(text)"),
+            ("использует isdigit", "def safe_int(text, default=0):\n    try:\n        if text.isdigit():\n            return int(text)\n        return default\n    except ValueError:\n        return default")
+        ]
+    },
+    "l1_exc_c2": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_try": True},
+        "tests": [
+            {"call": 'safe_divide(10, 4)', "returns": 2.5},
+            {"call": 'str(safe_divide(1, 0))', "returns": "None"},
+            {"call": 'safe_divide(0, 5)', "returns": 0},
+            {"call": 'safe_divide(-9, 3)', "returns": -3, "hidden": True},
+            {"call": 'str(safe_divide(0, 0))', "returns": "None", "hidden": True}
+        ],
+        "ref": "def safe_divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return None",
+        "wrong": [
+            ("без try", "def safe_divide(a, b):\n    if b == 0:\n        return None\n    return a / b")
+        ]
+    },
+    "l1_exc_c3": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_try": True},
+        "tests": [
+            {"call": 'read_value({"a": [1, 2]}, "a", 1)', "returns": 2},
+            {"call": 'read_value({"a": [1]}, "b", 0)', "returns": "нет ключа"},
+            {"call": 'read_value({"a": [1]}, "a", 5)', "returns": "нет элемента"},
+            {"call": 'read_value({"a": []}, "a", 0)', "returns": "нет элемента", "hidden": True},
+            {"call": 'read_value({}, "x", 0)', "returns": "нет ключа", "hidden": True}
+        ],
+        "ref": "def read_value(data, key, index):\n    try:\n        return data[key][index]\n    except KeyError:\n        return 'нет ключа'\n    except IndexError:\n        return 'нет элемента'",
+        "wrong": [
+            ("перепутаны сообщения", "def read_value(data, key, index):\n    try:\n        return data[key][index]\n    except KeyError:\n        return 'нет элемента'\n    except IndexError:\n        return 'нет ключа'")
+        ]
+    },
+    "l1_exc_c4": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_for": True, "require_try": True},
+        "tests": [
+            {"call": 'sum_valid(["1", "2", "x", "4"])', "returns": 7},
+            {"call": 'sum_valid([])', "returns": 0},
+            {"call": 'sum_valid(["a", "b"])', "returns": 0},
+            {"call": 'sum_valid(["10", "-3", "3.5", ""])', "returns": 7, "hidden": True},
+            {"call": 'sum_valid(["5"])', "returns": 5, "hidden": True}
+        ],
+        "ref": "def sum_valid(items):\n    total = 0\n    for item in items:\n        try:\n            total += int(item)\n        except ValueError:\n            continue\n    return total",
+        "wrong": [
+            ("без try", "def sum_valid(items):\n    total = 0\n    for item in items:\n        total += int(item)\n    return total")
+        ]
+    },
+    "l1_exc_c5": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_try": True, "require_raise": True, "require_calls": ["validate_age"]},
+        "tests": [
+            {"call": 'validate_age(25)', "returns": 25},
+            {"call": 'is_valid_age(30)', "returns": True},
+            {"call": 'is_valid_age(-1)', "returns": False},
+            {"call": 'is_valid_age(200)', "returns": False},
+            {"call": 'is_valid_age(0)', "returns": True, "hidden": True},
+            {"call": 'is_valid_age(150)', "returns": True, "hidden": True},
+            {"call": 'is_valid_age(151)', "returns": False, "hidden": True}
+        ],
+        "ref": "def validate_age(age):\n    if age < 0 or age > 150:\n        raise ValueError('Недопустимый возраст')\n    return age\n\ndef is_valid_age(age):\n    try:\n        validate_age(age)\n    except ValueError:\n        return False\n    return True",
+        "wrong": [
+            ("без raise", "def validate_age(age):\n    return age\n\ndef is_valid_age(age):\n    try:\n        validate_age(age)\n    except ValueError:\n        return False\n    return True")
+        ]
+    },
+    "l1_exc_f2": {
+        "astRequirements": {},
+        "tests": [
+            {"call": 'describe({"a": 1}, "a")', "returns": 1},
+            {"call": 'describe({"a": 1}, "b")', "returns": "нет ключа"},
+            {"call": 'describe(None, "a")', "returns": "ошибка"},
+            {"call": 'describe({}, 5)', "returns": "нет ключа", "hidden": True},
+            {"call": 'describe(7, "x")', "returns": "ошибка", "hidden": True}
+        ],
+        "ref": "def describe(data, key):\n    try:\n        return data[key]\n    except KeyError:\n        return 'нет ключа'\n    except Exception:\n        return 'ошибка'",
+        "wrong": [
+            ("код не изменён", "def describe(data, key):\n    try:\n        return data[key]\n    except Exception:\n        return 'ошибка'\n    except KeyError:\n        return 'нет ключа'")
+        ]
+    },
+    "l1_sty_f1": {
+        "astRequirements": {},
+        "tests": [
+            {"call": "total([1, 2, 3])", "returns": 6},
+            {"call": "total([])", "returns": 0, "hidden": True},
+            {"call": "total([-5, 5, 10])", "returns": 10, "hidden": True}
+        ],
+        "ref": "total_sum = 0\nfor price in [10, 20, 30]:\n    total_sum += price\n\ndef total(prices):\n    return sum(prices)",
+        "wrong": [
+            ("затенённая sum не исправлена", "sum = 0\nfor price in [10, 20, 30]:\n    sum += price\n\ndef total(prices):\n    return sum(prices)")
+        ]
+    },
+    "l1_sty_c1": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": "ticket_price(5)", "returns": 0},
+            {"call": "ticket_price(10)", "returns": 200},
+            {"call": "ticket_price(30)", "returns": 400},
+            {"call": "ticket_price(70)", "returns": 150},
+            {"call": "str(ticket_price(-1))", "returns": "None", "hidden": True},
+            {"call": "ticket_price(7)", "returns": 200, "hidden": True},
+            {"call": "ticket_price(17)", "returns": 200, "hidden": True},
+            {"call": "ticket_price(18)", "returns": 400, "hidden": True},
+            {"call": "ticket_price(64)", "returns": 400, "hidden": True},
+            {"call": "ticket_price(65)", "returns": 150, "hidden": True},
+            {"call": "ticket_price(0)", "returns": 0, "hidden": True}
+        ],
+        "ref": "def ticket_price(age):\n    if age < 0:\n        return None\n    if age < 7:\n        return 0\n    if age < 18:\n        return 200\n    if age >= 65:\n        return 150\n    return 400",
+        "wrong": [
+            ("неверная граница возраста", "def ticket_price(age):\n    if age < 0:\n        return None\n    if age <= 7:\n        return 0\n    if age < 18:\n        return 200\n    if age >= 65:\n        return 150\n    return 400")
+        ]
+    },
+    "l1_sty_c2": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": 'line_total("Яблоко", 50, 3)', "returns": "Яблоко: 150 руб."},
+            {"call": 'line_total("Хлеб", 40, 2)', "returns": "Хлеб: 80 руб."},
+            {"call": 'line_total("Чай", 0, 5)', "returns": "Чай: 0 руб.", "hidden": True}
+        ],
+        "ref": "def line_total(name, price, quantity):\n    return f'{name}: {price * quantity} руб.'\n\nfor name, price, qty in [('Яблоко', 50, 3), ('Хлеб', 40, 2), ('Молоко', 90, 1)]:\n    print(line_total(name, price, qty))",
+        "wrong": [
+            ("нет 'руб.'", "def line_total(name, price, quantity):\n    return f'{name}: {price * quantity}'")
+        ]
+    },
+    "l1_sty_c3": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": "is_leap_year(2000)", "returns": True},
+            {"call": "is_leap_year(1900)", "returns": False},
+            {"call": "is_leap_year(2024)", "returns": True},
+            {"call": "is_leap_year(2023)", "returns": False},
+            {"call": "is_leap_year(2100)", "returns": False, "hidden": True},
+            {"call": "is_leap_year(1600)", "returns": True, "hidden": True},
+            {"call": "is_leap_year(4)", "returns": True, "hidden": True},
+            {"call": "is_leap_year(1)", "returns": False, "hidden": True}
+        ],
+        "ref": "def is_leap_year(year):\n    if year % 400 == 0:\n        return True\n    if year % 100 == 0:\n        return False\n    return year % 4 == 0",
+        "wrong": [
+            ("без исключения на 100", "def is_leap_year(year):\n    return year % 4 == 0")
+        ]
+    },
+    "l1_sty_f2": {
+        "astRequirements": {},
+        "tests": [
+            {"call": 'to_int("42")', "returns": 42},
+            {"call": 'to_int("abc")', "returns": 0},
+            {"call": 'to_int("-3")', "returns": -3, "hidden": True},
+            {"call": 'to_int("")', "returns": 0, "hidden": True}
+        ],
+        "ref": "def to_int(text):\n    try:\n        return int(text)\n    except ValueError:\n        return 0",
+        "wrong": [
+            ("опечатка txt не исправлена", "def to_int(text):\n    try:\n        return int(txt)\n    except:\n        return 0")
+        ]
+    },
+    "l1_sty_c4": {
+        "astRequirements": {"require_def": True, "require_return": True},
+        "tests": [
+            {"call": "str(add_bonus([50, 70]))", "returns": "[60, 80]"},
+            {"call": "str((s := [1, 2], add_bonus(s), s)[2])", "returns": "[1, 2]"},
+            {"call": "str(add_bonus([]))", "returns": "[]", "hidden": True},
+            {"call": "str((s := [5], add_bonus(s), s)[1])", "returns": "[15]", "hidden": True}
+        ],
+        "ref": "def add_bonus(scores):\n    return [s + 10 for s in scores]",
+        "wrong": [
+            ("мутирует исходный список", "def add_bonus(scores):\n    for i in range(len(scores)):\n        scores[i] += 10\n    return scores")
+        ]
     }
 }
 
@@ -542,7 +736,13 @@ predict_tests = [
     ("l1_fn_p2", "def g(x):\n    print(x * 2)\n\ny = g(4)\nprint(y)", "8\nNone"),
     ("l1_dict_p1", "d = {'a': 1, 'b': 2}\nd['c'] = d['a'] + d['b']\nd['a'] = 10\nprint(d['a'], d['c'])", "10 3"),
     ("l1_dict_p2", "d = {'x': 1, 'y': 2}\nprint('x' in d, 1 in d)\nprint(d.get('z'))\nprint(d.get('z', 0))", "True False\nNone\n0"),
-    ("l1_dict_p3", "scores = {'Аня': 5, 'Борис': 3}\nfor name, score in scores.items():\n    print(name, score * 2)", "Аня 10\nБорис 6")
+    ("l1_dict_p3", "scores = {'Аня': 5, 'Борис': 3}\nfor name, score in scores.items():\n    print(name, score * 2)", "Аня 10\nБорис 6"),
+    ("l1_exc_p1", 'data = {"a": [1, 2]}\n\nfor key, idx in [("a", 1), ("a", 5), ("b", 0)]:\n    try:\n        print(data[key][idx])\n    except KeyError:\n        print("key")\n    except IndexError:\n        print("index")', "2\nindex\nkey"),
+    ("l1_exc_p2", 'def f(x):\n    try:\n        print("A")\n        result = 10 / x\n        print("B")\n    except ZeroDivisionError:\n        print("C")\n    else:\n        print("D")\n    finally:\n        print("E")\n\nf(2)\nf(0)', "A\nB\nD\nE\nA\nC\nE"),
+    ("l1_exc_p3", 'def g():\n    try:\n        return "try"\n    finally:\n        print("finally")\n\nprint(g())', "finally\ntry"),
+    ("l1_sty_p1", "def f(l, n):\n    r = []\n    for x in l:\n        if x > n:\n            r.append(x)\n    return r\n\nprint(f([5, 1, 8, 3], 4))", "[5, 8]"),
+    ("l1_sty_p2", 'x = 10\nprint("fizzbuzz" if x % 15 == 0 else "fizz" if x % 3 == 0 else "buzz" if x % 5 == 0 else x)', "buzz"),
+    ("l1_sty_p3", "print(1 + 2 * 3 ** 2 // 4 % 5)", "5")
 ]
 
 for pid, pcode, pexp in predict_tests:

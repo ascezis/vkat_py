@@ -383,7 +383,7 @@
         </div>
         ${stage.note ? `<div class="stage-card-note">${stage.note}</div>` : ''}
         <div class="stage-card-actions">
-          <button class="stage-card-btn" data-stage="${stage.id}">${btnText} <span class="stage-btn-arrow">→</span></button>
+          <button class="stage-card-btn" data-stage="${stage.id}">${btnText}</button>
           <span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">${progress.percent}%</span>
         </div>
       `;

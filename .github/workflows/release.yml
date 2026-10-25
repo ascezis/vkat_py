@@ -92,6 +92,8 @@ jobs:
             -x "dev/*" \
             -x "AI-PROMPTS/*" \
             -x "ai-prompts/*" \
+            -x "CLAUDE/*" \
+            -x "claude/*" \
             -x "CLAUDE-DESIGN/*" \
             -x "claude-design/*" \
             -x "patches/*" \

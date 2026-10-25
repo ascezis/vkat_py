@@ -25,8 +25,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Run JS Validation (102 tests)
+      - name: Run JS Validation (176 tests)
         run: node dev/run_js_validation.js
 
-      - name: Run Python Evaluation Tests (50 tests)
+      - name: Run Python Evaluation Tests (87 tests)
         run: python dev/run_tests.py

@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>вкат.py — интерактивный тренажёр по Python</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0B0C'/%3E%3Cpath d='M8 7l7 9-7 9' stroke='%23FF6A00' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Crect x='17' y='22' width='8' height='3.5' rx='1.75' fill='%23FFFFFF'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="app/styles.css">
 </head>
 
@@ -13,7 +14,13 @@
   <!-- ТОПБАР (общий для экранов урока и финала) -->
   <div id="app-topbar" class="topbar" style="display: none;">
     <div class="topbar-brand">
-      <div id="app-mark" class="mark" title="На стартовый экран">вкат<span class="dot">·</span>py</div>
+      <div id="app-mark" class="mark" title="На стартовый экран">
+        <svg viewBox="0 0 28 18" fill="none" class="brand-sign-mini" aria-hidden="true">
+          <path d="M4 2.5L11 9L4 15.5" stroke="#FF6A00" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="14" y="13.5" width="10" height="2.75" rx="1.375" fill="#FFFFFF"/>
+        </svg>
+        <span>вкат<span class="dot">·</span>py</span>
+      </div>
       <button id="btn-tree-toggle" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
     </div>
     <div class="topbar-right">
@@ -32,7 +39,13 @@
   <div id="screen-profiles" class="screen">
     <div class="topbar" style="border-bottom: none;">
       <div class="topbar-brand">
-        <div class="mark">вкат<span class="dot">·</span>py</div>
+        <div class="mark">
+          <svg viewBox="0 0 28 18" fill="none" class="brand-sign-mini" aria-hidden="true">
+            <path d="M4 2.5L11 9L4 15.5" stroke="#FF6A00" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="13.5" width="10" height="2.75" rx="1.375" fill="#FFFFFF"/>
+          </svg>
+          <span>вкат<span class="dot">·</span>py</span>
+        </div>
       </div>
     </div>
 
@@ -195,7 +208,13 @@
     <canvas id="start-grid-canvas" class="start-grid-canvas"></canvas>
     <div class="topbar" style="border-bottom: none;">
       <div class="topbar-brand">
-        <div class="mark">вкат<span class="dot">·</span>py</div>
+        <div class="mark">
+          <svg viewBox="0 0 28 18" fill="none" class="brand-sign-mini" aria-hidden="true">
+            <path d="M4 2.5L11 9L4 15.5" stroke="#FF6A00" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="13.5" width="10" height="2.75" rx="1.375" fill="#FFFFFF"/>
+          </svg>
+          <span>вкат<span class="dot">·</span>py</span>
+        </div>
         <button id="btn-tree-start" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
       </div>
       <div id="start-user-badge" class="topbar-user" title="Активный профиль">
@@ -204,8 +223,18 @@
       </div>
     </div>
     <div class="start-center">
-      <div class="kicker">Платформа CONNECT</div>
-      <h1 id="start-heading"><span id="start-typewriter">Пишешь код — сразу видишь результат</span></h1>
+      <div class="kicker kicker-connect">
+        <span class="kicker-brand">
+          <svg viewBox="0 0 28 18" fill="none" class="brand-sign-svg" aria-hidden="true">
+            <path d="M4 2.5L11 9L4 15.5" stroke="#FF6A00" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="13.5" width="10" height="2.75" rx="1.375" fill="#FFFFFF"/>
+          </svg>
+          <span class="kicker-brand-name">connect</span>
+        </span>
+        <span class="kicker-divider">/</span>
+        <span class="kicker-tagline">learn · build · connect</span>
+      </div>
+      <h1 id="start-heading"><span class="heading-prompt">&gt;</span> <span id="start-typewriter">Пишешь код — сразу видишь результат</span></h1>
       <p class="start-sub">Два модуля: экспресс-вкат в группу и углублённая практика с автопроверкой. Без лекций и воды — честное исполнение в браузере без сервера и интернета.</p>
 
       <!-- Карточки этапов курса (генерируются динамически из COURSE_STAGES) -->

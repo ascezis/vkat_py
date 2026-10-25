@@ -1,7 +1,7 @@
 # вкат.py
 
 > 🚀 **Live Demo:** [ascezis.github.io/vkat_py](https://ascezis.github.io/vkat_py/)  
-> 🏷️ **Текущая версия:** `v2.3.0` · Zero-Build · Offline-first
+> 🏷️ **Текущая версия:** `v2.3.1` · Zero-Build · Offline-first
 
 Автономный тренажёр по Python для школ и кружков программирования. Код исполняется на настоящем CPython (Pyodide WebAssembly) прямо в браузере — без установки интерпретатора, без компиляторов и без интернета.
 

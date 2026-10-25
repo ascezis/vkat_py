@@ -704,6 +704,285 @@ tasks_data = {
             ("мутирует исходный список", "def add_bonus(scores):\n    for i in range(len(scores)):\n        scores[i] += 10\n    return scores")
         ]
     }
+,
+    'l1_list_c1': {
+        "astRequirements": {},
+        "expectedOutput": '7 4.0 5 3',
+        "ref": 'grades = [4, 5, 3, 5, 4, 2, 5]\n\nprint(len(grades), sum(grades) / len(grades), max(grades), grades.count(5))',
+        "wrong": [('код не изменён', 'grades = [4, 5, 3, 5, 4, 2, 5]\n\n# Выведи: количество, среднее, максимум, число пятёрок')]
+    },
+    'l1_list_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(reverse_list([1, 2, 3, 4]))', 'returns': '[4, 3, 2, 1]'}, {'call': 'str(reverse_list([]))', 'returns': '[]'}, {'call': 'str(reverse_list([5]))', 'returns': '[5]', 'hidden': True}, {'call': 'str(reverse_list(["a", "b", "c"]))', 'returns': "['c', 'b', 'a']", 'hidden': True}],
+        "ref": 'def reverse_list(a):\n    return a[::-1]\n\nprint(reverse_list([1, 2, 3, 4]))',
+        "wrong": [('код не изменён', '# Напиши функцию reverse_list(a) без метода reverse()')]
+    },
+    'l1_list_c3': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(even_odd([1, 2, 3, 4, 5]))', 'returns': '([2, 4], [1, 3, 5])'}, {'call': 'str(even_odd([2, 4]))', 'returns': '([2, 4], [])'}, {'call': 'str(even_odd([]))', 'returns': '([], [])', 'hidden': True}, {'call': 'str(even_odd([7]))', 'returns': '([], [7])', 'hidden': True}],
+        "ref": 'def even_odd(nums):\n    evens = []\n    odds = []\n    for x in nums:\n        if x % 2 == 0:\n            evens.append(x)\n        else:\n            odds.append(x)\n    return evens, odds\n\nprint(even_odd(list(range(1, 21))))',
+        "wrong": [('код не изменён', '# Напиши функцию even_odd(nums)')]
+    },
+    'l1_list_c4': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(desc_and_sum("3 1 2"))', 'returns': '([3, 2, 1], 6)'}, {'call': 'str(desc_and_sum("10"))', 'returns': '([10], 10)'}, {'call': 'str(desc_and_sum("5 5 -1"))', 'returns': '([5, 5, -1], 9)', 'hidden': True}],
+        "ref": 'def desc_and_sum(line):\n    nums = [int(x) for x in line.split()]\n    return sorted(nums, reverse=True), sum(nums)\n\nprint(desc_and_sum("3 1 2"))',
+        "wrong": [('код не изменён', '# Напиши функцию desc_and_sum(line)')]
+    },
+    'l1_list_c5': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(unique_ordered([1, 2, 2, 3, 1, 4, 3]))', 'returns': '[1, 2, 3, 4]'}, {'call': 'str(unique_ordered([]))', 'returns': '[]'}, {'call': 'str(unique_ordered([3, 1, 3, 2]))', 'returns': '[3, 1, 2]', 'hidden': True}],
+        "ref": 'def unique_ordered(items):\n    result = []\n    for x in items:\n        if x not in result:\n            result.append(x)\n    return result\n\nprint(unique_ordered([1, 2, 2, 3, 1, 4, 3]))',
+        "wrong": [('код не изменён', '# Напиши функцию unique_ordered(items)')]
+    },
+    'l1_list_c6': {
+        "astRequirements": {},
+        "tests": [{'call': 'second_max([4, 9, 1, 9, 7])', 'returns': 7}, {'call': 'second_max([1, 2])', 'returns': 1}, {'call': 'second_max([5, 5, 3])', 'returns': 3, 'hidden': True}, {'call': 'second_max([-1, -5, -3])', 'returns': -3, 'hidden': True}],
+        "ref": 'def second_max(nums):\n    unique = list(set(nums))\n    first = max(unique)\n    unique.remove(first)\n    return max(unique)\n\nprint(second_max([4, 9, 1, 9, 7]))',
+        "wrong": [('код не изменён', '# Напиши функцию second_max(nums) без sort() и sorted()')]
+    },
+    'l1_list_c7': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(shift_right([1, 2, 3, 4, 5], 2))', 'returns': '[4, 5, 1, 2, 3]'}, {'call': 'str(shift_right([1, 2, 3], 1))', 'returns': '[3, 1, 2]'}, {'call': 'str(shift_right([1, 2, 3, 4, 5], 0))', 'returns': '[1, 2, 3, 4, 5]', 'hidden': True}, {'call': 'str(shift_right([1, 2, 3, 4, 5], 7))', 'returns': '[4, 5, 1, 2, 3]', 'hidden': True}],
+        "ref": 'def shift_right(a, k):\n    k = k % len(a)\n    return a[-k:] + a[:-k]\n\nprint(shift_right([1, 2, 3, 4, 5], 2))',
+        "wrong": [('код не изменён', '# Напиши функцию shift_right(a, k)')]
+    },
+    'l1_list_c8': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(long_words_upper("Python это очень удобный язык для новичков"))', 'returns': "['PYTHON', 'ОЧЕНЬ', 'УДОБНЫЙ', 'ЯЗЫК', 'НОВИЧКОВ']"}, {'call': 'str(long_words_upper("a bb ccc dddd"))', 'returns': "['DDDD']", 'hidden': True}, {'call': 'str(long_words_upper(""))', 'returns': '[]', 'hidden': True}],
+        "ref": 'def long_words_upper(text):\n    return [w.upper() for w in text.split() if len(w) > 3]\n\nprint(long_words_upper("Python это очень удобный язык для новичков"))',
+        "wrong": [('код не изменён', '# Напиши функцию long_words_upper(text)')]
+    },
+    'l1_list_c9': {
+        "astRequirements": {},
+        "expectedOutput": '[1, 2, 3, 4, 5]\n[2, 4, 6, 8, 10]\n[3, 6, 9, 12, 15]\n[4, 8, 12, 16, 20]\n[5, 10, 15, 20, 25]',
+        "ref": 'table = [[i * j for j in range(1, 6)] for i in range(1, 6)]\nfor row in table:\n    print(row)',
+        "wrong": [('код не изменён', '# Создай таблицу умножения 5x5 и выведи её построчно')]
+    },
+    'l1_list_f1': {
+        "astRequirements": {},
+        "expectedOutput": "[['.', '.', '.'], ['.', 'X', '.'], ['.', '.', '.']]",
+        "ref": 'board = [["."] * 3 for _ in range(3)]\nboard[1][1] = "X"\nprint(board)',
+        "wrong": [('код не изменён', 'board = [["."] * 3] * 3\nboard[1][1] = "X"\nprint(board)')]
+    },
+    'l1_list_c10': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(longest_words(["кот", "собака", "лиса", "слон", "утка"]))', 'returns': "['собака']"}, {'call': 'str(longest_words(["аб", "вг", "д"]))', 'returns': "['аб', 'вг']"}, {'call': 'str(longest_words(["кот", "пёс", "лев"]))', 'returns': "['кот', 'пёс', 'лев']", 'hidden': True}],
+        "ref": 'def longest_words(words):\n    max_len = 0\n    for w in words:\n        if len(w) > max_len:\n            max_len = len(w)\n    return [w for w in words if len(w) == max_len]\n\nprint(longest_words(["кот", "собака", "лиса"]))',
+        "wrong": [('код не изменён', '# Напиши функцию longest_words(words)')]
+    },
+    'l1_list_c11': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(transpose([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))', 'returns': '[[1, 4, 7], [2, 5, 8], [3, 6, 9]]'}, {'call': 'str(transpose([[1, 2, 3], [1, 2, 3], [1, 2, 3]]))', 'returns': '[[1, 1, 1], [2, 2, 2], [3, 3, 3]]', 'hidden': True}],
+        "ref": 'def transpose(m):\n    result = [[0] * 3 for _ in range(3)]\n    for i in range(3):\n        for j in range(3):\n            result[j][i] = m[i][j]\n    return result\n\nprint(transpose([[1, 2, 3], [4, 5, 6], [7, 8, 9]]))',
+        "wrong": [('код не изменён', '# Напиши функцию transpose(m) для матрицы 3x3')]
+    },
+    'l1_tup_f1': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(move((1, 2), 3, 4))', 'returns': '(4, 6)'}, {'call': 'str(move((0, 0), -1, -1))', 'returns': '(-1, -1)'}, {'call': 'str(move((5, 5), 0, 0))', 'returns': '(5, 5)', 'hidden': True}],
+        "expectedOutput": '(4, 6)',
+        "ref": 'def move(point, dx, dy):\n    x, y = point\n    return (x + dx, y + dy)\n\nprint(move((1, 2), 3, 4))',
+        "wrong": [('код не изменён', 'def move(point, dx, dy):\n    point[0] += dx\n    point[1] += dy\n    return point\n\nprint(move((1, 2), 3, 4))')]
+    },
+    'l1_tup_c1': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(min_max([3, 1, 4]))', 'returns': '(1, 4)'}, {'call': 'str(min_max([5]))', 'returns': '(5, 5)'}, {'call': 'str(min_max([-2, -9, 0]))', 'returns': '(-9, 0)', 'hidden': True}],
+        "ref": 'def min_max(nums):\n    return min(nums), max(nums)\n\nprint(min_max([3, 1, 4]))',
+        "wrong": [('код не изменён', '# Напиши функцию min_max(nums)')]
+    },
+    'l1_tup_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(swap_pair((1, 2)))', 'returns': '(2, 1)'}, {'call': 'str(swap_pair(("a", "b")))', 'returns': "('b', 'a')"}, {'call': 'str(swap_pair((5, 5)))', 'returns': '(5, 5)', 'hidden': True}],
+        "ref": 'def swap_pair(pair):\n    a, b = pair\n    return b, a\n\nprint(swap_pair((1, 2)))',
+        "wrong": [('код не изменён', '# Напиши функцию swap_pair(pair)')]
+    },
+    'l1_tup_c3': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(split_pairs([("Аня", 5), ("Борис", 3)]))', 'returns': "(['Аня', 'Борис'], [5, 3])"}, {'call': 'str(split_pairs([("Вера", 4)]))', 'returns': "(['Вера'], [4])"}, {'call': 'str(split_pairs([]))', 'returns': '([], [])', 'hidden': True}],
+        "ref": 'def split_pairs(pairs):\n    names = []\n    scores = []\n    for name, score in pairs:\n        names.append(name)\n        scores.append(score)\n    return names, scores\n\nprint(split_pairs([("Аня", 5), ("Борис", 3)]))',
+        "wrong": [('код не изменён', '# Напиши функцию split_pairs(pairs)')]
+    },
+    'l1_tup_c4': {
+        "astRequirements": {},
+        "tests": [{'call': 'best_player([("Аня", 5), ("Борис", 7), ("Вера", 6)])', 'returns': 'Борис'}, {'call': 'best_player([("Аня", 9), ("Борис", 7)])', 'returns': 'Аня'}, {'call': 'best_player([("Вера", 1)])', 'returns': 'Вера', 'hidden': True}, {'call': 'best_player([("a", -3), ("b", -1), ("c", -2)])', 'returns': 'b', 'hidden': True}],
+        "ref": 'def best_player(records):\n    best_name, best_score = records[0]\n    for name, score in records:\n        if score > best_score:\n            best_name = name\n            best_score = score\n    return best_name\n\nprint(best_player([("Аня", 5), ("Борис", 7), ("Вера", 6)]))',
+        "wrong": [('код не изменён', '# Напиши функцию best_player(records)')]
+    },
+    'l1_tup_c5': {
+        "astRequirements": {},
+        "tests": [{'call': 'count_pairs([(1, 2), (1, 2), (2, 1)])[(1, 2)]', 'returns': 2}, {'call': 'count_pairs([(1, 2), (1, 2), (2, 1)])[(2, 1)]', 'returns': 1}, {'call': 'len(count_pairs([(1, 2), (1, 2), (2, 1)]))', 'returns': 2}, {'call': 'len(count_pairs([]))', 'returns': 0, 'hidden': True}, {'call': 'count_pairs([(0, 0)] * 3)[(0, 0)]', 'returns': 3, 'hidden': True}],
+        "ref": 'def count_pairs(pairs):\n    result = {}\n    for p in pairs:\n        result[p] = result.get(p, 0) + 1\n    return result\n\nprint(count_pairs([(1, 2), (1, 2), (2, 1)]))',
+        "wrong": [('код не изменён', '# Напиши функцию count_pairs(pairs)')]
+    },
+    'l1_tup_c6': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(closest_to_origin([(3, 4), (1, 1), (5, 0)]))', 'returns': '(1, 1)'}, {'call': 'str(closest_to_origin([(0, 0), (1, 1)]))', 'returns': '(0, 0)'}, {'call': 'str(closest_to_origin([(-2, 0), (0, 1)]))', 'returns': '(0, 1)', 'hidden': True}, {'call': 'str(closest_to_origin([(1, 0), (0, 1)]))', 'returns': '(1, 0)', 'hidden': True}],
+        "ref": 'def closest_to_origin(points):\n    best = points[0]\n    best_d = best[0] ** 2 + best[1] ** 2\n    for x, y in points:\n        d = x * x + y * y\n        if d < best_d:\n            best = (x, y)\n            best_d = d\n    return best\n\nprint(closest_to_origin([(3, 4), (1, 1), (5, 0)]))',
+        "wrong": [('код не изменён', '# Напиши функцию closest_to_origin(points)')]
+    },
+    'l1_str_c1': {
+        "astRequirements": {},
+        "tests": [{'call': 'clean_name("  аНЯ  ")', 'returns': 'Аня'}, {'call': 'clean_name("борис")', 'returns': 'Борис'}, {'call': 'clean_name("ВЕРА")', 'returns': 'Вера', 'hidden': True}, {'call': 'clean_name("")', 'returns': '', 'hidden': True}],
+        "ref": 'def clean_name(text):\n    return text.strip().capitalize()\n\nprint(clean_name("  аНЯ  "))',
+        "wrong": [('код не изменён', '# Напиши функцию clean_name(text)')]
+    },
+    'l1_str_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'is_palindrome("Level")', 'returns': True}, {'call': 'is_palindrome("abc")', 'returns': False}, {'call': 'is_palindrome("")', 'returns': True, 'hidden': True}, {'call': 'is_palindrome("Aa")', 'returns': True, 'hidden': True}],
+        "ref": 'def is_palindrome(text):\n    t = text.lower()\n    return t == t[::-1]\n\nprint(is_palindrome("Level"))\nprint(is_palindrome("abc"))',
+        "wrong": [('код не изменён', '# Напиши функцию is_palindrome(text)')]
+    },
+    'l1_str_c3': {
+        "astRequirements": {},
+        "tests": [{'call': 'mask_card("1234567890123456")', 'returns': '****3456'}, {'call': 'mask_card("1111")', 'returns': '****1111'}, {'call': 'mask_card("40001234")', 'returns': '****1234', 'hidden': True}],
+        "ref": 'def mask_card(number):\n    return "****" + number[-4:]\n\nprint(mask_card("1234567890123456"))',
+        "wrong": [('код не изменён', '# Напиши функцию mask_card(number)')]
+    },
+    'l1_str_c4': {
+        "astRequirements": {},
+        "tests": [{'call': 'normalize_spaces("  привет   мир ")', 'returns': 'привет мир'}, {'call': 'normalize_spaces("a")', 'returns': 'a'}, {'call': 'normalize_spaces("a    b    c")', 'returns': 'a b c', 'hidden': True}, {'call': 'normalize_spaces("")', 'returns': '', 'hidden': True}],
+        "ref": 'def normalize_spaces(text):\n    return " ".join(text.split())\n\nprint(normalize_spaces("  привет   мир "))',
+        "wrong": [('код не изменён', '# Напиши функцию normalize_spaces(text)')]
+    },
+    'l1_str_c5': {
+        "astRequirements": {},
+        "tests": [{'call': 'initials("Иван Петров")', 'returns': 'И.П.'}, {'call': 'initials("анна")', 'returns': 'А.'}, {'call': 'initials("иван петрович сидоров")', 'returns': 'И.П.С.', 'hidden': True}, {'call': 'initials("  Иван   Петров ")', 'returns': 'И.П.', 'hidden': True}],
+        "ref": 'def initials(full_name):\n    result = ""\n    for word in full_name.split():\n        result += word[0].upper() + "."\n    return result\n\nprint(initials("Иван Петров"))',
+        "wrong": [('код не изменён', '# Напиши функцию initials(full_name)')]
+    },
+    'l1_str_c6': {
+        "astRequirements": {},
+        "tests": [{'call': 'format_price("Чай", 100.5)', 'returns': 'Чай: 100.50 руб.'}, {'call': 'format_price("Кофе", 150)', 'returns': 'Кофе: 150.00 руб.'}, {'call': 'format_price("Сок", 99.999)', 'returns': 'Сок: 100.00 руб.', 'hidden': True}],
+        "ref": 'def format_price(name, price):\n    return f"{name}: {price:.2f} руб."\n\nprint(format_price("Чай", 100.5))',
+        "wrong": [('код не изменён', '# Напиши функцию format_price(name, price)')]
+    },
+    'l1_str_f1': {
+        "astRequirements": {},
+        "tests": [{'call': 'describe("Аня", 17)', 'returns': 'Аня - 17 лет'}, {'call': 'describe("Борис", 5)', 'returns': 'Борис - 5 лет'}, {'call': 'describe("", 0)', 'returns': ' - 0 лет', 'hidden': True}],
+        "expectedOutput": 'Аня - 17 лет',
+        "ref": 'def describe(name, age):\n    return f"{name} - {age} лет"\n\nprint(describe("Аня", 17))',
+        "wrong": [('код не изменён', 'def describe(name, age):\n    return name + " - " + age + " лет"\n\nprint(describe("Аня", 17))')]
+    },
+    'l1_str_c7': {
+        "astRequirements": {},
+        "tests": [{'call': 'compress("aaabbc")', 'returns': 'a3b2c1'}, {'call': 'compress("abc")', 'returns': 'a1b1c1'}, {'call': 'compress("")', 'returns': '', 'hidden': True}, {'call': 'compress("zzzz")', 'returns': 'z4', 'hidden': True}, {'call': 'compress("aabaa")', 'returns': 'a2b1a2', 'hidden': True}],
+        "ref": 'def compress(text):\n    if text == "":\n        return ""\n    result = ""\n    current = text[0]\n    count = 1\n    for ch in text[1:]:\n        if ch == current:\n            count += 1\n        else:\n            result += current + str(count)\n            current = ch\n            count = 1\n    result += current + str(count)\n    return result\n\nprint(compress("aaabbc"))',
+        "wrong": [('код не изменён', '# Напиши функцию compress(text)')]
+    },
+    'l1_str_c8': {
+        "astRequirements": {},
+        "tests": [{'call': 'is_anagram("Лес", "сел")', 'returns': True}, {'call': 'is_anagram("кот", "ток")', 'returns': True}, {'call': 'is_anagram("кот", "кит")', 'returns': False}, {'call': 'is_anagram("а", "аа")', 'returns': False, 'hidden': True}],
+        "ref": 'def is_anagram(a, b):\n    return sorted(a.lower()) == sorted(b.lower())\n\nprint(is_anagram("Лес", "сел"))',
+        "wrong": [('код не изменён', '# Напиши функцию is_anagram(a, b)')]
+    },
+    'l1_loop_f1': {
+        "astRequirements": {},
+        "tests": [{'call': 'is_prime(2)', 'returns': True}, {'call': 'is_prime(7)', 'returns': True}, {'call': 'is_prime(9)', 'returns': False}, {'call': 'is_prime(15)', 'returns': False}, {'call': 'is_prime(1)', 'returns': False, 'hidden': True}, {'call': 'is_prime(25)', 'returns': False, 'hidden': True}],
+        "ref": 'def is_prime(n):\n    if n < 2:\n        return False\n    for d in range(2, n):\n        if n % d == 0:\n            return False\n    return True\n\nprint(is_prime(7), is_prime(9))',
+        "wrong": [('код не изменён', 'def is_prime(n):\n    if n < 2:\n        return False\n    for d in range(2, n):\n        if n % d == 0:\n            return False\n        else:\n            return True')]
+    },
+    'l1_loop_c1': {
+        "astRequirements": {},
+        "tests": [{'call': 'digit_sum(1234)', 'returns': 10}, {'call': 'digit_sum(7)', 'returns': 7}, {'call': 'digit_sum(909)', 'returns': 18}, {'call': 'digit_sum(0)', 'returns': 0, 'hidden': True}, {'call': 'digit_sum(100000)', 'returns': 1, 'hidden': True}],
+        "ref": 'def digit_sum(n):\n    total = 0\n    while n > 0:\n        total += n % 10\n        n //= 10\n    return total\n\nprint(digit_sum(1234))',
+        "wrong": [('код не изменён', '# Напиши функцию digit_sum(n) без преобразования в строку')]
+    },
+    'l1_loop_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'collatz_steps(6)', 'returns': 8}, {'call': 'collatz_steps(1)', 'returns': 0}, {'call': 'collatz_steps(7)', 'returns': 16}, {'call': 'collatz_steps(2)', 'returns': 1, 'hidden': True}, {'call': 'collatz_steps(27)', 'returns': 111, 'hidden': True}],
+        "ref": 'def collatz_steps(n):\n    steps = 0\n    while n != 1:\n        if n % 2 == 0:\n            n = n // 2\n        else:\n            n = 3 * n + 1\n        steps += 1\n    return steps\n\nprint(collatz_steps(6))',
+        "wrong": [('код не изменён', '# Напиши функцию collatz_steps(n)')]
+    },
+    'l1_loop_c3': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(pair_sum([2, 7, 11, 15], 9))', 'returns': '(0, 1)'}, {'call': 'str(pair_sum([3, 2, 4], 6))', 'returns': '(1, 2)'}, {'call': 'str(pair_sum([1, 2, 3], 10))', 'returns': 'None'}, {'call': 'str(pair_sum([5, 5], 10))', 'returns': '(0, 1)', 'hidden': True}, {'call': 'str(pair_sum([1, 4, 5, 6], 10))', 'returns': '(1, 3)', 'hidden': True}, {'call': 'str(pair_sum([], 3))', 'returns': 'None', 'hidden': True}],
+        "ref": 'def pair_sum(nums, target):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == target:\n                return i, j\n    return None\n\nprint(pair_sum([2, 7, 11, 15], 9))',
+        "wrong": [('код не изменён', '# Напиши функцию pair_sum(nums, target)')]
+    },
+    'l1_loop_c4': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(primes_up_to(20))', 'returns': '[2, 3, 5, 7, 11, 13, 17, 19]'}, {'call': 'str(primes_up_to(10))', 'returns': '[2, 3, 5, 7]'}, {'call': 'str(primes_up_to(2))', 'returns': '[2]'}, {'call': 'str(primes_up_to(1))', 'returns': '[]', 'hidden': True}, {'call': 'str(primes_up_to(30))', 'returns': '[2, 3, 5, 7, 11, 13, 17, 19, 23, 29]', 'hidden': True}],
+        "ref": 'def primes_up_to(n):\n    result = []\n    for k in range(2, n + 1):\n        for d in range(2, k):\n            if k % d == 0:\n                break\n        else:\n            result.append(k)\n    return result\n\nprint(primes_up_to(20))',
+        "wrong": [('код не изменён', '# Напиши функцию primes_up_to(n)')]
+    },
+    'l1_loop_c5': {
+        "astRequirements": {},
+        "expectedOutput": '1\n22\n333\n4444\n55555',
+        "ref": 'for i in range(1, 6):\n    for _ in range(i):\n        print(i, end="")\n    print()',
+        "wrong": [('код не изменён', '# Выведи лесенку из цифр высотой 5')]
+    },
+    'l1_loop_f2': {
+        "astRequirements": {},
+        "tests": [{'call': 'count_until_zero([3, 5, 0, 7, 8])', 'returns': 2}, {'call': 'count_until_zero([1, 2, 3])', 'returns': 3}, {'call': 'count_until_zero([0])', 'returns': 0, 'hidden': True}, {'call': 'count_until_zero([4, 0, 0])', 'returns': 1, 'hidden': True}],
+        "ref": 'def count_until_zero(nums):\n    count = 0\n    for x in nums:\n        if x == 0:\n            break\n        count += 1\n    return count\n\nprint(count_until_zero([3, 5, 0, 7, 8]))',
+        "wrong": [('код не изменён', 'def count_until_zero(nums):\n    count = 0\n    for x in nums:\n        if x == 0:\n            continue\n        count += 1\n    return count')]
+    },
+    'l1_loop_c6': {
+        "astRequirements": {},
+        "tests": [{'call': 'longest_streak([1, 1, 2, 2, 2, 3])', 'returns': 3}, {'call': 'longest_streak([1, 2, 3])', 'returns': 1}, {'call': 'longest_streak([])', 'returns': 0}, {'call': 'longest_streak([5])', 'returns': 1, 'hidden': True}, {'call': 'longest_streak([7, 7, 7, 7])', 'returns': 4, 'hidden': True}],
+        "ref": 'def longest_streak(nums):\n    best = 0\n    current = 0\n    for i in range(len(nums)):\n        if i > 0 and nums[i] == nums[i - 1]:\n            current += 1\n        else:\n            current = 1\n        best = max(best, current)\n    return best\n\nprint(longest_streak([1, 1, 2, 2, 2, 3]))',
+        "wrong": [('код не изменён', '# Напиши функцию longest_streak(nums)')]
+    },
+    'l1_loop_c7': {
+        "astRequirements": {},
+        "tests": [{'call': 'to_binary(10)', 'returns': '1010'}, {'call': 'to_binary(8)', 'returns': '1000'}, {'call': 'to_binary(1)', 'returns': '1'}, {'call': 'to_binary(0)', 'returns': '0', 'hidden': True}, {'call': 'to_binary(255)', 'returns': '11111111', 'hidden': True}],
+        "ref": 'def to_binary(n):\n    if n == 0:\n        return "0"\n    result = ""\n    while n > 0:\n        result = str(n % 2) + result\n        n //= 2\n    return result\n\nprint(to_binary(10))',
+        "wrong": [('код не изменён', '# Напиши функцию to_binary(n) без bin() и format()')]
+    },
+    'l1_nest_f1': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(get_names([{"name": "Анна", "score": 82}, {"name": "Борис", "score": 67}]))', 'returns': "['Анна', 'Борис']"}, {'call': 'str(get_names([{"name": "Вера", "score": 91}]))', 'returns': "['Вера']"}, {'call': 'str(get_names([]))', 'returns': '[]', 'hidden': True}, {'call': 'str(get_names([{"name": "А", "score": 1}, {"name": "Б", "score": 2}, {"name": "В", "score": 3}]))', 'returns': "['А', 'Б', 'В']", 'hidden': True}],
+        "ref": 'def get_names(users):\n    result = []\n    for user in users:\n        result.append(user["name"])\n    return result\n\nprint(get_names([{"name": "Анна", "score": 82}]))',
+        "wrong": [('код не изменён', 'def get_names(users):\n    result = []\n    for user in users:\n        result.append(users["name"])\n    return result')]
+    },
+    'l1_nest_c1': {
+        "astRequirements": {},
+        "tests": [{'call': 'top_scorer([{"name": "Анна", "score": 82}, {"name": "Борис", "score": 67}, {"name": "Вера", "score": 91}])', 'returns': 'Вера'}, {'call': 'top_scorer([{"name": "Анна", "score": 50}])', 'returns': 'Анна'}, {'call': 'str(top_scorer([]))', 'returns': 'None'}, {'call': 'top_scorer([{"name": "Анна", "score": 90}, {"name": "Борис", "score": 90}])', 'returns': 'Анна', 'hidden': True}, {'call': 'top_scorer([{"name": "А", "score": -5}, {"name": "Б", "score": -2}])', 'returns': 'Б', 'hidden': True}],
+        "ref": 'def top_scorer(users):\n    if not users:\n        return None\n    best = users[0]\n    for user in users:\n        if user["score"] > best["score"]:\n            best = user\n    return best["name"]\n\nprint(top_scorer([{"name": "Анна", "score": 82}, {"name": "Вера", "score": 91}]))',
+        "wrong": [('код не изменён', '# Напиши функцию top_scorer(users) без max, min и sorted')]
+    },
+    'l1_nest_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(filter_by_tag([{"title": "Заметка", "tags": ["python", "sql"]}, {"title": "Обзор", "tags": ["go"]}, {"title": "Гайд", "tags": ["python"]}], "python"))', 'returns': "['Заметка', 'Гайд']"}, {'call': 'str(filter_by_tag([{"title": "Заметка", "tags": ["python", "sql"]}, {"title": "Обзор", "tags": ["go"]}], "go"))', 'returns': "['Обзор']"}, {'call': 'str(filter_by_tag([{"title": "Заметка", "tags": ["python"]}], "rust"))', 'returns': '[]'}, {'call': 'str(filter_by_tag([{"title": "Пусто", "tags": []}], "python"))', 'returns': '[]', 'hidden': True}, {'call': 'str(filter_by_tag([], "python"))', 'returns': '[]', 'hidden': True}],
+        "ref": 'def filter_by_tag(posts, tag):\n    titles = []\n    for post in posts:\n        if tag in post["tags"]:\n            titles.append(post["title"])\n    return titles\n\nprint(filter_by_tag([{"title": "Гайд", "tags": ["python"]}], "python"))',
+        "wrong": [('код не изменён', '# Напиши функцию filter_by_tag(posts, tag)')]
+    },
+    'l1_nest_c3': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(sort_names_by_score([{"name": "Анна", "score": 82}, {"name": "Борис", "score": 67}, {"name": "Вера", "score": 91}]))', 'returns': "['Вера', 'Анна', 'Борис']"}, {'call': 'str(sort_names_by_score([{"name": "Анна", "score": 80}, {"name": "Борис", "score": 90}, {"name": "Вера", "score": 80}]))', 'returns': "['Борис', 'Анна', 'Вера']"}, {'call': 'str(sort_names_by_score([{"name": "Яна", "score": 10}]))', 'returns': "['Яна']"}, {'call': 'str(sort_names_by_score([]))', 'returns': '[]', 'hidden': True}, {'call': 'str(sort_names_by_score([{"name": "А", "score": -1}, {"name": "Б", "score": 0}]))', 'returns': "['Б', 'А']", 'hidden': True}],
+        "ref": 'def get_score(user):\n    return user["score"]\n\ndef sort_names_by_score(users):\n    ranking = sorted(users, key=get_score, reverse=True)\n    names = []\n    for user in ranking:\n        names.append(user["name"])\n    return names\n\nprint(sort_names_by_score([{"name": "Анна", "score": 82}, {"name": "Вера", "score": 91}]))',
+        "wrong": [('код не изменён', '# Напиши функцию sort_names_by_score(users) через sorted')]
+    },
+    'l1_nest_c4': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(group_names_by_city([{"name": "Анна", "city": "Омск"}, {"name": "Борис", "city": "Тула"}, {"name": "Вера", "city": "Омск"}]))', 'returns': "{'Омск': ['Анна', 'Вера'], 'Тула': ['Борис']}"}, {'call': 'str(group_names_by_city([{"name": "Глеб", "city": "Тула"}]))', 'returns': "{'Тула': ['Глеб']}"}, {'call': 'str(group_names_by_city([]))', 'returns': '{}'}, {'call': 'str(group_names_by_city([{"name": "А", "city": "Н"}, {"name": "Б", "city": "Н"}, {"name": "В", "city": "Н"}]))', 'returns': "{'Н': ['А', 'Б', 'В']}", 'hidden': True}, {'call': 'str(group_names_by_city([{"name": "А", "city": "Н"}, {"name": "Б", "city": "К"}, {"name": "В", "city": "Н"}, {"name": "Г", "city": "К"}]))', 'returns': "{'Н': ['А', 'В'], 'К': ['Б', 'Г']}", 'hidden': True}],
+        "ref": 'def group_names_by_city(people):\n    groups = {}\n    for person in people:\n        groups.setdefault(person["city"], []).append(person["name"])\n    return groups\n\nprint(group_names_by_city([{"name": "Анна", "city": "Омск"}]))',
+        "wrong": [('код не изменён', '# Напиши функцию group_names_by_city(people)')]
+    },
+    'l1_nest_c5': {
+        "astRequirements": {},
+        "tests": [{'call': 'get_in({"db": {"host": "localhost", "port": 5432}}, ["db", "port"], 0)', 'returns': 5432}, {'call': 'get_in({"db": {"host": "localhost", "port": 5432}}, ["cache", "ttl"], 60)', 'returns': 60}, {'call': 'get_in({"db": {"host": "localhost", "port": 5432}}, ["db", "user"], "root")', 'returns': 'root'}, {'call': 'str(get_in({"a": 1}, [], 0))', 'returns': "{'a': 1}", 'hidden': True}, {'call': 'get_in({"a": {"b": {"c": 7}}}, ["a", "b", "c"], 0)', 'returns': 7, 'hidden': True}, {'call': 'get_in({"a": {"b": {"c": 7}}}, ["a", "x", "c"], -1)', 'returns': -1, 'hidden': True}],
+        "ref": 'def get_in(data, path, default):\n    current = data\n    for key in path:\n        if key not in current:\n            return default\n        current = current[key]\n    return current\n\nprint(get_in({"db": {"port": 5432}}, ["db", "port"], 0))',
+        "wrong": [('код не изменён', '# Напиши функцию get_in(data, path, default)')]
+    },
+    'l1_nest_f2': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(collect_by_length(["кот", "сом", "лиса"]))', 'returns': "{3: ['кот', 'сом'], 4: ['лиса']}"}, {'call': 'str(collect_by_length(["я"]))', 'returns': "{1: ['я']}"}, {'call': 'str(collect_by_length([]))', 'returns': '{}', 'hidden': True}, {'call': 'str(collect_by_length(["дом", "рак", "лес", "ёж"]))', 'returns': "{3: ['дом', 'рак', 'лес'], 2: ['ёж']}", 'hidden': True}],
+        "ref": 'def collect_by_length(words):\n    groups = {}\n    for w in words:\n        groups.setdefault(len(w), []).append(w)\n    return groups\n\nprint(collect_by_length(["кот", "сом", "лиса"]))',
+        "wrong": [('код не изменён', 'def collect_by_length(words):\n    groups = dict.fromkeys([len(w) for w in words], [])\n    for w in words:\n        groups[len(w)].append(w)\n    return groups')]
+    },
+    'l1_nest_c6': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(merge_settings({"db": {"host": "localhost", "port": 5432}, "debug": {"level": 0}}, {"db": {"port": 6543}, "cache": {"ttl": 30}}))', 'returns': "{'db': {'host': 'localhost', 'port': 6543}, 'debug': {'level': 0}, 'cache': {'ttl': 30}}"}, {'call': 'merge_settings({"db": {"port": 5432}}, {})["db"]["port"]', 'returns': 5432}, {'call': 'merge_settings({}, {"cache": {"ttl": 30}})["cache"]["ttl"]', 'returns': 30}, {'call': 'merge_settings({"app": {"name": "test"}}, {"app": {"version": 2}})["app"]["name"]', 'returns': 'test', 'hidden': True}, {'call': 'merge_settings({"app": {"name": "test"}}, {"app": {"version": 2}})["app"]["version"]', 'returns': 2, 'hidden': True}],
+        "ref": 'import copy\n\ndef merge_settings(defaults, overrides):\n    result = copy.deepcopy(defaults)\n    for section, options in overrides.items():\n        if section not in result:\n            result[section] = {}\n        for key, value in options.items():\n            result[section][key] = copy.deepcopy(value)\n    return result\n\nprint(merge_settings({"db": {"port": 5432}}, {"db": {"port": 6543}}))',
+        "wrong": [('код не изменён', '# Напиши функцию merge_settings(defaults, overrides)\n# Не меняй defaults и overrides')]
+    },
+    'l1_nest_c7': {
+        "astRequirements": {},
+        "tests": [{'call': 'str(columns([{"a": 1, "b": 2}, {"a": 3, "b": 4}]))', 'returns': "{'a': [1, 3], 'b': [2, 4]}"}, {'call': 'str(columns([{"a": 1}, {"a": 2, "b": 3}]))', 'returns': "{'a': [1, 2], 'b': [None, 3]}"}, {'call': 'str(columns([]))', 'returns': '{}'}, {'call': 'str(columns([{"x": "q"}]))', 'returns': "{'x': ['q']}", 'hidden': True}, {'call': 'str(columns([{"a": 1}, {"b": 2}, {"a": 3, "b": 4}]))', 'returns': "{'a': [1, None, 3], 'b': [None, 2, 4]}", 'hidden': True}],
+        "ref": 'def columns(records):\n    keys = []\n    for record in records:\n        for key in record:\n            if key not in keys:\n                keys.append(key)\n    result = {}\n    for key in keys:\n        result[key] = []\n        for record in records:\n            result[key].append(record.get(key))\n    return result\n\nprint(columns([{"a": 1}, {"a": 2, "b": 3}]))',
+        "wrong": [('код не изменён', '# Напиши функцию columns(records)')]
+    },
 }
 
 passed_tests = 0
@@ -743,6 +1022,27 @@ predict_tests = [
     ("l1_sty_p1", "def f(l, n):\n    r = []\n    for x in l:\n        if x > n:\n            r.append(x)\n    return r\n\nprint(f([5, 1, 8, 3], 4))", "[5, 8]"),
     ("l1_sty_p2", 'x = 10\nprint("fizzbuzz" if x % 15 == 0 else "fizz" if x % 3 == 0 else "buzz" if x % 5 == 0 else x)', "buzz"),
     ("l1_sty_p3", "print(1 + 2 * 3 ** 2 // 4 % 5)", "5")
+,
+    ('l1_list_p2', 'a = [10, 20, 30, 40, 50]\nprint(a[1:4], a[-2], a[::2])', '[20, 30, 40] 40 [10, 30, 50]'),
+    ('l1_list_p3', 'b = [1, 2, 3]\nb.append([4, 5])\nprint(len(b))', '4'),
+    ('l1_list_p4', 'c = [1, 2, 3]\nd = c\nd[0] = 99\nprint(c)', '[99, 2, 3]'),
+    ('l1_list_p5', 'x = [3, 1, 2]\nprint(x.sort())', 'None'),
+    ('l1_list_p6', 'print([i * 2 for i in range(4)])', '[0, 2, 4, 6]'),
+    ('l1_tup_p1', 't = (10, 20, 30, 40, 50)\nprint(t[1], t[-1], t[1:3], len(t))', '20 50 (20, 30) 5'),
+    ('l1_tup_p2', 't = (1, [2, 3])\nt[1].append(4)\nprint(t)', '(1, [2, 3, 4])'),
+    ('l1_tup_p3', 'a, b = 1, 2\na, b = b, a + b\nprint(a, b)', '2 3'),
+    ('l1_tup_p4', 'def f():\n    return 1, 2\n\nx = f()\nprint(x, type(x) == tuple)', '(1, 2) True'),
+    ('l1_str_p1', 's = "программирование"\nprint(s[:6], s[-5:], s[::4])', 'програ вание приа'),
+    ('l1_str_p2', 's = "  Hello, World  "\nprint(s.strip().lower().replace("world", "python"))', 'hello, python'),
+    ('l1_str_p3', 's = "banana"\nprint(s.find("n"), s.find("x"), s.count("a"), s.count("an"))', '2 -1 3 2'),
+    ('l1_str_p4', 'parts = "red,green,blue".split(",")\nprint(parts[1], len(parts))\nprint("+".join(parts))', 'green 3\nred+green+blue'),
+    ('l1_str_p5', 'a = 10\nb = 3\nprint(f"{a / b:.2f}")\nprint(f"{a // b} и {a % b}")', '3.33\n3 и 1'),
+    ('l1_loop_p1', 'for i in range(3):\n    for j in range(3):\n        if j == 2:\n            break\n        print(i, j)', '0 0\n0 1\n1 0\n1 1\n2 0\n2 1'),
+    ('l1_loop_p2', 'for n in [4, 7]:\n    for d in range(2, n):\n        if n % d == 0:\n            print(n, "составное")\n            break\n    else:\n        print(n, "простое")', '4 составное\n7 простое'),
+    ('l1_loop_p3', 'print("" or "default", 5 and 0, [] or [1])', 'default 0 [1]'),
+    ('l1_nest_p1', 'words = ["кот", "коза", "сова", "сом", "корова"]\ngroups = {}\nfor w in words:\n    groups.setdefault(w[0], []).append(w)\n\nprint(len(groups))\nprint(len(groups["к"]))\nprint(groups["с"][-1])', '2\n3\nсом'),
+    ('l1_nest_p2', 'row = [0, 0]\ngrid = {"a": row, "b": row}\ngrid["a"][0] = 5\n\nprint(grid["b"][0], row[0])', '5 5'),
+    ('l1_nest_p3', 'user = {"name": "Анна", "address": {"city": "Омск"}}\n\nprint(user.get("phone", {}).get("code", "нет"))\nprint(user["address"].get("street", "-"))\nprint(user.get("address", {}).get("city"))', 'нет\n-\nОмск'),
 ]
 
 for pid, pcode, pexp in predict_tests:

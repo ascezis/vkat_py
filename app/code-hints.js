@@ -167,6 +167,25 @@
   }
 
   /**
+   * Экранирование HTML на случай отсутствия подсветчика
+   */
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  /**
+   * Подсветка синтаксиса Python с безопасным фоллбеком на экранированный текст
+   */
+  function highlight(src) {
+    const H = typeof window !== 'undefined' ? window.PythonHighlighter : null;
+    return H && typeof H.highlightCode === 'function' ? H.highlightCode(src) : escapeHtml(src);
+  }
+
+  /**
    * Компактный пример для карточки: без пустых строк, максимум MAX_EXAMPLE_LINES строк,
    * выравнивающие пробелы перед комментарием схлопнуты. Полный пример остаётся в данных.
    */
@@ -255,6 +274,7 @@
       </div>
       <div class="hint-popover-syntax"><code id="hint-popover-syntax"></code></div>
       <div class="hint-popover-desc" id="hint-popover-desc"></div>
+      <div class="hint-popover-example-label">пример</div>
       <div class="hint-popover-code"><pre><code id="hint-popover-code"></code></pre></div>
       <div class="hint-popover-pitfall-wrap" id="hint-popover-pitfall" style="display: none;">
         <button type="button" class="hint-popover-pitfall-toggle" id="hint-popover-pitfall-toggle" aria-expanded="false">ловушка</button>
@@ -346,7 +366,7 @@
     tokenEl.setAttribute('aria-expanded', 'true');
     tokenEl.setAttribute('aria-describedby', 'hint-popover');
 
-    // Заполнение данными
+    // Заполнение данными с синтаксической подсветкой кода
     const elTitle = document.getElementById('hint-popover-title');
     const elSyntax = document.getElementById('hint-popover-syntax');
     const elDesc = document.getElementById('hint-popover-desc');
@@ -356,9 +376,9 @@
     const elPitfallToggle = document.getElementById('hint-popover-pitfall-toggle');
 
     if (elTitle) elTitle.textContent = card.title || '';
-    if (elSyntax) elSyntax.textContent = card.syntax || '';
+    if (elSyntax) elSyntax.innerHTML = highlight(card.syntax);
     if (elDesc) elDesc.textContent = card.desc || '';
-    if (elCode) elCode.textContent = compactExample(card.code);
+    if (elCode) elCode.innerHTML = highlight(compactExample(card.code));
 
     // Ловушка свёрнута по умолчанию: раскрывается кликом по «ловушка»
     if (elPitfall && elPitfallText && elPitfallToggle) {
@@ -559,7 +579,8 @@
     attach,
     find,
     close,
-    lookup
+    lookup,
+    open
   };
 
   // Автоматическая регистрация при загрузке, если база уже доступна

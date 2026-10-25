@@ -192,6 +192,7 @@
 
   <!-- ЭКРАН 1: СТАРТОВЫЙ -->
   <div id="screen-start" class="screen">
+    <canvas id="start-grid-canvas" class="start-grid-canvas"></canvas>
     <div class="topbar" style="border-bottom: none;">
       <div class="topbar-brand">
         <div class="mark">вкат<span class="dot">·</span>py</div>
@@ -482,6 +483,9 @@
   <script src="app/renderers.js"></script>
   <!-- Логика проверки заданий (code / predict / quiz) -->
   <script src="app/checkers.js"></script>
+
+  <!-- Интерактивная выпуклая сетка Antigravity (Grid Warp) -->
+  <script src="app/grid-warp.js"></script>
 
   <!-- Оркестратор приложения (инициализация, навигация, состояние) -->
   <script src="app/app.js"></script>

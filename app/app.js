@@ -57,6 +57,7 @@
 
     dom.stageCards = document.getElementById('stage-cards');
     dom.startStatus = document.getElementById('start-status');
+    dom.startTypewriter = document.getElementById('start-typewriter');
 
     // Экран урока — панели
     dom.paneTheory = document.getElementById('pane-theory');
@@ -348,6 +349,85 @@
     window.location.reload();
   }
 
+  // ─── Живой заголовок (перепечатывание фраз) ──────────────────────────────────
+
+  const TYPEWRITER_PHRASES = [
+    'Пишешь код — сразу видишь результат',
+    'От базового синтаксиса до чистого кода',
+    'Ты пришёл чуть позже — быстро вкатишься',
+    'Настоящий Python прямо в твоём браузере',
+    'Разбирай чужой код и учись на ошибках'
+  ];
+
+  const typewriterState = {
+    phraseIdx: 0,
+    charIdx: TYPEWRITER_PHRASES[0].length,
+    isDeleting: false,
+    timerId: null,
+    isRunning: false
+  };
+
+  const TYPE_SPEED = 50;
+  const DELETE_SPEED = 25;
+  const HOLD_TIME = 3500;
+  const PAUSE_BEFORE_TYPE = 350;
+
+  function tickTypewriter() {
+    if (!typewriterState.isRunning || !dom.startTypewriter) return;
+
+    const currentPhrase = TYPEWRITER_PHRASES[typewriterState.phraseIdx];
+
+    if (!typewriterState.isDeleting) {
+      typewriterState.charIdx++;
+      dom.startTypewriter.textContent = currentPhrase.slice(0, typewriterState.charIdx);
+
+      if (typewriterState.charIdx >= currentPhrase.length) {
+        typewriterState.isDeleting = true;
+        typewriterState.timerId = setTimeout(tickTypewriter, HOLD_TIME);
+        return;
+      }
+      typewriterState.timerId = setTimeout(tickTypewriter, TYPE_SPEED);
+    } else {
+      typewriterState.charIdx--;
+      dom.startTypewriter.textContent = currentPhrase.slice(0, typewriterState.charIdx);
+
+      if (typewriterState.charIdx <= 0) {
+        typewriterState.isDeleting = false;
+        typewriterState.phraseIdx = (typewriterState.phraseIdx + 1) % TYPEWRITER_PHRASES.length;
+        typewriterState.timerId = setTimeout(tickTypewriter, PAUSE_BEFORE_TYPE);
+        return;
+      }
+      typewriterState.timerId = setTimeout(tickTypewriter, DELETE_SPEED);
+    }
+  }
+
+  function startTypewriter() {
+    if (!dom.startTypewriter) return;
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      dom.startTypewriter.textContent = TYPEWRITER_PHRASES[0];
+      return;
+    }
+
+    if (typewriterState.isRunning) return;
+    typewriterState.isRunning = true;
+
+    if (typewriterState.charIdx === TYPEWRITER_PHRASES[typewriterState.phraseIdx].length && !typewriterState.isDeleting) {
+      typewriterState.isDeleting = true;
+      typewriterState.timerId = setTimeout(tickTypewriter, HOLD_TIME);
+    } else {
+      tickTypewriter();
+    }
+  }
+
+  function stopTypewriter() {
+    typewriterState.isRunning = false;
+    if (typewriterState.timerId) {
+      clearTimeout(typewriterState.timerId);
+      typewriterState.timerId = null;
+    }
+  }
+
   // ─── Навигация экранов ────────────────────────────────────────────────────────
 
   function showScreen(screen) {
@@ -358,21 +438,25 @@
 
     updateProfileBadges();
 
-    if (screen === 'profiles') {
-      if (dom.screenProfiles) dom.screenProfiles.classList.add('active');
-      dom.topbar.style.display = 'none';
-      window.VkatProfiles.renderProfilesScreen();
-    } else if (screen === 'start') {
+    if (screen === 'start') {
       dom.screenStart.classList.add('active');
       dom.topbar.style.display = 'none';
       window.VkatRenderers.renderStartCards();
-    } else if (screen === 'lesson') {
-      dom.screenLesson.classList.add('active');
-      dom.topbar.style.display = 'flex';
-    } else if (screen === 'finish') {
-      dom.screenFinish.classList.add('active');
-      dom.topbar.style.display = 'flex';
-      updateCourseProgress();
+      startTypewriter();
+    } else {
+      stopTypewriter();
+      if (screen === 'profiles') {
+        if (dom.screenProfiles) dom.screenProfiles.classList.add('active');
+        dom.topbar.style.display = 'none';
+        window.VkatProfiles.renderProfilesScreen();
+      } else if (screen === 'lesson') {
+        dom.screenLesson.classList.add('active');
+        dom.topbar.style.display = 'flex';
+      } else if (screen === 'finish') {
+        dom.screenFinish.classList.add('active');
+        dom.topbar.style.display = 'flex';
+        updateCourseProgress();
+      }
     }
   }
 
@@ -630,6 +714,14 @@
         if (dom.treeDrawer && dom.treeDrawer.classList.contains('open')) {
           closeTreeDrawer();
         }
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopTypewriter();
+      } else if (dom.screenStart && dom.screenStart.classList.contains('active')) {
+        startTypewriter();
       }
     });
 

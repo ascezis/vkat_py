@@ -2587,7 +2587,39 @@ body {
 }
 
 .hint-popover-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 6px;
+}
+
+.hint-popover-close {
+  display: none;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -6px -8px 0 0;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.hint-popover-close:hover,
+.hint-popover-close:focus-visible {
+  color: var(--text);
+  border-color: var(--border-strong);
+  outline: none;
+}
+
+/* Крестик нужен только там, где нет наведения (телефон, планшет) */
+@media (hover: none) {
+  .hint-popover-close { display: block; }
 }
 
 .hint-popover-title {
@@ -2621,9 +2653,7 @@ body {
   background: var(--bg-panel-alt);
   border: 1px solid var(--border);
   padding: 6px 8px;
-  max-height: 140px;
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .hint-popover-code pre {
@@ -2635,8 +2665,7 @@ body {
   font-size: 12px;
   line-height: 1.4;
   color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
 }
 
 .hint-popover-code code {
@@ -2648,6 +2677,27 @@ body {
   border: none;
 }
 
+.hint-popover-pitfall-toggle {
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: underline dotted;
+  text-decoration-color: var(--text-dim);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.hint-popover-pitfall-toggle:hover,
+.hint-popover-pitfall-toggle:focus-visible {
+  color: var(--text);
+  text-decoration-style: solid;
+  outline: none;
+}
+
 .hint-popover-pitfall {
   font-size: 12px;
   border-left: 2px solid var(--text);
@@ -2657,6 +2707,8 @@ body {
   color: var(--text-muted);
   line-height: 1.4;
 }
+
+.hint-popover-pitfall[hidden] { display: none; }
 
 .hint-popover-pitfall-label {
   font-family: var(--font-mono);

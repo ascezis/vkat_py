@@ -60,6 +60,19 @@
   }
 
   /**
+   * Единое правило сопоставления токена с карточкой.
+   * Используется и в find() (текст), и в attach() (DOM), чтобы они не расходились.
+   *
+   * @param {string} name       имя без точки: "get", "range", "KeyError"
+   * @param {boolean} afterDot  токен стоит после точки (метод/атрибут)
+   * @returns {Object|null}     карточка или null
+   */
+  function lookup(name, afterDot) {
+    if (!name) return null;
+    return (afterDot ? dotTriggers.get('.' + name) : bareTriggers.get(name)) || null;
+  }
+
+  /**
    * Чистый лексический поиск токенов в коде (для тестов и статического анализа).
    * Не размечает токены внутри строк, комментариев и чисел.
    *
@@ -94,7 +107,7 @@
 
       if (dottedIdent) {
         const token = '.' + dottedIdent;
-        const card = dotTriggers.get(token);
+        const card = lookup(dottedIdent, true);
         if (card) {
           results.push({
             start: match.index,
@@ -105,7 +118,7 @@
         }
       } else if (bareIdent) {
         const token = bareIdent;
-        const card = bareTriggers.get(token);
+        const card = lookup(bareIdent, false);
         if (card) {
           results.push({
             start: match.index,
@@ -148,8 +161,70 @@
 
     if (activeTokenEl) {
       activeTokenEl.removeAttribute('aria-expanded');
+      activeTokenEl.removeAttribute('aria-describedby');
       activeTokenEl = null;
     }
+  }
+
+  /**
+   * Компактный пример для карточки: без пустых строк, максимум MAX_EXAMPLE_LINES строк,
+   * выравнивающие пробелы перед комментарием схлопнуты. Полный пример остаётся в данных.
+   */
+  const MAX_EXAMPLE_LINES = 5;
+  function compactExample(code) {
+    const lines = String(code || '')
+      .split('\n')
+      .filter((l) => l.trim() !== '')
+      .map((l) => l.replace(/\s{2,}#/, '  #'));
+    if (lines.length <= MAX_EXAMPLE_LINES) return lines.join('\n');
+    return lines.slice(0, MAX_EXAMPLE_LINES).join('\n') + '\n…';
+  }
+
+  /**
+   * Позиционирование карточки. Приоритет: справа от блока кода (не закрывая код),
+   * затем под блоком, затем над блоком, и только потом рядом с токеном.
+   */
+  function place(tokenEl) {
+    const pad = 12;
+    const gap = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    popoverEl.style.visibility = 'hidden';
+    popoverEl.style.display = 'block';
+    const popW = popoverEl.offsetWidth || 340;
+    const popH = popoverEl.offsetHeight || 180;
+
+    const tr = tokenEl.getBoundingClientRect();
+    const block = tokenEl.closest ? tokenEl.closest('.theory-block-code') : null;
+    const br = block ? block.getBoundingClientRect() : tr;
+
+    const clampTop = (t) => Math.max(pad, Math.min(t, vh - pad - popH));
+    let left;
+    let top;
+
+    if (block && br.right + gap + popW <= vw - pad) {
+      // 1. Справа от блока, по высоте выровнено с токеном
+      left = br.right + gap;
+      top = clampTop(tr.top - 8);
+    } else if (block && br.bottom + gap + popH <= vh - pad) {
+      // 2. Под блоком
+      left = Math.max(pad, Math.min(br.left, vw - pad - popW));
+      top = br.bottom + gap;
+    } else if (block && br.top - gap - popH >= pad) {
+      // 3. Над блоком
+      left = Math.max(pad, Math.min(br.left, vw - pad - popW));
+      top = br.top - gap - popH;
+    } else {
+      // 4. Запасной вариант: рядом с токеном (снизу, при нехватке места сверху)
+      left = Math.max(pad, Math.min(tr.left, vw - pad - popW));
+      top = tr.bottom + gap;
+      if (top + popH > vh - pad) top = clampTop(tr.top - gap - popH);
+    }
+
+    popoverEl.style.left = Math.round(left) + 'px';
+    popoverEl.style.top = Math.round(top) + 'px';
+    popoverEl.style.visibility = 'visible';
   }
 
   /**
@@ -172,13 +247,14 @@
     popoverEl.innerHTML = `
       <div class="hint-popover-header">
         <div class="hint-popover-title" id="hint-popover-title"></div>
+        <button type="button" class="hint-popover-close" id="hint-popover-close" aria-label="Закрыть подсказку">✕</button>
       </div>
       <div class="hint-popover-syntax"><code id="hint-popover-syntax"></code></div>
       <div class="hint-popover-desc" id="hint-popover-desc"></div>
       <div class="hint-popover-code"><pre><code id="hint-popover-code"></code></pre></div>
-      <div class="hint-popover-pitfall" id="hint-popover-pitfall" style="display: none;">
-        <span class="hint-popover-pitfall-label">ловушка:</span>
-        <span class="hint-popover-pitfall-text" id="hint-popover-pitfall-text"></span>
+      <div class="hint-popover-pitfall-wrap" id="hint-popover-pitfall" style="display: none;">
+        <button type="button" class="hint-popover-pitfall-toggle" id="hint-popover-pitfall-toggle" aria-expanded="false">ловушка</button>
+        <div class="hint-popover-pitfall" id="hint-popover-pitfall-text" hidden></div>
       </div>
       <!-- Скрытое место под будущую ссылку «Подробнее» -->
       <div class="hint-popover-more" id="hint-popover-more" style="display: none;">
@@ -187,6 +263,19 @@
     `;
 
     document.body.appendChild(popoverEl);
+
+    const toggleBtn = popoverEl.querySelector('#hint-popover-pitfall-toggle');
+    const pitfallText = popoverEl.querySelector('#hint-popover-pitfall-text');
+    toggleBtn.addEventListener('click', () => {
+      const show = pitfallText.hidden;
+      pitfallText.hidden = !show;
+      toggleBtn.setAttribute('aria-expanded', show ? 'true' : 'false');
+      toggleBtn.textContent = show ? 'скрыть ловушку' : 'ловушка';
+      // Высота изменилась: перепозиционируем, чтобы карточка не вылезла за экран
+      if (activeTokenEl) place(activeTokenEl);
+    });
+
+    popoverEl.querySelector('#hint-popover-close').addEventListener('click', close);
 
     // Курсор на самом поповере сохраняет его открытым
     popoverEl.addEventListener('pointerenter', () => {
@@ -228,11 +317,11 @@
       close();
     });
 
-    // Скролл в любом контейнере (включая theoryContent) закрывает подсказку
-    document.addEventListener('scroll', () => {
-      if (isVisible()) {
-        close();
-      }
+    // Скролл страницы закрывает подсказку. Скролл ВНУТРИ самой карточки её не закрывает.
+    document.addEventListener('scroll', (e) => {
+      if (!isVisible()) return;
+      if (popoverEl && e.target instanceof Node && popoverEl.contains(e.target)) return;
+      close();
     }, { passive: true, capture: true });
   }
 
@@ -251,6 +340,7 @@
 
     activeTokenEl = tokenEl;
     tokenEl.setAttribute('aria-expanded', 'true');
+    tokenEl.setAttribute('aria-describedby', 'hint-popover');
 
     // Заполнение данными
     const elTitle = document.getElementById('hint-popover-title');
@@ -259,54 +349,27 @@
     const elCode = document.getElementById('hint-popover-code');
     const elPitfall = document.getElementById('hint-popover-pitfall');
     const elPitfallText = document.getElementById('hint-popover-pitfall-text');
+    const elPitfallToggle = document.getElementById('hint-popover-pitfall-toggle');
 
     if (elTitle) elTitle.textContent = card.title || '';
     if (elSyntax) elSyntax.textContent = card.syntax || '';
     if (elDesc) elDesc.textContent = card.desc || '';
-    if (elCode) elCode.textContent = card.code || '';
+    if (elCode) elCode.textContent = compactExample(card.code);
 
-    if (card.pitfall && elPitfall && elPitfallText) {
-      elPitfallText.textContent = card.pitfall;
-      elPitfall.style.display = 'block';
-    } else if (elPitfall) {
-      elPitfall.style.display = 'none';
-    }
-
-    // Подготовка к позиционированию: делаем невидимым, но доступным для замера размеров
-    popoverEl.style.display = 'block';
-    popoverEl.style.visibility = 'hidden';
-
-    const rect = tokenEl.getBoundingClientRect();
-    const popW = popoverEl.offsetWidth || 340;
-    const popH = popoverEl.offsetHeight || 180;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const pad = 12;
-    const gap = 6;
-
-    // Горизонтальное выравнивание с зажатием в границы окна
-    let left = rect.left;
-    if (left + popW > vw - pad) {
-      left = vw - pad - popW;
-    }
-    if (left < pad) {
-      left = pad;
-    }
-
-    // Вертикальное позиционирование: снизу, при нехватке места — сверху
-    let top = rect.bottom + gap;
-    if (top + popH > vh - pad) {
-      const topAbove = rect.top - gap - popH;
-      if (topAbove >= pad || topAbove > (vh - top - popH)) {
-        top = Math.max(pad, topAbove);
+    // Ловушка свёрнута по умолчанию: раскрывается кликом по «ловушка»
+    if (elPitfall && elPitfallText && elPitfallToggle) {
+      if (card.pitfall) {
+        elPitfallText.textContent = card.pitfall;
+        elPitfallText.hidden = true;
+        elPitfallToggle.textContent = 'ловушка';
+        elPitfallToggle.setAttribute('aria-expanded', 'false');
+        elPitfall.style.display = 'block';
       } else {
-        top = Math.max(pad, Math.min(top, vh - pad - popH));
+        elPitfall.style.display = 'none';
       }
     }
 
-    popoverEl.style.left = Math.round(left) + 'px';
-    popoverEl.style.top = Math.round(top) + 'px';
-    popoverEl.style.visibility = 'visible';
+    place(tokenEl);
     popoverEl.classList.add('visible');
     popoverEl.setAttribute('aria-hidden', 'false');
   }
@@ -332,7 +395,7 @@
         openTimer = null;
       }
       if (isVisible() && activeTokenEl === tokenEl) {
-        closeTimer = setTimeout(close, 200);
+        closeTimer = setTimeout(close, 300);
       }
     });
 
@@ -378,6 +441,10 @@
     }
 
     const selector = (options && options.selector) || '.theory-block-code';
+    // По умолчанию размечаем только первое вхождение каждой карточки на странице:
+    // иначе print/for/if подчёркнуты в каждом примере и код превращается в «ёлку».
+    const firstOnly = !(options && options.firstOnly === false);
+    const seenCards = new Set();
     const blocks = [];
 
     if (rootEl.matches && rootEl.matches(selector)) {
@@ -438,9 +505,9 @@
         }
 
         if (isPrecededByDot) {
-          const dotToken = '.' + text;
-          const card = dotTriggers.get(dotToken);
-          if (card) {
+          const card = lookup(text, true);
+          if (card && !(firstOnly && seenCards.has(card.id))) {
+            seenCards.add(card.id);
             const wrapper = document.createElement('span');
             wrapper.className = 'hint-token';
             wrapper.setAttribute('data-hint', card.id);
@@ -462,8 +529,9 @@
           }
         } else {
           // Одиночный токен (ключевое слово, встроенная функция, исключение) НЕ после точки
-          const card = bareTriggers.get(text);
-          if (card) {
+          const card = lookup(text, false);
+          if (card && !(firstOnly && seenCards.has(card.id))) {
+            seenCards.add(card.id);
             const wrapper = document.createElement('span');
             wrapper.className = 'hint-token';
             wrapper.setAttribute('data-hint', card.id);
@@ -486,7 +554,8 @@
     register,
     attach,
     find,
-    close
+    close,
+    lookup
   };
 
   // Автоматическая регистрация при загрузке, если база уже доступна

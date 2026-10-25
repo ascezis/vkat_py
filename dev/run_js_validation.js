@@ -526,6 +526,32 @@ check('CodeHints.lookup: пустое и неизвестное имя возв�
   check('CodeHints.find согласован с lookup() на смешанном примере', consistent);
 }
 
+console.log('\n=== Валидация тестового покрытия COURSE_SELFTEST ===');
+const selftestDir = path.join(__dirname, 'selftest');
+const selftestFiles = fs.readdirSync(selftestDir).filter(f => f.endsWith('.js'));
+context.window.COURSE_SELFTEST = {};
+for (const file of selftestFiles) {
+  const fileContent = fs.readFileSync(path.join(selftestDir, file), 'utf8');
+  vm.runInContext(fileContent, context);
+}
+const selftestMap = context.window.COURSE_SELFTEST || {};
+let missingSelftest = [];
+const coreTopics = (context.window.COURSE_TOPICS || []).filter(t => t.id.startsWith('l1_'));
+let totalCoreCodeTasks = 0;
+for (const topic of coreTopics) {
+  for (const item of (topic.items || [])) {
+    if (item.type === 'code') {
+      totalCoreCodeTasks++;
+      const st = selftestMap[item.id];
+      if (!st || !st.reference || !Array.isArray(st.wrong) || st.wrong.length === 0) {
+        missingSelftest.push(item.id);
+      }
+    }
+  }
+}
+check(`COURSE_SELFTEST покрывает 100% практических задач Core (${totalCoreCodeTasks} задач)`, missingSelftest.length === 0, missingSelftest.join(', '));
+check(`Все эталоны COURSE_SELFTEST являются непустыми строками`, Object.values(selftestMap).every(st => typeof st.reference === 'string' && st.reference.trim().length > 0));
+
 async function runStorageValidation() {
   console.log('\n=== Валидация системы профилей и VkatStorage ===');
   check('VKAT_VERSION экспортирован в формате SemVer', typeof context.window.VKAT_VERSION === 'string' && /^\d+\.\d+\.\d+$/.test(context.window.VKAT_VERSION));

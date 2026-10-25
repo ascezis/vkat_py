@@ -38,7 +38,8 @@
     isChecking: false,
     pyodideReady: false,
     revealedHintsCount: 0,
-    selectedQuizOption: null
+    selectedQuizOption: null,
+    gridWarp: null
   };
 
   // ─── Кэш DOM-элементов ───────────────────────────────────────────────────────
@@ -58,6 +59,7 @@
     dom.stageCards = document.getElementById('stage-cards');
     dom.startStatus = document.getElementById('start-status');
     dom.startTypewriter = document.getElementById('start-typewriter');
+    dom.startGridCanvas = document.getElementById('start-grid-canvas');
 
     // Экран урока — панели
     dom.paneTheory = document.getElementById('pane-theory');
@@ -367,8 +369,8 @@
     isRunning: false
   };
 
-  const TYPE_SPEED = 50;
-  const DELETE_SPEED = 25;
+  const TYPE_SPEED = 70;
+  const DELETE_SPEED = 30;
   const HOLD_TIME = 3500;
   const PAUSE_BEFORE_TYPE = 350;
 
@@ -443,8 +445,10 @@
       dom.topbar.style.display = 'none';
       window.VkatRenderers.renderStartCards();
       startTypewriter();
+      if (state.gridWarp) state.gridWarp.resume();
     } else {
       stopTypewriter();
+      if (state.gridWarp) state.gridWarp.pause();
       if (screen === 'profiles') {
         if (dom.screenProfiles) dom.screenProfiles.classList.add('active');
         dom.topbar.style.display = 'none';
@@ -720,8 +724,10 @@
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         stopTypewriter();
+        if (state.gridWarp) state.gridWarp.pause();
       } else if (dom.screenStart && dom.screenStart.classList.contains('active')) {
         startTypewriter();
+        if (state.gridWarp) state.gridWarp.resume();
       }
     });
 
@@ -818,6 +824,10 @@
     buildCourseStructure();
     setupEditor();
     setupEvents();
+
+    if (window.VkatGridWarp && dom.startGridCanvas) {
+      state.gridWarp = window.VkatGridWarp.init(dom.startGridCanvas, dom.screenStart);
+    }
 
     const activeProfile = window.VkatStorage ? window.VkatStorage.getActiveProfileSync() : null;
 

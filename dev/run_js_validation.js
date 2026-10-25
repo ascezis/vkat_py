@@ -160,6 +160,148 @@ check('[l1_dicts] Обязательных проверяемых элемент
 check('[l1_dicts] Необязательных (★) элементов 1', optCountD === 1);
 check('[l1_dicts] Элементов теории 6', theoryCountD === 6);
 
+console.log('\n=== Валидация элементов темы l1_lists ===');
+const l1list = topicMap.get('l1_lists');
+check('Тема l1_lists содержит items[]', l1list && Array.isArray(l1list.items));
+check('Тема l1_lists содержит ровно 24 элемента', l1list && l1list.items.length === 24);
+
+const expectedListOrder = [
+  'l1_list_t1', 'l1_list_t2', 'l1_list_p1', 'l1_list_t3', 'l1_list_t4',
+  'l1_list_t5', 'l1_list_t6', 'l1_list_p2', 'l1_list_p3', 'l1_list_p4',
+  'l1_list_p5', 'l1_list_p6', 'l1_list_c1', 'l1_list_c2', 'l1_list_c3',
+  'l1_list_c4', 'l1_list_c5', 'l1_list_c6', 'l1_list_c7', 'l1_list_c8',
+  'l1_list_c9', 'l1_list_f1', 'l1_list_c10', 'l1_list_c11'
+];
+expectedListOrder.forEach((id, idx) => {
+  check(`[l1_lists] Элемент #${idx + 1} равен ${id}`, l1list && l1list.items[idx] && l1list.items[idx].id === id);
+});
+
+let reqCountList = 0, optCountList = 0, theoryCountList = 0;
+if (l1list) {
+  l1list.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountList++;
+    else if (it.optional || it.tier === 'star') optCountList++;
+    else reqCountList++;
+  });
+}
+check('[l1_lists] Обязательных проверяемых элементов 16', reqCountList === 16);
+check('[l1_lists] Необязательных (★) элементов 2', optCountList === 2);
+check('[l1_lists] Элементов теории 6', theoryCountList === 6);
+
+console.log('\n=== Валидация элементов темы l1_tuples ===');
+const l1tup = topicMap.get('l1_tuples');
+check('Тема l1_tuples содержит items[]', l1tup && Array.isArray(l1tup.items));
+check('Тема l1_tuples содержит ровно 20 элементов', l1tup && l1tup.items.length === 20);
+
+const expectedTupOrder = [
+  'l1_tup_t1', 'l1_tup_q1', 'l1_tup_p1', 'l1_tup_t2', 'l1_tup_q2',
+  'l1_tup_p2', 'l1_tup_f1', 'l1_tup_t3', 'l1_tup_q3', 'l1_tup_p3',
+  'l1_tup_p4', 'l1_tup_c1', 'l1_tup_c2', 'l1_tup_c3', 'l1_tup_c4',
+  'l1_tup_t4', 'l1_tup_q4', 'l1_tup_c5', 'l1_tup_c6', 'l1_tup_t5'
+];
+expectedTupOrder.forEach((id, idx) => {
+  check(`[l1_tuples] Элемент #${idx + 1} равен ${id}`, l1tup && l1tup.items[idx] && l1tup.items[idx].id === id);
+});
+
+let reqCountTup = 0, optCountTup = 0, theoryCountTup = 0;
+if (l1tup) {
+  l1tup.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountTup++;
+    else if (it.optional || it.tier === 'star') optCountTup++;
+    else reqCountTup++;
+  });
+}
+check('[l1_tuples] Обязательных проверяемых элементов 14', reqCountTup === 14);
+check('[l1_tuples] Необязательных (★) элементов 1', optCountTup === 1);
+check('[l1_tuples] Элементов теории 5', theoryCountTup === 5);
+
+console.log('\n=== Валидация элементов темы l1_strings ===');
+const l1str = topicMap.get('l1_strings');
+check('Тема l1_strings содержит items[]', l1str && Array.isArray(l1str.items));
+check('Тема l1_strings содержит ровно 25 элементов', l1str && l1str.items.length === 25);
+
+const expectedStrOrder = [
+  'l1_str_t1', 'l1_str_q1', 'l1_str_q2', 'l1_str_p1', 'l1_str_t2',
+  'l1_str_p2', 'l1_str_t3', 'l1_str_q3', 'l1_str_p3', 'l1_str_c1',
+  'l1_str_c2', 'l1_str_c3', 'l1_str_t4', 'l1_str_q4', 'l1_str_p4',
+  'l1_str_c4', 'l1_str_c5', 'l1_str_t5', 'l1_str_q5', 'l1_str_p5',
+  'l1_str_c6', 'l1_str_f1', 'l1_str_c7', 'l1_str_c8', 'l1_str_t6'
+];
+expectedStrOrder.forEach((id, idx) => {
+  check(`[l1_strings] Элемент #${idx + 1} равен ${id}`, l1str && l1str.items[idx] && l1str.items[idx].id === id);
+});
+
+let reqCountStr = 0, optCountStr = 0, theoryCountStr = 0;
+if (l1str) {
+  l1str.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountStr++;
+    else if (it.optional || it.tier === 'star') optCountStr++;
+    else reqCountStr++;
+  });
+}
+check('[l1_strings] Обязательных проверяемых элементов 17', reqCountStr === 17);
+check('[l1_strings] Необязательных (★) элементов 2', optCountStr === 2);
+check('[l1_strings] Элементов теории 6', theoryCountStr === 6);
+
+console.log('\n=== Валидация элементов темы l1_loops_adv ===');
+const l1loop = topicMap.get('l1_loops_adv');
+check('Тема l1_loops_adv содержит items[]', l1loop && Array.isArray(l1loop.items));
+check('Тема l1_loops_adv содержит ровно 20 элементов', l1loop && l1loop.items.length === 20);
+
+const expectedLoopOrder = [
+  'l1_loop_t1', 'l1_loop_t2', 'l1_loop_t3', 'l1_loop_t4', 'l1_loop_t5',
+  'l1_loop_q1', 'l1_loop_q2', 'l1_loop_q3', 'l1_loop_p1', 'l1_loop_p2',
+  'l1_loop_p3', 'l1_loop_f1', 'l1_loop_c1', 'l1_loop_c2', 'l1_loop_c3',
+  'l1_loop_c4', 'l1_loop_c5', 'l1_loop_f2', 'l1_loop_c6', 'l1_loop_c7'
+];
+expectedLoopOrder.forEach((id, idx) => {
+  check(`[l1_loops_adv] Элемент #${idx + 1} равен ${id}`, l1loop && l1loop.items[idx] && l1loop.items[idx].id === id);
+});
+
+let reqCountLoop = 0, optCountLoop = 0, theoryCountLoop = 0;
+if (l1loop) {
+  l1loop.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountLoop++;
+    else if (it.optional || it.tier === 'star') optCountLoop++;
+    else reqCountLoop++;
+  });
+}
+check('[l1_loops_adv] Обязательных проверяемых элементов 13', reqCountLoop === 13);
+check('[l1_loops_adv] Необязательных (★) элементов 2', optCountLoop === 2);
+check('[l1_loops_adv] Элементов теории 5', theoryCountLoop === 5);
+
+console.log('\n=== Валидация элементов темы l1_nested_structures ===');
+const l1nest = topicMap.get('l1_nested_structures');
+check('Тема l1_nested_structures содержит items[]', l1nest && Array.isArray(l1nest.items));
+check('Тема l1_nested_structures содержит ровно 20 элементов', l1nest && l1nest.items.length === 20);
+
+const expectedNestOrder = [
+  'l1_nest_t1', 'l1_nest_t2', 'l1_nest_t3', 'l1_nest_t4', 'l1_nest_t5',
+  'l1_nest_q1', 'l1_nest_q2', 'l1_nest_q3', 'l1_nest_p1', 'l1_nest_p2',
+  'l1_nest_p3', 'l1_nest_f1', 'l1_nest_c1', 'l1_nest_c2', 'l1_nest_c3',
+  'l1_nest_c4', 'l1_nest_c5', 'l1_nest_f2', 'l1_nest_c6', 'l1_nest_c7'
+];
+expectedNestOrder.forEach((id, idx) => {
+  check(`[l1_nested_structures] Элемент #${idx + 1} равен ${id}`, l1nest && l1nest.items[idx] && l1nest.items[idx].id === id);
+});
+
+let reqCountNest = 0, optCountNest = 0, theoryCountNest = 0;
+if (l1nest) {
+  l1nest.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountNest++;
+    else if (it.optional || it.tier === 'star') optCountNest++;
+    else reqCountNest++;
+  });
+}
+check('[l1_nested_structures] Обязательных проверяемых элементов 13', reqCountNest === 13);
+check('[l1_nested_structures] Необязательных (★) элементов 2', optCountNest === 2);
+check('[l1_nested_structures] Элементов теории 5', theoryCountNest === 5);
+
 console.log('\n=== Валидация элементов темы l1_exceptions ===');
 const l1exc = topicMap.get('l1_exceptions');
 check('Тема l1_exceptions содержит items[]', l1exc && Array.isArray(l1exc.items));

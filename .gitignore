@@ -12,6 +12,8 @@ desktop.ini
 # Temporary files
 *.log
 *.tmp
+__pycache__/
+*.pyc
 
 # AI
 AI-PROMPTS/

@@ -57,6 +57,8 @@ loadScript('content/core/04-tuples.js');
 loadScript('content/core/05-strings-adv.js');
 loadScript('content/core/06-loops-adv.js');
 loadScript('content/core/07-nested-structures.js');
+loadScript('content/core/08-exceptions.js');
+loadScript('content/core/11-code-style.js');
 loadScript('content/cheatsheet.js');
 loadScript('app/code-hints.js');
 loadScript('app/version.js');
@@ -157,6 +159,68 @@ if (l1d) {
 check('[l1_dicts] Обязательных проверяемых элементов 12', reqCountD === 12);
 check('[l1_dicts] Необязательных (★) элементов 1', optCountD === 1);
 check('[l1_dicts] Элементов теории 6', theoryCountD === 6);
+
+console.log('\n=== Валидация элементов темы l1_exceptions ===');
+const l1exc = topicMap.get('l1_exceptions');
+check('Тема l1_exceptions содержит items[]', l1exc && Array.isArray(l1exc.items));
+check('Тема l1_exceptions содержит ровно 20 элементов', l1exc && l1exc.items.length === 20);
+
+const expectedExcOrder = [
+  'l1_exc_t1', 'l1_exc_q1', 'l1_exc_t2', 'l1_exc_q2', 'l1_exc_p1',
+  'l1_exc_f1', 'l1_exc_c1', 'l1_exc_c2', 'l1_exc_c3', 'l1_exc_t3',
+  'l1_exc_q3', 'l1_exc_p2', 'l1_exc_p3', 'l1_exc_c4', 'l1_exc_t4',
+  'l1_exc_c5', 'l1_exc_f2', 'l1_exc_t5', 'l1_exc_c6', 'l1_exc_c7'
+];
+
+expectedExcOrder.forEach((id, idx) => {
+  check(`[l1_exceptions] Элемент #${idx + 1} равен ${id}`, l1exc && l1exc.items[idx] && l1exc.items[idx].id === id);
+});
+
+let reqCountExc = 0;
+let optCountExc = 0;
+let theoryCountExc = 0;
+if (l1exc) {
+  l1exc.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountExc++;
+    else if (it.optional || it.tier === 'star') optCountExc++;
+    else reqCountExc++;
+  });
+}
+check('[l1_exceptions] Обязательных проверяемых элементов 13', reqCountExc === 13);
+check('[l1_exceptions] Необязательных (★) элементов 2', optCountExc === 2);
+check('[l1_exceptions] Элементов теории 5', theoryCountExc === 5);
+
+console.log('\n=== Валидация элементов темы l1_code_style ===');
+const l1sty = topicMap.get('l1_code_style');
+check('Тема l1_code_style содержит items[]', l1sty && Array.isArray(l1sty.items));
+check('Тема l1_code_style содержит ровно 17 элементов', l1sty && l1sty.items.length === 17);
+
+const expectedStyOrder = [
+  'l1_sty_t1', 'l1_sty_q1', 'l1_sty_t2', 'l1_sty_q2', 'l1_sty_p1',
+  'l1_sty_f1', 'l1_sty_t3', 'l1_sty_c1', 'l1_sty_c2', 'l1_sty_t4',
+  'l1_sty_p2', 'l1_sty_p3', 'l1_sty_c3', 'l1_sty_f2', 'l1_sty_t5',
+  'l1_sty_q3', 'l1_sty_c4'
+];
+
+expectedStyOrder.forEach((id, idx) => {
+  check(`[l1_code_style] Элемент #${idx + 1} равен ${id}`, l1sty && l1sty.items[idx] && l1sty.items[idx].id === id);
+});
+
+let reqCountSty = 0;
+let optCountSty = 0;
+let theoryCountSty = 0;
+if (l1sty) {
+  l1sty.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountSty++;
+    else if (it.optional || it.tier === 'star') optCountSty++;
+    else reqCountSty++;
+  });
+}
+check('[l1_code_style] Обязательных проверяемых элементов 11', reqCountSty === 11);
+check('[l1_code_style] Необязательных (★) элементов 1', optCountSty === 1);
+check('[l1_code_style] Элементов теории 5', theoryCountSty === 5);
 
 console.log('\n=== Валидация уникальности ID во всём курсе ===');
 const allIds = new Set();

@@ -301,6 +301,25 @@ try {
 }
 check('CodeHints.find: пустой код и null/undefined не вызывают падения', emptyNoCrash);
 
+// Общее правило сопоставления lookup() используется и в find() (текст), и в attach() (DOM)
+check('CodeHints.lookup: ".get" после точки находит карточку, без точки не находит',
+  codeHints.lookup('get', true) && codeHints.lookup('get', true).id === 'dict_get' && codeHints.lookup('get', false) === null);
+check('CodeHints.lookup: ключевое слово/встроенная функция находится без точки, но не после точки',
+  codeHints.lookup('range', false) !== null && codeHints.lookup('range', true) === null);
+check('CodeHints.lookup: пустое и неизвестное имя возвращают null',
+  codeHints.lookup('', false) === null && codeHints.lookup('no_such_name_xyz', false) === null);
+{
+  // find() и lookup() согласованы: каждый найденный токен действительно ведёт на свою карточку
+  const code = 'd = {}\nx = d.get("a")\nfor i in range(3):\n    print(i)  # range\n';
+  const found = codeHints.find(code);
+  const consistent = found.length > 0 && found.every((r) => {
+    const name = r.token.replace(/^\./, '');
+    const c = codeHints.lookup(name, r.token.startsWith('.'));
+    return c && c.id === r.cardId;
+  });
+  check('CodeHints.find согласован с lookup() на смешанном примере', consistent);
+}
+
 async function runStorageValidation() {
   console.log('\n=== Валидация системы профилей и VkatStorage ===');
   check('VKAT_VERSION экспортирован в формате SemVer', typeof context.window.VKAT_VERSION === 'string' && /^\d+\.\d+\.\d+$/.test(context.window.VKAT_VERSION));

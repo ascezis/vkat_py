@@ -617,6 +617,35 @@ tasks_data = {
             ("код не изменён", "def describe(data, key):\n    try:\n        return data[key]\n    except Exception:\n        return 'ошибка'\n    except KeyError:\n        return 'нет ключа'")
         ]
     },
+    "l1_exc_c6": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_try": True},
+        "tests": [
+            {"call": 'str(parse_log("5"))', "returns": "['start', 'ok', 'done']"},
+            {"call": 'str(parse_log("x"))', "returns": "['start', 'error', 'done']"},
+            {"call": 'str(parse_log(""))', "returns": "['start', 'error', 'done']", "hidden": True},
+            {"call": 'str(parse_log("-3"))', "returns": "['start', 'ok', 'done']", "hidden": True}
+        ],
+        "ref": "def parse_log(text):\n    steps = ['start']\n    try:\n        int(text)\n    except ValueError:\n        steps.append('error')\n    else:\n        steps.append('ok')\n    finally:\n        steps.append('done')\n    return steps",
+        "wrong": [
+            ("код не изменён", "# Напиши функцию parse_log(text) с блоками try / except / else / finally\n")
+        ]
+    },
+    "l1_exc_c7": {
+        "astRequirements": {"require_def": True, "require_return": True, "require_for": True, "require_try": True, "forbid_methods": ["isdigit", "isnumeric"]},
+        "tests": [
+            {"call": 'average_of_valid("1, 2, 3")', "returns": 2},
+            {"call": 'average_of_valid("4, x, 6")', "returns": 5},
+            {"call": 'str(average_of_valid("a, b"))', "returns": "None"},
+            {"call": 'str(average_of_valid(""))', "returns": "None"},
+            {"call": 'average_of_valid("10")', "returns": 10, "hidden": True},
+            {"call": 'average_of_valid("1,2,x,y,3")', "returns": 2, "hidden": True}
+        ],
+        "ref": "def average_of_valid(text):\n    numbers = []\n    for part in text.split(','):\n        try:\n            numbers.append(int(part.strip()))\n        except ValueError:\n            continue\n    try:\n        return sum(numbers) / len(numbers)\n    except ZeroDivisionError:\n        return None",
+        "wrong": [
+            ("код не изменён", "# Напиши функцию average_of_valid(text)\n"),
+            ("запрещённый isdigit", "def average_of_valid(text):\n    numbers = []\n    for part in text.split(','):\n        part = part.strip()\n        if part.isdigit():\n            numbers.append(int(part))\n    if not numbers:\n        return None\n    return sum(numbers) / len(numbers)")
+        ]
+    },
     "l1_sty_f1": {
         "astRequirements": {},
         "tests": [

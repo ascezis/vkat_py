@@ -205,18 +205,22 @@
 
     if (block && br.right + gap + popW <= vw - pad) {
       // 1. Справа от блока, по высоте выровнено с токеном
+      popoverEl.dataset.placement = 'right';
       left = br.right + gap;
       top = clampTop(tr.top - 8);
     } else if (block && br.bottom + gap + popH <= vh - pad) {
       // 2. Под блоком
+      popoverEl.dataset.placement = 'below';
       left = Math.max(pad, Math.min(br.left, vw - pad - popW));
       top = br.bottom + gap;
     } else if (block && br.top - gap - popH >= pad) {
       // 3. Над блоком
+      popoverEl.dataset.placement = 'above';
       left = Math.max(pad, Math.min(br.left, vw - pad - popW));
       top = br.top - gap - popH;
     } else {
       // 4. Запасной вариант: рядом с токеном (снизу, при нехватке места сверху)
+      popoverEl.dataset.placement = 'near';
       left = Math.max(pad, Math.min(tr.left, vw - pad - popW));
       top = tr.bottom + gap;
       if (top + popH > vh - pad) top = clampTop(tr.top - gap - popH);

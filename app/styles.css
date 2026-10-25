@@ -2584,6 +2584,23 @@ body {
 
 .hint-popover.visible {
   display: block;
+  animation: hint-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes hint-in {
+  from { opacity: 0; transform: translate(var(--hint-dx, 0), var(--hint-dy, 4px)); }
+  to   { opacity: 1; transform: translate(0, 0); }
+}
+
+/* Направление сдвига зависит от того, с какой стороны карточка относительно блока кода */
+.hint-popover[data-placement="right"]  { --hint-dx: -6px; --hint-dy: 0; }
+.hint-popover[data-placement="below"]  { --hint-dx: 0;    --hint-dy: -4px; }
+.hint-popover[data-placement="above"]  { --hint-dx: 0;    --hint-dy: 4px; }
+.hint-popover[data-placement="near"]   { --hint-dx: 0;    --hint-dy: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hint-popover.visible { animation: hint-in-reduced 1ms linear both; }
+  @keyframes hint-in-reduced { from { opacity: 0; } to { opacity: 1; } }
 }
 
 .hint-popover-header {

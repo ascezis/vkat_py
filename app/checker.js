@@ -357,7 +357,11 @@ def _run_task_tests(tests_json):
     import re as _re_
 
     tests = _json.loads(tests_json)
-    user_ns = getattr(_checker_mod, '_user_ns', {})
+    # Доверенный namespace: только публичные имена (без _*).
+    # Студент не может подменить _user_ns, _lc* и т.п. переменными заглушками.
+    _raw = getattr(_checker_mod, '_user_ns', {})
+    user_ns = {k: v for k, v in _raw.items() if not k.startswith('_')}
+    user_ns['__builtins__'] = _SAFE_BUILTINS
 
     for t in tests:
         call_expr = t["call"]
@@ -703,9 +707,15 @@ def _run_task_tests_proxy(tests_json):
     if (task.testCode) {
       try {
         await pyodide.runPythonAsync(`
-# Тестирование функции/переменных в изолированном пространстве студента
-_ns = getattr(_checker_mod, '_user_ns', {})
-exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _ns)
+# Формируем доверенный namespace: только публичные имена от студента.
+# Ключи, начинающиеся с '_', отбрасываются — в т.ч. любой '_user_ns',
+# который студент мог определить как заглушку.
+_raw_ns = getattr(_checker_mod, '_user_ns', {})
+_trusted = {k: v for k, v in _raw_ns.items() if not k.startswith('_')}
+# Добавляем safe builtins и доверенный _user_ns (не от студента)
+_trusted['__builtins__'] = _SAFE_BUILTINS
+_trusted['_user_ns'] = dict(_trusted)  # доверенная копия для testCode, если он её использует
+exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
 `);
       } catch (testErr) {
         let testMsg = testErr.message || String(testErr);

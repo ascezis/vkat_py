@@ -144,6 +144,52 @@
   }
 
   /**
+   * HMAC-SHA256 подпись строки с ключом (hex-string)
+   * Используется для защиты списка completed от прямого редактирования в DevTools.
+   */
+  async function computeHmac(keyMaterial, message) {
+    if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
+      return null; // SubtleCrypto недоступен — подпись невозможна
+    }
+    try {
+      const enc = new TextEncoder();
+      const keyBytes = enc.encode(keyMaterial);
+      const msgBytes = enc.encode(message);
+      const cryptoKey = await window.crypto.subtle.importKey(
+        'raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+      );
+      const sigBuffer = await window.crypto.subtle.sign('HMAC', cryptoKey, msgBytes);
+      return Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+      console.warn('HMAC computation failed:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Подписывает массив completed для профиля.
+   * keyMaterial = profileId + ':' + (pinHash || 'npin')
+   */
+  async function signCompleted(profileId, pinHash, completed) {
+    const key = `${profileId}:${pinHash || 'npin'}`;
+    const msg = JSON.stringify(completed);
+    return computeHmac(key, msg);
+  }
+
+  /**
+   * Проверяет подпись completed.
+   * Возвращает true если подпись верна или SubtleCrypto недоступен (graceful fallback).
+   */
+  async function verifyCompleted(profileId, pinHash, completed, sig) {
+    if (!sig) return true; // нет подписи — старая запись, принимаем как есть
+    const key = `${profileId}:${pinHash || 'npin'}`;
+    const msg = JSON.stringify(completed);
+    const expected = await computeHmac(key, msg);
+    if (expected === null) return true; // SubtleCrypto недоступен — не можем проверить
+    return expected === sig;
+  }
+
+  /**
    * Получение списка метаданных всех профилей
    */
   async function listProfiles() {
@@ -357,12 +403,37 @@
 
     try {
       const parsed = JSON.parse(raw);
+      const completedArr = Array.isArray(parsed.completed) ? parsed.completed : [];
+
+      // ── Проверка целостности completed (Issue #10) ──────────────────────
+      const profile = getActiveProfileSync();
+      const pinHash = profile ? (profile.pinHash || null) : null;
+      const sig = parsed.sig || null;
+      const valid = await verifyCompleted(activeId, pinHash, completedArr, sig);
+      if (!valid) {
+        console.warn('[VkatStorage] Обнаружена фальсификация прогресса — сброс completed.');
+        // Сбрасываем только completed, черновики и позицию сохраняем
+        const sanitized = {
+          schema: 2,
+          completed: [],
+          drafts: parsed.drafts && typeof parsed.drafts === 'object' ? parsed.drafts : {},
+          position: parsed.position && typeof parsed.position === 'object' ? parsed.position : { topicId: '', itemId: '' },
+          updated: Date.now()
+        };
+        // Заново подписываем пустой массив
+        sanitized.sig = await signCompleted(activeId, pinHash, []);
+        storageSet(KEYS.PROFILE_PREFIX + activeId, JSON.stringify(sanitized));
+        activeDataCache = sanitized;
+        return sanitized;
+      }
+
       activeDataCache = {
         schema: 2,
-        completed: Array.isArray(parsed.completed) ? parsed.completed : [],
+        completed: completedArr,
         drafts: parsed.drafts && typeof parsed.drafts === 'object' ? parsed.drafts : {},
         position: parsed.position && typeof parsed.position === 'object' ? parsed.position : { topicId: '', itemId: '' },
-        updated: parsed.updated || Date.now()
+        updated: parsed.updated || Date.now(),
+        sig: sig
       };
       return activeDataCache;
     } catch (e) {
@@ -398,6 +469,11 @@
       activeDataCache.position = { ...activeDataCache.position, ...patch.position };
     }
     activeDataCache.updated = Date.now();
+
+    // ── Подписываем completed перед записью (Issue #10) ──────────────────
+    const profile = getActiveProfileSync();
+    const pinHash = profile ? (profile.pinHash || null) : null;
+    activeDataCache.sig = await signCompleted(activeId, pinHash, activeDataCache.completed);
 
     storageSet(KEYS.PROFILE_PREFIX + activeId, JSON.stringify(activeDataCache));
   }

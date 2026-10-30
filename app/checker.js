@@ -111,61 +111,109 @@
 
         const pyodide = await Promise.race([loadPromise, timeoutPromise]);
 
-        // Инициализируем Python-хелперы для перехвата вывода, AST проверки и тестов
+        // ── Инициализируем Python-хелперы в изолированном приватном модуле ──
+        // Все checker-функции живут в sys.modules['_vkat_checker'], а не в __main__,
+        // поэтому студенческий код не может их перезаписать через sys.modules['__main__'].
         await pyodide.runPythonAsync(`
-import sys
-import io
-import ast
-import json
-import traceback
-import re
+import sys as _sys
+import io as _io
+import ast as _ast
+import json as _json
+import traceback as _traceback
+import re as _re
+import types as _types
+import builtins as _builtins_mod
 
-def analyze_ast(code_str, requirements_json):
-    reqs = json.loads(requirements_json)
+# ── Создаём приватный модуль для хранения checker-логики ──────────────────
+_checker_mod = _types.ModuleType('_vkat_checker')
+_checker_mod.__package__ = '_vkat_checker'
+_sys.modules['_vkat_checker'] = _checker_mod
+
+# ── Список модулей, запрещённых для студенческого кода ────────────────────
+_BLOCKED_IMPORTS = frozenset([
+    'sys', 'js', 'importlib', 'importlib.util', 'importlib.machinery',
+    'builtins', 'ctypes', 'gc', 'signal', 'subprocess', 'os',
+    'posix', 'nt', 'sysconfig', '_thread', 'threading',
+    'socket', 'ssl', 'http', 'urllib', 'ftplib',
+    '_vkat_checker',
+])
+
+# ── Ограниченный __import__ для пространства имён студента ───────────────
+def _student_import(name, globals=None, locals=None, fromlist=(), level=0):
+    top = name.split('.')[0]
+    if top in _BLOCKED_IMPORTS or name in _BLOCKED_IMPORTS:
+        raise ImportError(
+            f"Импорт '{name}' недоступен в учебном окружении."
+        )
+    return _builtins_mod.__import__(name, globals, locals, fromlist, level)
+
+# ── Безопасный набор встроенных функций для студенческого кода ────────────
+_SAFE_BUILTINS = {
+    k: getattr(_builtins_mod, k) for k in (
+        'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'breakpoint',
+        'bytearray', 'bytes', 'callable', 'chr', 'complex',
+        'dict', 'dir', 'divmod', 'enumerate', 'filter',
+        'float', 'format', 'frozenset', 'hasattr', 'hash',
+        'help', 'hex', 'id', 'input', 'int', 'isinstance',
+        'issubclass', 'iter', 'len', 'list', 'locals', 'map',
+        'max', 'min', 'next', 'object', 'oct', 'ord', 'pow',
+        'print', 'property', 'range', 'repr', 'reversed',
+        'round', 'set', 'slice', 'sorted', 'staticmethod',
+        'str', 'sum', 'super', 'tuple', 'type', 'zip',
+        'ArithmeticError', 'AssertionError', 'AttributeError',
+        'EOFError', 'Exception', 'FileNotFoundError', 'FloatingPointError',
+        'GeneratorExit', 'IOError', 'ImportError', 'IndexError',
+        'KeyError', 'KeyboardInterrupt', 'LookupError', 'MemoryError',
+        'ModuleNotFoundError', 'NameError', 'NotImplementedError',
+        'OSError', 'OverflowError', 'RecursionError', 'RuntimeError',
+        'StopIteration', 'StopAsyncIteration', 'SyntaxError', 'SystemExit',
+        'TypeError', 'UnboundLocalError', 'UnicodeDecodeError',
+        'UnicodeEncodeError', 'UnicodeError', 'ValueError', 'ZeroDivisionError',
+        'True', 'False', 'None',
+        'NotImplemented', 'Ellipsis',
+        'copyright', 'credits', 'license',
+    ) if hasattr(_builtins_mod, k)
+}
+_SAFE_BUILTINS['__import__'] = _student_import
+_SAFE_BUILTINS['__name__'] = '__student__'
+_SAFE_BUILTINS['__doc__'] = None
+
+# ── Функции анализа / проверки кода (размещаются в _checker_mod) ──────────
+
+def _analyze_ast(code_str, requirements_json):
+    reqs = _json.loads(requirements_json)
     try:
-        tree = ast.parse(code_str)
+        tree = _ast.parse(code_str)
     except SyntaxError as e:
         err_type = type(e).__name__
-        return json.dumps({"syntax_error": f"{err_type}: {e}", "lineno": e.lineno, "offset": e.offset})
+        return _json.dumps({"syntax_error": f"{err_type}: {e}", "lineno": e.lineno, "offset": e.offset})
 
     errors = []
-    
-    # Сбор всех узлов
-    nodes = list(ast.walk(tree))
+    nodes = list(_ast.walk(tree))
     node_types = {type(n) for n in nodes}
 
-    # Базовые требования
-    if reqs.get("require_for") and ast.For not in node_types:
+    if reqs.get("require_for") and _ast.For not in node_types:
         errors.append("В коде должен использоваться цикл for.")
-    
-    if reqs.get("require_while") and ast.While not in node_types:
+    if reqs.get("require_while") and _ast.While not in node_types:
         errors.append("В коде должен использоваться цикл while.")
-        
-    if reqs.get("require_loop") and (ast.For not in node_types and ast.While not in node_types):
+    if reqs.get("require_loop") and (_ast.For not in node_types and _ast.While not in node_types):
         errors.append("В решении обязательно должен использоваться цикл (for или while).")
-        
-    if reqs.get("require_def") and ast.FunctionDef not in node_types:
+    if reqs.get("require_def") and _ast.FunctionDef not in node_types:
         errors.append("Необходимо объявить функцию с помощью ключевого слова def.")
-        
     if reqs.get("require_return"):
-        has_return = any(isinstance(n, ast.Return) for n in nodes)
-        if not has_return:
+        if not any(isinstance(n, _ast.Return) for n in nodes):
             errors.append("Функция должна возвращать результат через ключевое слово return.")
-            
-    if reqs.get("require_if") and ast.If not in node_types:
+    if reqs.get("require_if") and _ast.If not in node_types:
         errors.append("В коде должно использоваться ветвление с условием if.")
-
-    if reqs.get("require_try") and ast.Try not in node_types:
+    if reqs.get("require_try") and _ast.Try not in node_types:
         errors.append("В коде должна использоваться конструкция try/except.")
-
-    if reqs.get("require_raise") and ast.Raise not in node_types:
+    if reqs.get("require_raise") and _ast.Raise not in node_types:
         errors.append("В коде должен использоваться оператор raise.")
 
-    # Новые флаги AST
     forbid_calls = reqs.get("forbid_calls", [])
     if forbid_calls:
         for n in nodes:
-            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name):
+            if isinstance(n, _ast.Call) and isinstance(n.func, _ast.Name):
                 if n.func.id in forbid_calls:
                     errors.append(f"В этом задании нельзя использовать {n.func.id}().")
                     break
@@ -173,7 +221,7 @@ def analyze_ast(code_str, requirements_json):
     forbid_methods = reqs.get("forbid_methods", [])
     if forbid_methods:
         for n in nodes:
-            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute):
+            if isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute):
                 if n.func.attr in forbid_methods:
                     errors.append(f"В этом задании нельзя использовать метод {n.func.attr}().")
                     break
@@ -182,9 +230,9 @@ def analyze_ast(code_str, requirements_json):
     if require_calls:
         for call_name in require_calls:
             called = any(
-                isinstance(n, ast.Call) and (
-                    (isinstance(n.func, ast.Name) and n.func.id == call_name) or
-                    (isinstance(n.func, ast.Attribute) and n.func.attr == call_name)
+                isinstance(n, _ast.Call) and (
+                    (isinstance(n.func, _ast.Name) and n.func.id == call_name) or
+                    (isinstance(n.func, _ast.Attribute) and n.func.attr == call_name)
                 )
                 for n in nodes
             )
@@ -192,64 +240,61 @@ def analyze_ast(code_str, requirements_json):
                 errors.append(f"В решении нужно вызвать функцию {call_name}.")
                 break
 
-    # Проверка переменных на CamelCase для линтера
-    names = []
-    for n in nodes:
-        if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):
-            names.append(n.id)
+    names = [
+        n.id for n in nodes
+        if isinstance(n, _ast.Name) and isinstance(n.ctx, _ast.Store)
+    ]
+    return _json.dumps({"errors": errors, "variables": names})
 
-    return json.dumps({
-        "errors": errors,
-        "variables": names
-    })
+_checker_mod.analyze_ast = _analyze_ast
 
 def _inject_loop_guard_ast(tree, max_iters=5000000):
     counter_id = 0
-    class LoopGuardInjector(ast.NodeTransformer):
+    class LoopGuardInjector(_ast.NodeTransformer):
         def _inject(self, node):
             nonlocal counter_id
             counter_id += 1
             var = f"_lc{counter_id}"
-            init = ast.Assign(
-                targets=[ast.Name(id=var, ctx=ast.Store())],
-                value=ast.Constant(value=0)
+            init = _ast.Assign(
+                targets=[_ast.Name(id=var, ctx=_ast.Store())],
+                value=_ast.Constant(value=0)
             )
-            ast.copy_location(init, node)
-            inc = ast.AugAssign(
-                target=ast.Name(id=var, ctx=ast.Store()),
-                op=ast.Add(),
-                value=ast.Constant(value=1)
+            _ast.copy_location(init, node)
+            inc = _ast.AugAssign(
+                target=_ast.Name(id=var, ctx=_ast.Store()),
+                op=_ast.Add(),
+                value=_ast.Constant(value=1)
             )
-            ast.copy_location(inc, node)
-            check = ast.If(
-                test=ast.Compare(
-                    left=ast.Name(id=var, ctx=ast.Load()),
-                    ops=[ast.Gt()],
-                    comparators=[ast.Constant(value=max_iters)]
+            _ast.copy_location(inc, node)
+            check = _ast.If(
+                test=_ast.Compare(
+                    left=_ast.Name(id=var, ctx=_ast.Load()),
+                    ops=[_ast.Gt()],
+                    comparators=[_ast.Constant(value=max_iters)]
                 ),
-                body=[ast.Raise(
-                    exc=ast.Call(
-                        func=ast.Name(id='RuntimeError', ctx=ast.Load()),
-                        args=[ast.Constant(value=f'Цикл выполнился больше {max_iters} раз — похоже на бесконечный. Проверь условие цикла.')],
+                body=[_ast.Raise(
+                    exc=_ast.Call(
+                        func=_ast.Name(id='RuntimeError', ctx=_ast.Load()),
+                        args=[_ast.Constant(value=f'Цикл выполнился больше {max_iters} раз — похоже на бесконечный. Проверь условие цикла.')],
                         keywords=[]
                     ),
                     cause=None
                 )],
                 orelse=[]
             )
-            ast.copy_location(check, node)
+            _ast.copy_location(check, node)
             node.body = [inc, check] + node.body
             self.generic_visit(node)
             return [init, node]
-
         def visit_For(self, node):
             return self._inject(node)
         def visit_While(self, node):
             return self._inject(node)
-
     tree = LoopGuardInjector().visit(tree)
-    ast.fix_missing_locations(tree)
+    _ast.fix_missing_locations(tree)
     return tree
+
+_checker_mod._inject_loop_guard_ast = _inject_loop_guard_ast
 
 def _clean_tb(tb):
     lines = tb.splitlines()
@@ -262,34 +307,32 @@ def _clean_tb(tb):
             cleaned.append(l)
     return '\\n'.join(cleaned) if cleaned else tb
 
-def _inject_loop_guard(code_str, max_iters=5000000):
-    """Внедряет счётчик итераций в каждый цикл for/while для защиты от бесконечных циклов."""
-    try:
-        tree = ast.parse(code_str)
-        tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
-        return ast.unparse(tree)
-    except SyntaxError:
-        return code_str
+_checker_mod._clean_tb = _clean_tb
 
 def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
-    global _user_ns, _captured_output, _runtime_err
-    import sys, io, ast, linecache, traceback
+    """Выполняет код студента в изолированном пространстве имён."""
+    import sys as _sys_
+    import io as _io_
+    import ast as _ast_
+    import linecache as _lc_
+    import traceback as _tb_
 
-    buf = io.StringIO()
-    old_out = sys.stdout
-    sys.stdout = buf
+    buf = _io_.StringIO()
+    old_out = _sys_.stdout
+    _sys_.stdout = buf
 
-    _runtime_err = None
-    target_ns = {}
+    _checker_mod._runtime_err = None
+    # Изолированный namespace — только безопасные builtins, без sys/js
+    target_ns = {'__builtins__': dict(_SAFE_BUILTINS), '__name__': '__student__'}
     try:
-        linecache.cache['<student>'] = (
+        _lc_.cache['<student>'] = (
             len(code_str),
             None,
             [line + '\\n' for line in code_str.splitlines()],
             '<student>'
         )
         try:
-            tree = ast.parse(code_str, filename='<student>')
+            tree = _ast_.parse(code_str, filename='<student>')
             tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
             code_obj = compile(tree, '<student>', 'exec')
         except SyntaxError:
@@ -297,15 +340,25 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
 
         exec(code_obj, target_ns)
         if save_user_ns:
-            _user_ns = target_ns
+            _checker_mod._user_ns = target_ns
     except Exception:
-        _runtime_err = _clean_tb(traceback.format_exc())
+        _checker_mod._runtime_err = _clean_tb(_tb_.format_exc())
     finally:
-        sys.stdout = old_out
-        _captured_output = buf.getvalue()
+        _sys_.stdout = old_out
+        _checker_mod._captured_output = buf.getvalue()
+
+_checker_mod._exec_user_code = _exec_user_code
 
 def _run_task_tests(tests_json):
-    tests = json.loads(tests_json)
+    """Запускает тесты из JSON в namespace студента."""
+    import sys as _sys_
+    import io as _io_
+    import traceback as _tb_
+    import re as _re_
+
+    tests = _json.loads(tests_json)
+    user_ns = getattr(_checker_mod, '_user_ns', {})
+
     for t in tests:
         call_expr = t["call"]
         expected_ret = t.get("returns")
@@ -314,47 +367,35 @@ def _run_task_tests(tests_json):
         has_expected_stdout = "stdout" in t
         is_hidden = bool(t.get("hidden"))
 
-        buf = io.StringIO()
-        old_out = sys.stdout
-        sys.stdout = buf
+        buf = _io_.StringIO()
+        old_out = _sys_.stdout
+        _sys_.stdout = buf
         call_err = None
         func_not_found = None
         ret_val = None
 
         try:
-            ret_val = eval(call_expr, _user_ns)
+            ret_val = eval(call_expr, user_ns)
         except NameError as ne:
-            m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", call_expr.strip())
+            m = _re_.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", call_expr.strip())
             fn = m.group(1) if m else None
             if fn and f"name '{fn}' is not defined" in str(ne):
                 func_not_found = fn
             else:
-                call_err = _clean_tb(traceback.format_exc())
+                call_err = _clean_tb(_tb_.format_exc())
         except Exception:
-            call_err = _clean_tb(traceback.format_exc())
+            call_err = _clean_tb(_tb_.format_exc())
         finally:
-            sys.stdout = old_out
+            _sys_.stdout = old_out
             captured_stdout = buf.getvalue()
 
         if func_not_found:
-            return json.dumps({
-                "passed": False,
-                "type": "not_found",
-                "func": func_not_found,
-                "call": call_expr,
-                "hidden": is_hidden
-            })
-
+            return _json.dumps({"passed": False, "type": "not_found",
+                                "func": func_not_found, "call": call_expr, "hidden": is_hidden})
         if call_err:
-            return json.dumps({
-                "passed": False,
-                "type": "error",
-                "call": call_expr,
-                "error": call_err,
-                "hidden": is_hidden
-            })
+            return _json.dumps({"passed": False, "type": "error",
+                                "call": call_expr, "error": call_err, "hidden": is_hidden})
 
-        # Сравнение returns
         if has_expected_ret:
             ret_mismatch = False
             if isinstance(expected_ret, bool):
@@ -374,30 +415,33 @@ def _run_task_tests(tests_json):
                     ret_mismatch = True
 
             if ret_mismatch:
-                return json.dumps({
-                    "passed": False,
-                    "type": "returns_mismatch",
-                    "call": call_expr,
-                    "expected": expected_ret,
-                    "actual": repr(ret_val),
-                    "hidden": is_hidden
-                })
+                return _json.dumps({"passed": False, "type": "returns_mismatch",
+                                    "call": call_expr, "expected": expected_ret,
+                                    "actual": repr(ret_val), "hidden": is_hidden})
 
-        # Сравнение stdout
         if has_expected_stdout:
             norm_actual = "\\n".join([line.rstrip() for line in captured_stdout.replace("\\r\\n", "\\n").split("\\n")]).strip()
             norm_expected = "\\n".join([line.rstrip() for line in expected_stdout.replace("\\r\\n", "\\n").split("\\n")]).strip()
             if norm_actual != norm_expected:
-                return json.dumps({
-                    "passed": False,
-                    "type": "stdout_mismatch",
-                    "call": call_expr,
-                    "expected": norm_expected,
-                    "actual": norm_actual,
-                    "hidden": is_hidden
-                })
+                return _json.dumps({"passed": False, "type": "stdout_mismatch",
+                                    "call": call_expr, "expected": norm_expected,
+                                    "actual": norm_actual, "hidden": is_hidden})
 
-    return json.dumps({"passed": True})
+    return _json.dumps({"passed": True})
+
+_checker_mod._run_task_tests = _run_task_tests
+
+# ── Публичные псевдонимы в __main__ (только для вызовов из JS) ─────────────
+# Они указывают на функции в _checker_mod — студент не может их перезаписать,
+# не имея доступа к _checker_mod.
+def analyze_ast(code_str, requirements_json):
+    return _checker_mod.analyze_ast(code_str, requirements_json)
+
+def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=5000000):
+    _checker_mod._exec_user_code(code_str, save_user_ns, max_iters)
+
+def _run_task_tests_proxy(tests_json):
+    return _checker_mod._run_task_tests(tests_json)
 `);
 
         pyodideInstance = pyodide;
@@ -488,10 +532,10 @@ def _run_task_tests(tests_json):
 
     try {
       await pyodide.runPythonAsync(
-        `_exec_user_code(${JSON.stringify(code)}, save_user_ns=False)`
+        `_exec_user_code_proxy(${JSON.stringify(code)}, save_user_ns=False)`
       );
-      stdout = pyodide.globals.get('_captured_output') || '';
-      const rawErr = pyodide.globals.get('_runtime_err');
+      stdout = await pyodide.runPythonAsync(`getattr(_checker_mod, '_captured_output', '')`) || '';
+      const rawErr = await pyodide.runPythonAsync(`getattr(_checker_mod, '_runtime_err', None)`);
       if (rawErr) {
         error = rawErr.split('\n')
           .filter(l => !l.includes('pyodide') && !l.includes('_captured_output') && !l.includes('_exec_user_code'))
@@ -553,10 +597,10 @@ def _run_task_tests(tests_json):
 
     try {
       await pyodide.runPythonAsync(
-        `_exec_user_code(${JSON.stringify(userCode)}, save_user_ns=True)`
+        `_exec_user_code_proxy(${JSON.stringify(userCode)}, save_user_ns=True)`
       );
-      stdout = pyodide.globals.get('_captured_output') || '';
-      runtimeError = pyodide.globals.get('_runtime_err');
+      stdout = await pyodide.runPythonAsync(`getattr(_checker_mod, '_captured_output', '')`) || '';
+      runtimeError = await pyodide.runPythonAsync(`getattr(_checker_mod, '_runtime_err', None)`);
     } catch (e) {
       runtimeError = e.message || String(e);
     }
@@ -600,7 +644,7 @@ def _run_task_tests(tests_json):
     if (Array.isArray(task.tests) && task.tests.length > 0) {
       const testsJson = JSON.stringify(task.tests);
       const testResultJson = await pyodide.runPythonAsync(
-        `_run_task_tests(${JSON.stringify(testsJson)})`
+        `_run_task_tests_proxy(${JSON.stringify(testsJson)})`
       );
       const testResult = JSON.parse(testResultJson);
 
@@ -659,8 +703,9 @@ def _run_task_tests(tests_json):
     if (task.testCode) {
       try {
         await pyodide.runPythonAsync(`
-# Тестирование функции/переменных в _user_ns
-${task.testCode}
+# Тестирование функции/переменных в изолированном пространстве студента
+_ns = getattr(_checker_mod, '_user_ns', {})
+exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _ns)
 `);
       } catch (testErr) {
         let testMsg = testErr.message || String(testErr);

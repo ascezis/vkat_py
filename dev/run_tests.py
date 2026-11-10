@@ -430,6 +430,17 @@ def check_solution(user_code, task):
         if not test_res.get("passed"):
             return {"passed": False, "title": "TestFailed", "sub": str(test_res)}
 
+    if task.get("testCode"):
+        trusted = {k: v for k, v in user_ns.items() if not k.startswith('_')}
+        trusted['__builtins__'] = __import__('builtins')
+        trusted['_user_ns'] = dict(trusted)
+        trusted['sys'] = sys
+        trusted['io'] = io
+        try:
+            exec(compile(task["testCode"], '<testcode>', 'exec'), trusted)
+        except Exception as te:
+            return {"passed": False, "title": "TestFailed", "sub": str(te)}
+
     return {"passed": True}
 
 # Тестирование заданий из пилотной темы
@@ -1349,6 +1360,26 @@ if float_res["passed"]:
     passed_tests += 1
 else:
     print(f"  × [regression_flexible_float_returns] ОШИБКА: {float_res}")
+    failed_tests += 1
+
+# Регрессия 7: Тестирование заданий со старым testCode (включая show_score с import sys/io)
+fn2_task = {
+    "astRequirements": {"require_def": True},
+    "expectedOutput": "Max 100",
+    "testCode": 'import io as _tio; import sys as _tsys; _tb = _tio.StringIO(); _tsys.stdout = _tb; _user_ns["show_score"]("Test", 42); _tsys.stdout = _tsys.__stdout__; assert "Test 42" in _tb.getvalue(), "Функция show_score должна печатать имя и очки"'
+}
+fn2_code = """
+def show_score(player, points):
+    print(player, points)
+
+show_score("Max", 100)
+"""
+fn2_res = check_solution(fn2_code, fn2_task)
+if fn2_res["passed"]:
+    print("  ✓ [regression_testcode_sys] Задание fn_2 с testCode (import sys/io) успешно выполняется")
+    passed_tests += 1
+else:
+    print(f"  × [regression_testcode_sys] ОШИБКА: {fn2_res}")
     failed_tests += 1
 
 print(f"\nИТОГ: {passed_tests} пройдено, {failed_tests} ошибок.")

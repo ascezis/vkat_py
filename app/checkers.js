@@ -48,6 +48,106 @@
       .trim();
   }
 
+  // ─── Интеллектуальное сопоставление ответа в predict ───────────────────────
+
+  /**
+   * Сравнивает ответ ученика в predict с фактическим выводом программы.
+   * Учитывает:
+   *  - внешние кавычки вокруг строк ("hello" vs hello)
+   *  - русскую десятичную запятую (3,33 vs 3.33)
+   *  - регистр ключевых слов (true -> True, false -> False, none -> None)
+   *  - букву «ё» / «е» (звёздочки vs звездочки)
+   *  - концевые знаки препинания (. ! ?)
+   *  - разделители элементов (запятые или пробелы вместо переносов строк)
+   *  - регистр букв при совпадении текста
+   */
+  function fuzzyPredictMatch(userVal, actualVal) {
+    if (userVal === actualVal) return { match: true, tip: null };
+
+    const u = (userVal || '').replace(/\r\n/g, '\n').trim();
+    const a = (actualVal || '').replace(/\r\n/g, '\n').trim();
+    if (u === a) return { match: true, tip: null };
+    if (!u && a) return { match: false, tip: null };
+
+    // 1. Снятие внешних кавычек (если ученик ввёл "text" или 'text')
+    const stripQuotes = s => s.replace(/^["']|["']$/g, '').trim();
+    if (stripQuotes(u) === stripQuotes(a)) {
+      return {
+        match: true,
+        tip: 'Подсказка: функция print() выводит текст строки без кавычек.'
+      };
+    }
+
+    // 2. Десятичная запятая: 3,33 -> 3.33 (если в эталоне есть дробные числа с точкой)
+    const hasDecimal = /\d\.\d/.test(a);
+    const normDecimal = s => (hasDecimal ? s.replace(/(\d),(\d)/g, '$1.$2') : s);
+    if (hasDecimal && normDecimal(u) === a) {
+      return {
+        match: true,
+        tip: 'Подсказка: в Python десятичные дроби пишутся через точку, а не запятую.'
+      };
+    }
+
+    // 3. Булевы константы и None (регистронезависимо)
+    const normKeywords = s =>
+      s.replace(/\btrue\b/gi, 'True').replace(/\bfalse\b/gi, 'False').replace(/\bnone\b/gi, 'None');
+    if (normKeywords(u) === normKeywords(a)) {
+      return { match: true, tip: null };
+    }
+
+    // 4. Буква «ё» / «е»
+    const normYo = s => s.replace(/ё/g, 'е').replace(/Ё/g, 'Е');
+    if (normYo(u) === normYo(a)) {
+      return { match: true, tip: null };
+    }
+
+    // 5. Концевой знак препинания (. ! ?)
+    const stripDot = s => s.replace(/[.!?]+$/, '').trim();
+    if (stripDot(u) === stripDot(a) || normYo(stripDot(u)) === normYo(stripDot(a))) {
+      return { match: true, tip: null };
+    }
+
+    // 6. Токенизация и сравнение (запятые/переносы строк между элементами)
+    const tokenize = s =>
+      normYo(normKeywords(normDecimal(stripQuotes(s))))
+        .replace(/[;,]/g, ' ')
+        .replace(/[()]/g, ' ')
+        .replace(/\[\s*/g, '[')
+        .replace(/\s*\]/g, ']')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    const uTokens = tokenize(u);
+    const aTokens = tokenize(a);
+    if (uTokens.length > 0 && uTokens.length === aTokens.length) {
+      const allTokensMatch = uTokens.every((tok, idx) => {
+        const aTok = aTokens[idx];
+        if (tok === aTok) return true;
+        if (stripQuotes(tok) === stripQuotes(aTok)) return true;
+        const numU = Number(tok);
+        const numA = Number(aTok);
+        if (!isNaN(numU) && !isNaN(numA)) {
+          return Math.abs(numU - numA) < 1e-4 || Math.abs(numU - numA) / (Math.abs(numA) || 1) < 1e-3;
+        }
+        return false;
+      });
+      if (allTokensMatch) {
+        return {
+          match: true,
+          tip: 'Совет: значения совпали по смыслу! В следующий раз разделяй их так же, как выводит программа.'
+        };
+      }
+    }
+
+    // 7. Регистронезависимое совпадение
+    if (normYo(stripQuotes(stripDot(u))).toLowerCase() === normYo(stripQuotes(stripDot(a))).toLowerCase()) {
+      return { match: true, tip: 'Совет: обрати внимание на регистр букв.' };
+    }
+
+    return { match: false, tip: null };
+  }
+
   // ─── Проверка Code ────────────────────────────────────────────────────────────
 
   /**
@@ -193,13 +293,18 @@
       dom.predictResultBox.classList.add('visible');
       revealResult(dom.predictResultBox);
 
-      const isMatch = userVal === actualVal;
-      if (isMatch) {
+      const matchRes = fuzzyPredictMatch(userVal, actualVal);
+      if (matchRes.match) {
         dom.predictResultMark.className = 'result-mark ok';
         dom.predictResultMark.textContent = '✓';
         dom.predictResultTitle.className = 'result-title';
-        dom.predictResultTitle.textContent = 'Ответ совпал';
-        dom.predictResultSub.textContent = `Фактический вывод:\n${actualVal || '(пустая строка)'}`;
+        dom.predictResultTitle.textContent = matchRes.tip ? 'Ответ засчитан' : 'Ответ совпал';
+
+        let subMsg = `Фактический вывод:\n${actualVal || '(пустая строка)'}`;
+        if (matchRes.tip) {
+          subMsg += `\n\n${matchRes.tip}`;
+        }
+        dom.predictResultSub.textContent = subMsg;
       } else {
         dom.predictResultMark.className = 'result-mark err';
         dom.predictResultMark.textContent = '×';
@@ -293,7 +398,8 @@
   window.VkatCheckers = {
     runCheck,
     runPredictCheck,
-    runQuizCheck
+    runQuizCheck,
+    fuzzyPredictMatch
   };
 
 })(window);

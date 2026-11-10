@@ -910,9 +910,12 @@ def _match_output_proxy(actual_str, expected_str):
 # который студент мог определить как заглушку.
 _raw_ns = getattr(_checker_mod, '_user_ns', {})
 _trusted = {k: v for k, v in _raw_ns.items() if not k.startswith('_')}
-# Добавляем safe builtins и доверенный _user_ns (не от студента)
-_trusted['__builtins__'] = _SAFE_BUILTINS
+# Для testCode используем полные встроенные функции _builtins_mod,
+# так как авторские тесты используют sys/io для перехвата вывода.
+_trusted['__builtins__'] = _builtins_mod
 _trusted['_user_ns'] = dict(_trusted)  # доверенная копия для testCode, если он её использует
+_trusted['sys'] = _sys
+_trusted['io'] = _io
 exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
 `);
       } catch (testErr) {

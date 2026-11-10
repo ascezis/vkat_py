@@ -64,6 +64,7 @@ loadScript('app/code-hints.js');
 loadScript('app/version.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
+loadScript('app/checkers.js');
 loadScript('dev/selftest/l1-functions.js');
 loadScript('dev/selftest/l1-dicts.js');
 
@@ -700,6 +701,22 @@ async function runStorageValidation() {
   const safeGuest = allProfs.find(p => p.name.toLowerCase() === 'гость' && !p.pinHash);
   check('Быстрый старт: профиль Гость с PIN игнорируется при поиске гостевого профиля', safeGuest === undefined);
   await storage.deleteProfile(pGuestWithPin.id);
+
+  // 16. Проверка гибкой валидации ответов в predict (fuzzyPredictMatch)
+  const predictFuzzy = context.window.VkatCheckers && context.window.VkatCheckers.fuzzyPredictMatch;
+  check('VkatCheckers.fuzzyPredictMatch экспортирован', typeof predictFuzzy === 'function');
+  if (typeof predictFuzzy === 'function') {
+    check('fuzzyPredictMatch: снятие двойных кавычек вокруг строк ("nohtyp" -> nohtyp)', predictFuzzy('"nohtyp"', 'nohtyp').match === true);
+    check('fuzzyPredictMatch: снятие одинарных кавычек вокруг строк (\'hello\' -> hello)', predictFuzzy("'hello, python'", 'hello, python').match === true);
+    check('fuzzyPredictMatch: концевая точка игнорируется (hello, python. -> hello, python)', predictFuzzy('hello, python.', 'hello, python').match === true);
+    check('fuzzyPredictMatch: запятая вместо пробела (10, 3 -> 10 3)', predictFuzzy('10, 3', '10 3').match === true);
+    check('fuzzyPredictMatch: запятая без пробела (10,3 -> 10 3)', predictFuzzy('10,3', '10 3').match === true);
+    check('fuzzyPredictMatch: регистр ключевых слов (true false none 0 -> True False None 0)', predictFuzzy('true false none 0', 'True False\nNone\n0').match === true);
+    check('fuzzyPredictMatch: десятичная запятая при наличии float (3,33 -> 3.33)', predictFuzzy('3,33\n3 и 1', '3.33\n3 и 1').match === true);
+    check('fuzzyPredictMatch: пробелы в списках ([20,30,40] -> [20, 30, 40])', predictFuzzy('[20,30,40] 40 [10,30,50]', '[20, 30, 40] 40 [10, 30, 50]').match === true);
+    check('fuzzyPredictMatch: неверный ответ отклоняется', predictFuzzy('wrong_val', 'hello, python').match === false);
+    check('fuzzyPredictMatch: пустой ввод отклоняется', predictFuzzy('', 'hello, python').match === false);
+  }
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);

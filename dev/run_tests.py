@@ -9,6 +9,7 @@ import ast
 import json
 import re
 import traceback
+import math
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -27,25 +28,33 @@ def analyze_ast(code_str, requirements_json):
     nodes = list(ast.walk(tree))
     node_types = {type(n) for n in nodes}
 
-    if reqs.get("require_for") and ast.For not in node_types:
-        errors.append("В коде должен использоваться цикл for.")
+    if reqs.get("require_for"):
+        has_for = ast.For in node_types or any(isinstance(n, ast.comprehension) for n in nodes)
+        if not has_for:
+            errors.append("В коде должен использоваться цикл for.")
     
     if reqs.get("require_while") and ast.While not in node_types:
         errors.append("В коде должен использоваться цикл while.")
         
-    if reqs.get("require_loop") and (ast.For not in node_types and ast.While not in node_types):
-        errors.append("В решении обязательно должен использоваться цикл (for или while).")
+    if reqs.get("require_loop"):
+        has_loop = (ast.For in node_types or ast.While in node_types or any(isinstance(n, ast.comprehension) for n in nodes))
+        if not has_loop:
+            errors.append("В решении обязательно должен использоваться цикл (for или while).")
         
-    if reqs.get("require_def") and ast.FunctionDef not in node_types:
-        errors.append("Необходимо объявить функцию с помощью ключевого слова def.")
+    if reqs.get("require_def"):
+        has_def = ast.FunctionDef in node_types or any(isinstance(n, getattr(ast, 'AsyncFunctionDef', ())) for n in nodes)
+        if not has_def:
+            errors.append("Необходимо объявить функцию с помощью ключевого слова def.")
         
     if reqs.get("require_return"):
         has_return = any(isinstance(n, ast.Return) for n in nodes)
         if not has_return:
             errors.append("Функция должна возвращать результат через ключевое слово return.")
             
-    if reqs.get("require_if") and ast.If not in node_types:
-        errors.append("В коде должно использоваться ветвление с условием if.")
+    if reqs.get("require_if"):
+        has_if = ast.If in node_types or ast.IfExp in node_types
+        if not has_if:
+            errors.append("В коде должно использоваться ветвление с условием if.")
 
     if reqs.get("require_try") and ast.Try not in node_types:
         errors.append("В коде должна использоваться конструкция try/except.")
@@ -176,6 +185,104 @@ def _compile_user_code(code_str, filename='<student>', max_iters=5000000):
     except SyntaxError:
         return compile(code_str, filename, 'exec')
 
+def _match_output(actual, expected):
+    """Интеллектуальное сопоставление вывода программы с эталоном."""
+    if actual is None:
+        actual = ""
+    if expected is None:
+        expected = ""
+
+    act_str = str(actual).replace('\r\n', '\n').strip()
+    exp_str = str(expected).replace('\r\n', '\n').strip()
+
+    if act_str == exp_str:
+        return True, None
+
+    act_lines = [l.rstrip() for l in act_str.split('\n')]
+    exp_lines = [l.rstrip() for l in exp_str.split('\n')]
+
+    while act_lines and not act_lines[0].strip():
+        act_lines.pop(0)
+    while act_lines and not act_lines[-1].strip():
+        act_lines.pop()
+
+    while exp_lines and not exp_lines[0].strip():
+        exp_lines.pop(0)
+    while exp_lines and not exp_lines[-1].strip():
+        exp_lines.pop()
+
+    if '\n'.join(act_lines) == '\n'.join(exp_lines):
+        return True, None
+
+    def norm_yo(s):
+        return s.replace('ё', 'е').replace('Ё', 'Е')
+
+    act_collapsed = '\n'.join([re.sub(r'[ \t]+', ' ', l).strip() for l in act_lines])
+    exp_collapsed = '\n'.join([re.sub(r'[ \t]+', ' ', l).strip() for l in exp_lines])
+    if act_collapsed == exp_collapsed or norm_yo(act_collapsed) == norm_yo(exp_collapsed):
+        return True, None
+
+    def strip_punct(lines):
+        return '\n'.join([re.sub(r'[.!?]+$', '', l).strip() for l in lines])
+
+    if norm_yo(strip_punct(act_lines)) == norm_yo(strip_punct(exp_lines)):
+        return True, "Зачтено! Совет: точку в конце вывода ставить не обязательно."
+
+    if len(act_lines) == len(exp_lines):
+        all_lines_match = True
+        for a_l, e_l in zip(act_lines, exp_lines):
+            a_clean = re.sub(r'[ \t]+', ' ', a_l).strip()
+            e_clean = re.sub(r'[ \t]+', ' ', e_l).strip()
+            if a_clean == e_clean or norm_yo(a_clean) == norm_yo(e_clean):
+                continue
+            try:
+                if ast.literal_eval(a_clean) == ast.literal_eval(e_clean):
+                    continue
+            except Exception:
+                pass
+            try:
+                if math.isclose(float(a_clean), float(e_clean), rel_tol=0.01, abs_tol=0.01):
+                    continue
+            except Exception:
+                pass
+            a_toks = a_clean.split()
+            e_toks = e_clean.split()
+            if len(a_toks) == len(e_toks) and len(a_toks) > 1:
+                toks_ok = True
+                for at, et in zip(a_toks, e_toks):
+                    if at == et or norm_yo(at) == norm_yo(et):
+                        continue
+                    try:
+                        if math.isclose(float(at), float(et), rel_tol=0.01, abs_tol=0.01):
+                            continue
+                    except Exception:
+                        pass
+                    try:
+                        if ast.literal_eval(at) == ast.literal_eval(et):
+                            continue
+                    except Exception:
+                        pass
+                    toks_ok = False
+                    break
+                if toks_ok:
+                    continue
+            all_lines_match = False
+            break
+        if all_lines_match:
+            return True, None
+
+    if len(act_lines) == len(exp_lines) == 1:
+        m = re.match(r'^(?:[a-zA-Zа-яА-ЯёЁ_ ]+[:=]\s*)(.+)$', act_lines[0].strip())
+        if m:
+            sub_res, _ = _match_output(m.group(1).strip(), exp_lines[0].strip())
+            if sub_res:
+                return True, f"Зачтено! Твой код вывел '{act_lines[0]}'. Совет: в задании достаточно выводить только значение."
+
+    if norm_yo(strip_punct(act_lines)).lower() == norm_yo(strip_punct(exp_lines)).lower():
+        return True, "Зачтено! Обрати внимание на регистр букв."
+
+    return False, None
+
 def _run_task_tests(tests_json, user_ns):
     tests = json.loads(tests_json)
     for t in tests:
@@ -234,12 +341,30 @@ def _run_task_tests(tests_json, user_ns):
             elif expected_ret is None:
                 if ret_val is not None:
                     ret_mismatch = True
-            elif isinstance(expected_ret, str):
-                if not (isinstance(ret_val, str) and ret_val == expected_ret):
-                    ret_mismatch = True
             elif isinstance(expected_ret, (int, float)):
-                if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)) or ret_val != expected_ret:
+                if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)):
                     ret_mismatch = True
+                else:
+                    if isinstance(expected_ret, float) or isinstance(ret_val, float):
+                        if not math.isclose(ret_val, expected_ret, rel_tol=1e-5, abs_tol=1e-5):
+                            ret_mismatch = True
+                    else:
+                        if ret_val != expected_ret:
+                            ret_mismatch = True
+            elif isinstance(expected_ret, str):
+                if not isinstance(ret_val, str):
+                    ret_mismatch = True
+                elif ret_val != expected_ret:
+                    r_clean = ret_val.replace('\r\n', '\n').strip()
+                    e_clean = expected_ret.replace('\r\n', '\n').strip()
+                    if r_clean == e_clean:
+                        pass
+                    elif r_clean.replace('ё', 'е').replace('Ё', 'Е') == e_clean.replace('ё', 'е').replace('Ё', 'Е'):
+                        pass
+                    elif r_clean.rstrip('.') == e_clean.rstrip('.'):
+                        pass
+                    else:
+                        ret_mismatch = True
             else:
                 if ret_val != expected_ret:
                     ret_mismatch = True
@@ -255,15 +380,14 @@ def _run_task_tests(tests_json, user_ns):
                 })
 
         if has_expected_stdout:
-            norm_actual = "\n".join([line.rstrip() for line in captured_stdout.replace("\r\n", "\n").split("\n")]).strip()
-            norm_expected = "\n".join([line.rstrip() for line in expected_stdout.replace("\r\n", "\n").split("\n")]).strip()
-            if norm_actual != norm_expected:
+            is_match, _ = _match_output(captured_stdout, expected_stdout)
+            if not is_match:
                 return json.dumps({
                     "passed": False,
                     "type": "stdout_mismatch",
                     "call": call_expr,
-                    "expected": norm_expected,
-                    "actual": norm_actual,
+                    "expected": expected_stdout,
+                    "actual": captured_stdout.strip(),
                     "hidden": is_hidden
                 })
 
@@ -294,10 +418,11 @@ def check_solution(user_code, task):
     if runtime_err:
         return {"passed": False, "title": "RuntimeError", "sub": runtime_err}
 
-    norm_out = "\n".join([l.rstrip() for l in out.replace("\r\n", "\n").split("\n")]).strip()
     if "expectedOutput" in task:
-        norm_exp = "\n".join([l.rstrip() for l in task["expectedOutput"].replace("\r\n", "\n").split("\n")]).strip()
-        if norm_out != norm_exp:
+        matched, tip = _match_output(out, task["expectedOutput"])
+        if not matched:
+            norm_out = "\n".join([l.rstrip() for l in out.replace("\r\n", "\n").split("\n")]).strip()
+            norm_exp = "\n".join([l.rstrip() for l in task["expectedOutput"].replace("\r\n", "\n").split("\n")]).strip()
             return {"passed": False, "title": "OutputMismatch", "sub": f"Expected: {norm_exp}, got: {norm_out}"}
 
     if task.get("tests"):
@@ -1148,6 +1273,82 @@ try:
         failed_tests += 1
 except Exception as e:
     print(f"  × [regression_bootstrap_ast] Исключение при синтаксическом разборе bootstrap: {e}")
+    failed_tests += 1
+
+# Регрессия 4: Интеллектуальная валидация вывода (flexible output validation)
+flex_cases = [
+    ("В пределах нормы.", "В пределах нормы", True, "Точка в конце вывода зачтена"),
+    ("в пределах нормы", "В пределах нормы", True, "Нижний регистр текста зачтен"),
+    ("звездочки", "звёздочки", True, "Замена ё на е зачтена"),
+    ('{"b": 2, "a": 1}', '{"a": 1, "b": 2}', True, "Словарь с другим порядком ключей зачтен"),
+    ('{2, 1}', '{1, 2}', True, "Множество с другим порядком зачтено"),
+    ('["apple", "banana"]', "['apple', 'banana']", True, "Список с двойными кавычками зачтен"),
+    ("4.0", "4", True, "Число float/int 4.0 == 4 зачтено"),
+    ("3.3333333333333335", "3.33", True, "Погрешность float округления зачтена"),
+    ("Ответ: 55", "55", True, "Вывод с префиксом 'Ответ: 55' зачтен"),
+    ("Сумма = 55", "55", True, "Вывод с префиксом 'Сумма = 55' зачтен"),
+    ("42", "55", False, "Неверное значение корректно отклонено"),
+    ("15\n6\n21", "21", False, "Лишние строки с выводом корректно отклонены"),
+]
+
+all_flex_ok = True
+for act_val, exp_val, should_pass, desc in flex_cases:
+    m_ok, _ = _match_output(act_val, exp_val)
+    if m_ok != should_pass:
+        print(f"  × [regression_flexible_stdout] ОШИБКА на '{act_val}' vs '{exp_val}': получено {m_ok}, ожидалось {should_pass}")
+        all_flex_ok = False
+        failed_tests += 1
+        break
+
+if all_flex_ok:
+    print("  ✓ [regression_flexible_stdout] Интеллектуальная валидация вывода успешно прошла 12 проверок")
+    passed_tests += 1
+
+# Регрессия 5: Поддержка тернарного if и comprehension в AST
+ternary_code = """
+def max_of_two(a, b):
+    return a if a > b else b
+"""
+ternary_res = check_solution(ternary_code, {
+    "astRequirements": {"require_def": True, "require_return": True, "require_if": True},
+    "tests": [{"call": "max_of_two(5, 3)", "returns": 5}]
+})
+if ternary_res["passed"]:
+    print("  ✓ [regression_flexible_ast_if] Тернарный оператор 'if' корректно засчитывается для require_if")
+    passed_tests += 1
+else:
+    print(f"  × [regression_flexible_ast_if] ОШИБКА: {ternary_res}")
+    failed_tests += 1
+
+comp_code = """
+def double_all(arr):
+    return [x * 2 for x in arr]
+"""
+comp_res = check_solution(comp_code, {
+    "astRequirements": {"require_def": True, "require_return": True, "require_loop": True},
+    "tests": [{"call": "double_all([1, 2, 3])", "returns": [2, 4, 6]}]
+})
+if comp_res["passed"]:
+    print("  ✓ [regression_flexible_ast_loop] Генератор списка (comprehension) засчитывается для require_loop")
+    passed_tests += 1
+else:
+    print(f"  × [regression_flexible_ast_loop] ОШИБКА: {comp_res}")
+    failed_tests += 1
+
+# Регрессия 6: Мягкое сравнение float (погрешность округления) и строк в тестах
+float_task_code = """
+def add_floats():
+    return 0.1 + 0.2
+"""
+float_res = check_solution(float_task_code, {
+    "astRequirements": {"require_def": True, "require_return": True},
+    "tests": [{"call": "add_floats()", "returns": 0.3}]
+})
+if float_res["passed"]:
+    print("  ✓ [regression_flexible_float_returns] Погрешность float в returns (0.1+0.2 == 0.3) корректно допускается")
+    passed_tests += 1
+else:
+    print(f"  × [regression_flexible_float_returns] ОШИБКА: {float_res}")
     failed_tests += 1
 
 print(f"\nИТОГ: {passed_tests} пройдено, {failed_tests} ошибок.")

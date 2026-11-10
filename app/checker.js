@@ -123,6 +123,7 @@ import traceback as _traceback
 import re as _re
 import types as _types
 import builtins as _builtins_mod
+import math as _math
 
 # ── Создаём приватный модуль для хранения checker-логики ──────────────────
 _checker_mod = _types.ModuleType('_vkat_checker')
@@ -192,19 +193,27 @@ def _analyze_ast(code_str, requirements_json):
     nodes = list(_ast.walk(tree))
     node_types = {type(n) for n in nodes}
 
-    if reqs.get("require_for") and _ast.For not in node_types:
-        errors.append("В коде должен использоваться цикл for.")
+    if reqs.get("require_for"):
+        has_for = _ast.For in node_types or any(isinstance(n, _ast.comprehension) for n in nodes)
+        if not has_for:
+            errors.append("В коде должен использоваться цикл for.")
     if reqs.get("require_while") and _ast.While not in node_types:
         errors.append("В коде должен использоваться цикл while.")
-    if reqs.get("require_loop") and (_ast.For not in node_types and _ast.While not in node_types):
-        errors.append("В решении обязательно должен использоваться цикл (for или while).")
-    if reqs.get("require_def") and _ast.FunctionDef not in node_types:
-        errors.append("Необходимо объявить функцию с помощью ключевого слова def.")
+    if reqs.get("require_loop"):
+        has_loop = (_ast.For in node_types or _ast.While in node_types or any(isinstance(n, _ast.comprehension) for n in nodes))
+        if not has_loop:
+            errors.append("В решении обязательно должен использоваться цикл (for или while).")
+    if reqs.get("require_def"):
+        has_def = _ast.FunctionDef in node_types or any(isinstance(n, getattr(_ast, 'AsyncFunctionDef', ())) for n in nodes)
+        if not has_def:
+            errors.append("Необходимо объявить функцию с помощью ключевого слова def.")
     if reqs.get("require_return"):
         if not any(isinstance(n, _ast.Return) for n in nodes):
             errors.append("Функция должна возвращать результат через ключевое слово return.")
-    if reqs.get("require_if") and _ast.If not in node_types:
-        errors.append("В коде должно использоваться ветвление с условием if.")
+    if reqs.get("require_if"):
+        has_if = _ast.If in node_types or _ast.IfExp in node_types
+        if not has_if:
+            errors.append("В коде должно использоваться ветвление с условием if.")
     if reqs.get("require_try") and _ast.Try not in node_types:
         errors.append("В коде должна использоваться конструкция try/except.")
     if reqs.get("require_raise") and _ast.Raise not in node_types:
@@ -247,6 +256,106 @@ def _analyze_ast(code_str, requirements_json):
     return _json.dumps({"errors": errors, "variables": names})
 
 _checker_mod.analyze_ast = _analyze_ast
+
+def _match_output(actual, expected):
+    """Интеллектуальное сопоставление вывода программы с эталоном."""
+    if actual is None:
+        actual = ""
+    if expected is None:
+        expected = ""
+
+    act_str = str(actual).replace('\\r\\n', '\\n').strip()
+    exp_str = str(expected).replace('\\r\\n', '\\n').strip()
+
+    if act_str == exp_str:
+        return [True, None]
+
+    act_lines = [l.rstrip() for l in act_str.split('\\n')]
+    exp_lines = [l.rstrip() for l in exp_str.split('\\n')]
+
+    while act_lines and not act_lines[0].strip():
+        act_lines.pop(0)
+    while act_lines and not act_lines[-1].strip():
+        act_lines.pop()
+
+    while exp_lines and not exp_lines[0].strip():
+        exp_lines.pop(0)
+    while exp_lines and not exp_lines[-1].strip():
+        exp_lines.pop()
+
+    if '\\n'.join(act_lines) == '\\n'.join(exp_lines):
+        return [True, None]
+
+    def norm_yo(s):
+        return s.replace('ё', 'е').replace('Ё', 'Е')
+
+    act_collapsed = '\\n'.join([_re.sub(r'[ \\t]+', ' ', l).strip() for l in act_lines])
+    exp_collapsed = '\\n'.join([_re.sub(r'[ \\t]+', ' ', l).strip() for l in exp_lines])
+    if act_collapsed == exp_collapsed or norm_yo(act_collapsed) == norm_yo(exp_collapsed):
+        return [True, None]
+
+    def strip_punct(lines):
+        return '\\n'.join([_re.sub(r'[.!?]+$', '', l).strip() for l in lines])
+
+    if norm_yo(strip_punct(act_lines)) == norm_yo(strip_punct(exp_lines)):
+        return [True, "Зачтено! Совет: точку в конце вывода ставить не обязательно."]
+
+    if len(act_lines) == len(exp_lines):
+        all_lines_match = True
+        for a_l, e_l in zip(act_lines, exp_lines):
+            a_clean = _re.sub(r'[ \\t]+', ' ', a_l).strip()
+            e_clean = _re.sub(r'[ \\t]+', ' ', e_l).strip()
+            if a_clean == e_clean or norm_yo(a_clean) == norm_yo(e_clean):
+                continue
+            try:
+                if _ast.literal_eval(a_clean) == _ast.literal_eval(e_clean):
+                    continue
+            except Exception:
+                pass
+            try:
+                if _math.isclose(float(a_clean), float(e_clean), rel_tol=0.01, abs_tol=0.01):
+                    continue
+            except Exception:
+                pass
+            a_toks = a_clean.split()
+            e_toks = e_clean.split()
+            if len(a_toks) == len(e_toks) and len(a_toks) > 1:
+                toks_ok = True
+                for at, et in zip(a_toks, e_toks):
+                    if at == et or norm_yo(at) == norm_yo(et):
+                        continue
+                    try:
+                        if _math.isclose(float(at), float(et), rel_tol=0.01, abs_tol=0.01):
+                            continue
+                    except Exception:
+                        pass
+                    try:
+                        if _ast.literal_eval(at) == _ast.literal_eval(et):
+                            continue
+                    except Exception:
+                        pass
+                    toks_ok = False
+                    break
+                if toks_ok:
+                    continue
+            all_lines_match = False
+            break
+        if all_lines_match:
+            return [True, None]
+
+    if len(act_lines) == len(exp_lines) == 1:
+        m = _re.match(r'^(?:[a-zA-Zа-яА-ЯёЁ_ ]+[:=]\\s*)(.+)$', act_lines[0].strip())
+        if m:
+            sub_res = _match_output(m.group(1).strip(), exp_lines[0].strip())
+            if sub_res[0]:
+                return [True, f"Зачтено! Твой код вывел '{act_lines[0]}'. Совет: в задании достаточно выводить только значение."]
+
+    if norm_yo(strip_punct(act_lines)).lower() == norm_yo(strip_punct(exp_lines)).lower():
+        return [True, "Зачтено! Обрати внимание на регистр букв."]
+
+    return [False, None]
+
+_checker_mod._match_output = _match_output
 
 def _inject_loop_guard_ast(tree, max_iters=5000000):
     counter_id = 0
@@ -408,12 +517,30 @@ def _run_task_tests(tests_json):
             elif expected_ret is None:
                 if ret_val is not None:
                     ret_mismatch = True
-            elif isinstance(expected_ret, str):
-                if not (isinstance(ret_val, str) and ret_val == expected_ret):
-                    ret_mismatch = True
             elif isinstance(expected_ret, (int, float)):
-                if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)) or ret_val != expected_ret:
+                if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)):
                     ret_mismatch = True
+                else:
+                    if isinstance(expected_ret, float) or isinstance(ret_val, float):
+                        if not _math.isclose(ret_val, expected_ret, rel_tol=1e-5, abs_tol=1e-5):
+                            ret_mismatch = True
+                    else:
+                        if ret_val != expected_ret:
+                            ret_mismatch = True
+            elif isinstance(expected_ret, str):
+                if not isinstance(ret_val, str):
+                    ret_mismatch = True
+                elif ret_val != expected_ret:
+                    r_clean = ret_val.replace('\\r\\n', '\\n').strip()
+                    e_clean = expected_ret.replace('\\r\\n', '\\n').strip()
+                    if r_clean == e_clean:
+                        pass
+                    elif r_clean.replace('ё', 'е').replace('Ё', 'Е') == e_clean.replace('ё', 'е').replace('Ё', 'Е'):
+                        pass
+                    elif r_clean.rstrip('.') == e_clean.rstrip('.'):
+                        pass
+                    else:
+                        ret_mismatch = True
             else:
                 if ret_val != expected_ret:
                     ret_mismatch = True
@@ -424,12 +551,11 @@ def _run_task_tests(tests_json):
                                     "actual": repr(ret_val), "hidden": is_hidden})
 
         if has_expected_stdout:
-            norm_actual = "\\n".join([line.rstrip() for line in captured_stdout.replace("\\r\\n", "\\n").split("\\n")]).strip()
-            norm_expected = "\\n".join([line.rstrip() for line in expected_stdout.replace("\\r\\n", "\\n").split("\\n")]).strip()
-            if norm_actual != norm_expected:
+            is_match, _ = _match_output(captured_stdout, expected_stdout)
+            if not is_match:
                 return _json.dumps({"passed": False, "type": "stdout_mismatch",
-                                    "call": call_expr, "expected": norm_expected,
-                                    "actual": norm_actual, "hidden": is_hidden})
+                                    "call": call_expr, "expected": expected_stdout,
+                                    "actual": captured_stdout.strip(), "hidden": is_hidden})
 
     return _json.dumps({"passed": True})
 
@@ -446,6 +572,9 @@ def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=5000000):
 
 def _run_task_tests_proxy(tests_json):
     return _checker_mod._run_task_tests(tests_json)
+
+def _match_output_proxy(actual_str, expected_str):
+    return _json.dumps(_checker_mod._match_output(actual_str, expected_str))
 `);
 
         pyodideInstance = pyodide;
@@ -521,6 +650,59 @@ def _run_task_tests_proxy(tests_json):
       .map(line => line.trimEnd())
       .join('\n')
       .trim();
+  }
+
+  /**
+   * Резервное гибкое сопоставление вывода на JS (если рантайм Python недоступен)
+   */
+  function fuzzyMatchOutputJS(actual, expected) {
+    if (actual === expected) return { match: true, tip: null };
+
+    const actStr = (actual || '').replace(/\r\n/g, '\n').trim();
+    const expStr = (expected || '').replace(/\r\n/g, '\n').trim();
+
+    if (actStr === expStr) return { match: true, tip: null };
+
+    const actLines = actStr.split('\n').map(l => l.trimEnd()).filter(Boolean);
+    const expLines = expStr.split('\n').map(l => l.trimEnd()).filter(Boolean);
+
+    if (actLines.join('\n') === expLines.join('\n')) return { match: true, tip: null };
+
+    const normYo = s => s.replace(/ё/g, 'е').replace(/Ё/g, 'Е');
+    const collapse = s => s.replace(/[ \t]+/g, ' ').trim();
+
+    const actCollapsed = actLines.map(collapse).join('\n');
+    const expCollapsed = expLines.map(collapse).join('\n');
+
+    if (actCollapsed === expCollapsed || normYo(actCollapsed) === normYo(expCollapsed)) {
+      return { match: true, tip: null };
+    }
+
+    const stripPunct = s => s.replace(/[.!?]+$/, '').trim();
+    const actNoPunct = actLines.map(l => normYo(stripPunct(collapse(l)))).join('\n');
+    const expNoPunct = expLines.map(l => normYo(stripPunct(collapse(l)))).join('\n');
+    if (actNoPunct === expNoPunct) {
+      return { match: true, tip: 'Зачтено! Совет: точку или знак препинания в конце вывода ставить не обязательно.' };
+    }
+
+    if (actLines.length === expLines.length && actLines.length === 1) {
+      const m = actLines[0].trim().match(/^(?:[a-zA-Zа-яА-ЯёЁ_ ]+[:=]\s*)(.+)$/);
+      if (m) {
+        const subRes = fuzzyMatchOutputJS(m[1].trim(), expLines[0].trim());
+        if (subRes.match) {
+          return {
+            match: true,
+            tip: `Зачтено! Твой код вывел "${actLines[0]}". Совет: в заданиях достаточно выводить только значение.`
+          };
+        }
+      }
+    }
+
+    if (actNoPunct.toLowerCase() === expNoPunct.toLowerCase()) {
+      return { match: true, tip: 'Зачтено! Обрати внимание на регистр букв.' };
+    }
+
+    return { match: false, tip: null };
   }
 
   /**
@@ -631,17 +813,33 @@ def _run_task_tests_proxy(tests_json):
     }
 
     // Проверка логического соответствия (ожидаемый вывод, если задан)
-    const normActual = normalizeOutput(stdout);
-    const normExpected = normalizeOutput(task.expectedOutput || '');
+    let outputTip = null;
+    if (task.expectedOutput !== undefined) {
+      let isMatch = false;
+      try {
+        const matchResJson = await pyodide.runPythonAsync(
+          `_match_output_proxy(${JSON.stringify(stdout)}, ${JSON.stringify(task.expectedOutput)})`
+        );
+        const [matched, tip] = JSON.parse(matchResJson);
+        isMatch = matched;
+        outputTip = tip;
+      } catch (e) {
+        const jsRes = fuzzyMatchOutputJS(stdout, task.expectedOutput);
+        isMatch = jsRes.match;
+        outputTip = jsRes.tip;
+      }
 
-    if (task.expectedOutput !== undefined && normActual !== normExpected) {
-      return {
-        passed: false,
-        title: 'Вывод не совпадает с ожидаемым',
-        sub: `Ожидалось: "${normExpected.replace(/\n/g, '↵')}", получено: "${normActual.replace(/\n/g, '↵')}"`,
-        stdout: stdout,
-        improveTips: []
-      };
+      if (!isMatch) {
+        const normActual = normalizeOutput(stdout);
+        const normExpected = normalizeOutput(task.expectedOutput || '');
+        return {
+          passed: false,
+          title: 'Вывод не совпадает с ожидаемым',
+          sub: `Ожидалось: "${normExpected.replace(/\n/g, '↵')}", получено: "${normActual.replace(/\n/g, '↵')}"`,
+          stdout: stdout,
+          improveTips: []
+        };
+      }
     }
 
     // Проверка тестов tests[] (новый формат)
@@ -735,6 +933,9 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
 
     // Слой 3: PEP8 линтер (код успешен, формируем советы по улучшению)
     const improveTips = lintCode(userCode, astResult.variables, task.improveTip);
+    if (outputTip) {
+      improveTips.unshift(outputTip);
+    }
 
     return {
       passed: true,
@@ -748,7 +949,8 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
   window.CodeChecker = {
     initPyodide,
     checkSolution,
-    runCode
+    runCode,
+    fuzzyMatchOutputJS
   };
 
 })(window);

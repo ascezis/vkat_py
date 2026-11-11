@@ -12,6 +12,10 @@
     PROFILE_PREFIX: 'vkat_p:',
     ACTIVE_TAB_PROFILE: 'vkat_active_profile',
     LEGACY_BACKUP: 'vkat_legacy_backup',
+    // Настройки приложения (единый JSON-ключ, доступ через getSetting/setSetting)
+    SETTINGS: 'vkat_settings',
+    // Очередь недоставленной телеметрии CONNECT (см. FEATURES/CONNECT-PROTOCOL.md)
+    CONNECT_OUTBOX: 'vkat_outbox',
     // Устаревшие ключи (для миграции)
     LEGACY_COMPLETED: 'vkat_completed_tasks',
     LEGACY_DRAFTS: 'vkat_code_drafts',
@@ -729,6 +733,58 @@
     }
   }
 
+  // ─── Настройки приложения и outbox CONNECT ─────────────────────────────────
+
+  /**
+   * Чтение настройки приложения (единый JSON-ключ KEYS.SETTINGS).
+   * Весь доступ к localStorage для телеметрии идёт только отсюда.
+   */
+  function getSetting(key, defaultValue = null) {
+    try {
+      const raw = storageGet(KEYS.SETTINGS);
+      if (!raw) return defaultValue;
+      const obj = JSON.parse(raw);
+      return obj[key] === undefined ? defaultValue : obj[key];
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+
+  /**
+   * Запись настройки приложения
+   */
+  function setSetting(key, value) {
+    let obj = {};
+    try {
+      const raw = storageGet(KEYS.SETTINGS);
+      if (raw) obj = JSON.parse(raw) || {};
+    } catch (e) {
+      obj = {};
+    }
+    obj[key] = value;
+    storageSet(KEYS.SETTINGS, JSON.stringify(obj));
+  }
+
+  /**
+   * Очередь недоставленных снимков телеметрии (outbox CONNECT-протокола)
+   */
+  function getOutbox() {
+    try {
+      const raw = storageGet(KEYS.CONNECT_OUTBOX);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /**
+   * Перезапись очереди outbox
+   */
+  function setOutbox(items) {
+    storageSet(KEYS.CONNECT_OUTBOX, JSON.stringify(Array.isArray(items) ? items : []));
+  }
+
   // Экспорт публичного API
   window.VkatStorage = {
     KEYS,
@@ -749,7 +805,11 @@
     migrateLegacyToProfile,
     exportProfile,
     importProfile,
-    resetAll
+    resetAll,
+    getSetting,
+    setSetting,
+    getOutbox,
+    setOutbox
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

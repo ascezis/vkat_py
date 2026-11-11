@@ -29,6 +29,8 @@ const context = {
   Uint8Array: Uint8Array,
   setTimeout: setTimeout,
   clearTimeout: clearTimeout,
+  setInterval: setInterval,
+  clearInterval: clearInterval,
   localStorage: localStorageMock,
   sessionStorage: sessionStorageMock,
   crypto: globalThis.crypto
@@ -65,6 +67,8 @@ loadScript('app/version.js');
 loadScript('app/storage.js');
 loadScript('app/errors.js');
 loadScript('app/checkers.js');
+// Телеметрия CONNECT (секция 17 валидации)
+loadScript('app/connect.js');
 loadScript('dev/selftest/l1-functions.js');
 loadScript('dev/selftest/l1-dicts.js');
 
@@ -716,6 +720,99 @@ async function runStorageValidation() {
     check('fuzzyPredictMatch: пробелы в списках ([20,30,40] -> [20, 30, 40])', predictFuzzy('[20,30,40] 40 [10,30,50]', '[20, 30, 40] 40 [10, 30, 50]').match === true);
     check('fuzzyPredictMatch: неверный ответ отклоняется', predictFuzzy('wrong_val', 'hello, python').match === false);
     check('fuzzyPredictMatch: пустой ввод отклоняется', predictFuzzy('', 'hello, python').match === false);
+  }
+
+  // 17. Валидация телеметрии CONNECT (VkatConnect: endpoint, события, outbox, снапшот)
+  const connect = context.window.VkatConnect;
+  check('VkatConnect экспортирован (sessionStart/trackCheck/trackStageComplete)',
+        Boolean(connect) && typeof connect.sessionStart === 'function' &&
+        typeof connect.trackCheck === 'function' && typeof connect.trackStageComplete === 'function');
+
+  if (connect) {
+    const fetchLog = [];
+    let fetchMode = 'ok';
+    context.fetch = (url, opts) => {
+      fetchLog.push({ url, opts });
+      if (fetchMode === 'fail') return Promise.reject(new Error('network down'));
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    };
+
+    // 17.1 Автономный no-op: без endpoint'а сессия не создаётся
+    connect.sessionStart('prof0001', 'Тест');
+    check('CONNECT: без endpoint и без /app/ пути — no-op (офлайн-режим)', connect.isEnabled() === false);
+
+    // 17.2 Явный endpoint из VKAT_CONNECT_ENDPOINT
+    context.VKAT_CONNECT_ENDPOINT = 'http://teacher-lan:8087';
+    connect.sessionStart('prof0001', 'Тест');
+    check('CONNECT: sessionStart с явным endpoint включает телеметрию', connect.isEnabled() === true);
+    check('CONNECT: resolveEndpoint нормализует базу (без /report)',
+          connect.resolveEndpoint() === 'http://teacher-lan:8087');
+    const hb = fetchLog.find(f => f.url === 'http://teacher-lan:8087/event');
+    check('CONNECT: стартовый пульс ушёл на /event', Boolean(hb));
+    const hbBody = hb ? JSON.parse(hb.opts.body) : {};
+    check('CONNECT: пульс несёт kind/profileId/name/ts/timeSpentSeconds',
+          hbBody.kind === 'heartbeat' && hbBody.profileId === 'prof0001' &&
+          hbBody.name === 'Тест' && typeof hbBody.ts === 'number' &&
+          typeof hbBody.timeSpentSeconds === 'number');
+
+    // 17.3 Попытка code-задания: attempt-событие с классом ошибки и кодом
+    const taskCode = { id: 'l1_fn_c1', type: 'code', title: 'Привет, функция' };
+    connect.trackCheck(taskCode, {
+      passed: false,
+      errorText: 'Traceback (most recent call last):\nNameError: name \'x\' is not defined',
+      code: 'print(x)'
+    });
+    const attempt1 = fetchLog.filter(f => f.url.endsWith('/event'))
+      .map(f => JSON.parse(f.opts.body)).find(b => b.kind === 'attempt');
+    check('CONNECT: attempt содержит passed=false, errorClass=NameError, finalCode, completed=false',
+          Boolean(attempt1) && attempt1.passed === false && attempt1.errorClass === 'NameError' &&
+          attempt1.finalCode === 'print(x)' && attempt1.completed === false);
+
+    // 17.4 Успешная попытка: completed=true
+    connect.trackCheck(taskCode, { passed: true, errorText: '', code: 'print("hi")' });
+    const attempt2 = fetchLog.filter(f => f.url.endsWith('/event'))
+      .map(f => JSON.parse(f.opts.body)).filter(b => b.kind === 'attempt')[1];
+    check('CONNECT: успешная попытка помечает completed', attempt2 && attempt2.passed === true && attempt2.completed === true);
+
+    // 17.5 Сбой сети уводит событие в outbox (через VkatStorage)
+    fetchMode = 'fail';
+    connect.trackCheck(taskCode, { passed: false, errorText: 'TypeError: bad', code: 'print(1)' });
+    await new Promise(r => setTimeout(r, 30)); // enqueue — микрозадача, даём ей отработать
+    const outboxAfterFail = context.window.VkatStorage.getOutbox();
+    check('CONNECT: сбой сети кладёт событие в outbox', outboxAfterFail.length === 1 &&
+          outboxAfterFail[0].data.kind === 'attempt');
+
+    // 17.6 Восстановление сети: снапшот уходит на /report, outbox досылается
+    fetchMode = 'ok';
+    connect.trackStageComplete('core');
+    const snap = fetchLog.find(f => f.url === 'http://teacher-lan:8087/report');
+    check('CONNECT: trackStageComplete отправляет снапшот на /report', Boolean(snap));
+    const snapBody = snap ? JSON.parse(snap.opts.body) : {};
+    check('CONNECT: снапшот по схеме спеки (protocol/student/session/solutions)',
+          snapBody.protocol === 'vkat-connect/v1' && snapBody.student.profileId === 'prof0001' &&
+          snapBody.session.stageId === 'core' && Array.isArray(snapBody.solutions) &&
+          snapBody.solutions.some(s => s.itemId === 'l1_fn_c1' && s.attempts === 3 &&
+          Array.isArray(s.errorsEncountered) && s.errorsEncountered.includes('NameError')));
+    await new Promise(r => setTimeout(r, 60));
+    check('CONNECT: outbox дослан после восстановления сети',
+          context.window.VkatStorage.getOutbox().length === 0);
+
+    // 17.7 Авто-детект консоли: страница отдана под /app/ → same-origin endpoint
+    connect.sessionEnd();
+    delete context.VKAT_CONNECT_ENDPOINT;
+    context.location = { pathname: '/app/', origin: 'http://192.168.1.50:8087' };
+    connect.sessionStart('prof0002', 'Вася');
+    check('CONNECT: авто-детект консоли по пути /app/ (same-origin)',
+          connect.isEnabled() === true && fetchLog.some(f => f.url === 'http://192.168.1.50:8087/event'));
+    connect.sessionEnd();
+
+    // 17.8 Настройка connect_endpoint через VkatStorage (низший приоритет)
+    delete context.location;
+    check('CONNECT: после sessionEnd телеметрия выключена', connect.isEnabled() === false);
+    context.window.VkatStorage.setSetting('connect_endpoint', 'http://fallback:8090/');
+    check('CONNECT: resolveEndpoint читает настройку VkatStorage и нормализует слэш',
+          connect.resolveEndpoint() === 'http://fallback:8090');
+    context.window.VkatStorage.setSetting('connect_endpoint', '');
   }
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);

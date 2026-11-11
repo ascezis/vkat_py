@@ -348,6 +348,8 @@
       window.VkatStorage.flushSync();
       window.VkatStorage.clearActiveProfile();
     }
+    // Телеметрия CONNECT: завершаем сессию перед перезагрузкой
+    if (window.VkatConnect) window.VkatConnect.sessionEnd();
     window.location.reload();
   }
 
@@ -585,6 +587,9 @@
       }
     };
 
+    // Телеметрия CONNECT: этап завершён — полный снапшот vkat-connect/v1
+    if (window.VkatConnect) window.VkatConnect.trackStageComplete(stageId);
+
     showScreen('finish');
   }
 
@@ -762,6 +767,7 @@
     // Сброс буфера перед уходом со страницы
     window.addEventListener('beforeunload', () => {
       if (window.VkatStorage) window.VkatStorage.flushSync();
+      if (window.VkatConnect) window.VkatConnect.sessionEnd();
     });
 
     // Межвкладочная синхронизация прогресса
@@ -788,6 +794,8 @@
       if (task) {
         state.completedTasks.add(task.id);
         saveStorage();
+        // Телеметрия CONNECT: теория закрыта без попытки
+        if (window.VkatConnect) window.VkatConnect.trackItemComplete(task);
       }
       nextTask();
     });
@@ -834,6 +842,8 @@
     if (activeProfile) {
       await loadStorage();
       showScreen('start');
+      // Телеметрия CONNECT: сессия ученика (no-op без endpoint'а)
+      if (window.VkatConnect) window.VkatConnect.sessionStart(activeProfile.id, activeProfile.name);
     } else {
       showScreen('profiles');
     }

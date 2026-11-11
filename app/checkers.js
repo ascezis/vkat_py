@@ -169,6 +169,15 @@
       const code = dom.editor.value;
       const result = await window.CodeChecker.checkSolution(code, task);
 
+      // Телеметрия CONNECT: попытка решения
+      if (window.VkatConnect) {
+        window.VkatConnect.trackCheck(task, {
+          passed: result.passed,
+          errorText: result.stdout || '',
+          code: code
+        });
+      }
+
       dom.resultBox.classList.add('visible');
       revealResult(dom.resultBox);
 
@@ -294,6 +303,16 @@
       revealResult(dom.predictResultBox);
 
       const matchRes = fuzzyPredictMatch(userVal, actualVal);
+
+      // Телеметрия CONNECT: отправка предсказания (засчитывается с первой попытки)
+      if (window.VkatConnect) {
+        window.VkatConnect.trackCheck(task, {
+          passed: matchRes.match,
+          completed: true,
+          userAnswer: dom.predictInput.value
+        });
+      }
+
       if (matchRes.match) {
         dom.predictResultMark.className = 'result-mark ok';
         dom.predictResultMark.textContent = '✓';
@@ -363,6 +382,17 @@
     }
 
     const isCorrect = state.selectedQuizOption === task.correct;
+
+    // Телеметрия CONNECT: ответ на тест
+    if (window.VkatConnect) {
+      const options = Array.isArray(task.options) ? task.options : [];
+      const chosen = options[state.selectedQuizOption];
+      window.VkatConnect.trackCheck(task, {
+        passed: isCorrect,
+        completed: isCorrect,
+        userAnswer: chosen != null ? String(chosen) : String(state.selectedQuizOption)
+      });
+    }
 
     dom.quizResultBox.classList.add('visible');
     revealResult(dom.quizResultBox);

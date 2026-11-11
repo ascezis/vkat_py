@@ -40,6 +40,17 @@
 
   // ─── Экран профилей ──────────────────────────────────────────────────────────
 
+  /**
+   * Телеметрия CONNECT: после активации профиля открываем сессию телеметрии.
+   * Вызывается на всех путях входа (вход, PIN, гость, создание профиля);
+   * без endpoint'а sessionStart остаётся no-op.
+   */
+  function notifyConnectSession() {
+    if (!window.VkatConnect || !window.VkatStorage) return;
+    const meta = window.VkatStorage.getActiveProfileSync();
+    if (meta) window.VkatConnect.sessionStart(meta.id, meta.name);
+  }
+
   async function renderProfilesScreen() {
     if (!window.VkatStorage) return;
     const profiles = await window.VkatStorage.listProfiles();
@@ -184,6 +195,7 @@
     try {
       await window.VkatStorage.selectProfile(profileId, pin);
       await window.VkatApp.loadStorage();
+      notifyConnectSession();
       window.VkatApp.showScreen('start');
     } catch (err) {
       console.error('Ошибка входа в профиль:', err);
@@ -233,6 +245,7 @@
       await window.VkatStorage.selectProfile(currentPinTargetProfile.id, pin);
       closePinModal();
       await window.VkatApp.loadStorage();
+      notifyConnectSession();
       window.VkatApp.showScreen('start');
     } catch (err) {
       if (dom.pinErrorAlert) dom.pinErrorAlert.textContent = 'Неверный PIN-код';
@@ -256,6 +269,7 @@
       }
       await window.VkatStorage.selectProfile(guest.id);
       await window.VkatApp.loadStorage();
+      notifyConnectSession();
       window.VkatApp.showScreen('start');
     } catch (err) {
       console.error('Ошибка быстрого старта:', err);
@@ -323,6 +337,7 @@
           }
           await window.VkatStorage.selectProfile(profile.id, pin);
           await window.VkatApp.loadStorage();
+          notifyConnectSession();
           window.VkatApp.showScreen('start');
         } catch (err) {
           alert('Ошибка создания профиля: ' + err.message);

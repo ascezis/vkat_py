@@ -151,11 +151,13 @@ def _student_import(name, globals=None, locals=None, fromlist=(), level=0):
 # ── Безопасный набор встроенных функций для студенческого кода ────────────
 _SAFE_BUILTINS = {
     k: getattr(_builtins_mod, k) for k in (
-        'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'breakpoint',
+        # ВНИМАНИЕ: breakpoint (pdb вешает рантайм) и help (интерактивный
+        # pydoc требует stdin) сознательно НЕ входят в набор.
+        'abs', 'all', 'any', 'ascii', 'bin', 'bool',
         'bytearray', 'bytes', 'callable', 'chr', 'complex',
         'dict', 'dir', 'divmod', 'enumerate', 'filter',
         'float', 'format', 'frozenset', 'hasattr', 'hash',
-        'help', 'hex', 'id', 'input', 'int', 'isinstance',
+        'hex', 'id', 'input', 'int', 'isinstance',
         'issubclass', 'iter', 'len', 'list', 'locals', 'map',
         'max', 'min', 'next', 'object', 'oct', 'ord', 'pow',
         'print', 'property', 'range', 'repr', 'reversed',
@@ -357,7 +359,9 @@ def _match_output(actual, expected):
 
 _checker_mod._match_output = _match_output
 
-def _inject_loop_guard_ast(tree, max_iters=5000000):
+# 1 млн итераций (а не 5M): в Pyodide 5M идут дольше watchdog, и ученик
+# получает общий таймаут вместо точного сообщения loop-guard.
+def _inject_loop_guard_ast(tree, max_iters=1000000):
     counter_id = 0
     class LoopGuardInjector(_ast.NodeTransformer):
         def _inject(self, node):
@@ -418,7 +422,7 @@ def _clean_tb(tb):
 
 _checker_mod._clean_tb = _clean_tb
 
-def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
+def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000):
     """Выполняет код студента в изолированном пространстве имён."""
     import sys as _sys_
     import io as _io_
@@ -450,7 +454,9 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
         exec(code_obj, target_ns)
         if save_user_ns:
             _checker_mod._user_ns = target_ns
-    except Exception:
+    except BaseException:
+        # BaseException, а не Exception: SystemExit есть в _SAFE_BUILTINS и
+        # иначе пролетает мимо _runtime_err, ломая всю дальнейшую проверку.
         _checker_mod._runtime_err = _clean_tb(_tb_.format_exc())
     finally:
         _sys_.stdout = old_out
@@ -496,7 +502,9 @@ def _run_task_tests(tests_json):
                 func_not_found = fn
             else:
                 call_err = _clean_tb(_tb_.format_exc())
-        except Exception:
+        except BaseException:
+            # BaseException: SystemExit из функции ученика не должен ронять
+            # весь вызов _run_task_tests.
             call_err = _clean_tb(_tb_.format_exc())
         finally:
             _sys_.stdout = old_out
@@ -567,7 +575,7 @@ _checker_mod._run_task_tests = _run_task_tests
 def analyze_ast(code_str, requirements_json):
     return _checker_mod.analyze_ast(code_str, requirements_json)
 
-def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=5000000):
+def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=1000000):
     _checker_mod._exec_user_code(code_str, save_user_ns, max_iters)
 
 def _run_task_tests_proxy(tests_json):
@@ -955,10 +963,34 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
 
   // ─── Фоновый Web Worker («Антифриз» — Sandbox Worker) ─────────────────────
 
+  /**
+   * Результат «песочница не смогла исполнить payload». Код ученика при этом
+   * НЕ исполняется повторно в главном потоке — повторный inline-запуск того же
+   * кода может заморозить UI (то, от чего защищает issue #2).
+   */
+  function sandboxFailureResult(err) {
+    const detail = err && err.message ? err.message : String(err || 'Worker failure');
+    return {
+      passed: false,
+      title: 'Ошибка проверки',
+      sub: 'Фоновая песочница не смогла выполнить проверку и была перезапущена. Попробуй нажать «Проверить» ещё раз.',
+      stdout: 'SandboxError: ' + detail,
+      isSandboxError: true,
+      improveTips: []
+    };
+  }
+
   class PyodideWorkerBridge {
-    static DEFAULT_TIMEOUT_MS = 7000;
 
     constructor() {
+      // Обычные свойства вместо static-полей: static class fields требуют ES2022,
+      // и на старых браузерах всё объявление класса падает с SyntaxError,
+      // лишая checker.js и in-thread fallback (см. TECH-DEBT: школьные ПК).
+      this.DEFAULT_TIMEOUT_MS = 7000;
+      this.INIT_TIMEOUT_MS = 90000;      // JS-таймаут на INIT воркера (в воркере свой, 60с)
+      this.MAX_CONSECUTIVE_CRASHES = 3;  // после стольких крашей подряд — перманентный fallback
+      this._crashCount = 0;
+      this._initTimer = null;
       this.worker = null;
       this.isReady = false;
       this.initPromise = null;
@@ -1009,7 +1041,14 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
     }
 
     handleWorkerCrash(err) {
-      this.useFallback = true;
+      // Одиночный краш (OOM, wasm abort) не должен перманентно отключать «Антифриз»:
+      // воркер пересоздаётся, а перманентный fallback включается только после серии
+      // крашей подряд (например, код ученика стабильно роняет wasm).
+      this._crashCount++;
+      if (this._crashCount >= this.MAX_CONSECUTIVE_CRASHES) {
+        console.warn('[PyodideWorkerBridge] Крашей подряд:', this._crashCount, '— перманентный fallback.');
+        this.useFallback = true;
+      }
       for (const [id, req] of this.pending.entries()) {
         clearTimeout(req.timer);
         req.reject(err || new Error('Worker crash'));
@@ -1019,6 +1058,10 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
         try { this.worker.terminate(); } catch (_) {}
         this.worker = null;
       }
+      if (!this.useFallback) {
+        // Прогреваем пересозданный воркер в фоне, чтобы следующая проверка была быстрой.
+        this.ensureReady().catch(() => {});
+      }
     }
 
     handleMessage(data) {
@@ -1027,11 +1070,14 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
 
       if (type === 'INIT_OK') {
         this.isReady = true;
+        this._crashCount = 0;
+        if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
         if (this._initResolve) {
           this._initResolve(true);
           this._initResolve = null;
         }
       } else if (type === 'INIT_ERROR') {
+        if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
         if (this._initReject) {
           this._initReject(new Error(error || 'Worker init failed'));
           this._initReject = null;
@@ -1041,6 +1087,7 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
         if (req) {
           clearTimeout(req.timer);
           this.pending.delete(id);
+          this._crashCount = 0; // успешное исполнение — серия крашей прервана
           req.resolve(result);
         }
       } else if (type === 'CHECK_ERROR' || type === 'RUN_ERROR') {
@@ -1064,16 +1111,37 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       }
 
       this.initPromise = new Promise((resolve) => {
-        this._initResolve = () => resolve(true);
+        let settled = false;
+        const finish = (ok) => {
+          if (settled) return;
+          settled = true;
+          if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
+          resolve(ok);
+        };
+        this._initResolve = () => finish(true);
         this._initReject = () => {
           this.useFallback = true;
-          resolve(false);
+          finish(false);
         };
+        // Страховка: если воркер завис до установки обработчиков (например,
+        // importScripts не отвечает), внутренний 60-сек таймер воркера не сработает.
+        // Не даём главному потоку ждать вечно.
+        this._initTimer = setTimeout(() => {
+          console.warn('[PyodideWorkerBridge] INIT не ответил за', this.INIT_TIMEOUT_MS, 'мс — переключение на локальный рантайм.');
+          this._initResolve = null;
+          this._initReject = null;
+          this.useFallback = true;
+          if (this.worker) {
+            try { this.worker.terminate(); } catch (_) {}
+            this.worker = null;
+          }
+          finish(false);
+        }, this.INIT_TIMEOUT_MS);
         try {
           this.worker.postMessage({ type: 'INIT' });
         } catch (_) {
           this.useFallback = true;
-          resolve(false);
+          finish(false);
         }
       });
 
@@ -1097,37 +1165,46 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       }
 
       const id = ++this.reqId;
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          this.pending.delete(id);
-          this.terminateAndRespawn();
-          this.ensureReady().catch(() => {});
+      try {
+        return await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => {
+            this.pending.delete(id);
+            this.terminateAndRespawn();
+            this.ensureReady().catch(() => {});
 
-          resolve({
-            passed: false,
-            title: 'Превышено время выполнения',
-            sub: `Программа выполнялась дольше ${Math.round(timeoutMs / 1000)} секунд. Возможно, в коде бесконечный цикл (проверь while).`,
-            stdout: `TimeoutError: Превышено время выполнения программы (${timeoutMs}мс). Код был принудительно остановлен фоновой песочницей («Антифриз»).`,
-            isRuntimeError: true,
-            friendlyExplain: 'Программа зависла в бесконечном цикле и была принудительно остановлена («Антифриз»). Проверь, изменяются ли переменные внутри цикла while.',
-            improveTips: []
-          });
-        }, timeoutMs);
+            resolve({
+              passed: false,
+              title: 'Превышено время выполнения',
+              sub: `Программа выполнялась дольше ${Math.round(timeoutMs / 1000)} секунд. Возможно, в коде бесконечный цикл (проверь while).`,
+              stdout: `TimeoutError: Превышено время выполнения программы (${timeoutMs}мс). Код был принудительно остановлен фоновой песочницей («Антифриз»).`,
+              isRuntimeError: true,
+              friendlyExplain: 'Программа зависла в бесконечном цикле и была принудительно остановлена («Антифриз»). Проверь, изменяются ли переменные внутри цикла while.',
+              improveTips: []
+            });
+          }, timeoutMs);
 
-        this.pending.set(id, { timer, resolve, reject });
-        try {
-          this.worker.postMessage({
-            type: 'CHECK',
-            id,
-            payload: { code, task }
-          });
-        } catch (err) {
-          clearTimeout(timer);
-          this.pending.delete(id);
-          this.useFallback = true;
-          resolve(fallbackCheckSolution(code, task));
-        }
-      });
+          this.pending.set(id, { timer, resolve, reject });
+          try {
+            this.worker.postMessage({
+              type: 'CHECK',
+              id,
+              payload: { code, task }
+            });
+          } catch (err) {
+            clearTimeout(timer);
+            this.pending.delete(id);
+            this.useFallback = true;
+            resolve(fallbackCheckSolution(code, task));
+          }
+        });
+      } catch (err) {
+        // Воркер упал (краш/OOM или CHECK_ERROR) УЖЕ ПОСЛЕ того, как взял payload.
+        // Повторный запуск того же кода в главном потоке может его заморозить —
+        // ровно то, от чего защищает «Антифриз» (issue #2). Возвращаем ошибку
+        // как результат, не исполняя код повторно.
+        console.warn('[PyodideWorkerBridge] Ошибка исполнения в воркере:', err);
+        return sandboxFailureResult(err);
+      }
     }
 
     async runCode(code, timeoutMs = 7000) {
@@ -1137,32 +1214,37 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       }
 
       const id = ++this.reqId;
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-          this.pending.delete(id);
-          this.terminateAndRespawn();
-          this.ensureReady().catch(() => {});
+      try {
+        return await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => {
+            this.pending.delete(id);
+            this.terminateAndRespawn();
+            this.ensureReady().catch(() => {});
 
-          resolve({
-            stdout: '',
-            error: `TimeoutError: Превышено время выполнения (${timeoutMs}мс).`
-          });
-        }, timeoutMs);
+            resolve({
+              stdout: '',
+              error: `TimeoutError: Превышено время выполнения (${timeoutMs}мс).`
+            });
+          }, timeoutMs);
 
-        this.pending.set(id, { timer, resolve, reject });
-        try {
-          this.worker.postMessage({
-            type: 'RUN',
-            id,
-            payload: { code }
-          });
-        } catch (err) {
-          clearTimeout(timer);
-          this.pending.delete(id);
-          this.useFallback = true;
-          resolve(fallbackRunCode(code));
-        }
-      });
+          this.pending.set(id, { timer, resolve, reject });
+          try {
+            this.worker.postMessage({
+              type: 'RUN',
+              id,
+              payload: { code }
+            });
+          } catch (err) {
+            clearTimeout(timer);
+            this.pending.delete(id);
+            this.useFallback = true;
+            resolve(fallbackRunCode(code));
+          }
+        });
+      } catch (err) {
+        console.warn('[PyodideWorkerBridge] Ошибка исполнения в воркере (runCode):', err);
+        return { stdout: '', error: 'SandboxError: ' + (err && err.message ? err.message : String(err)) };
+      }
     }
   }
 
@@ -1186,9 +1268,11 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       try {
         res = await bridge.checkSolution(userCode, task, timeoutMs);
       } catch (err) {
-        console.warn('[CodeChecker] Ошибка вызова воркере, переключение на локальный fallback:', err);
-        bridge.useFallback = true;
-        res = await fallbackCheckSolution(userCode, task);
+        // Дублирующая страховка: bridge.checkSolution сам конвертирует отказы
+        // в результат. Если исключение всё же дошло сюда — НЕ исполняем код
+        // повторно в главном потоке (риск заморозки UI, issue #2).
+        console.warn('[CodeChecker] Сбой моста песочницы:', err);
+        res = sandboxFailureResult(err);
       }
     } else {
       res = await fallbackCheckSolution(userCode, task);
@@ -1205,9 +1289,8 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       try {
         return await bridge.runCode(code, timeoutMs);
       } catch (err) {
-        console.warn('[CodeChecker] Ошибка вызова воркера runCode, переключение на локальный fallback:', err);
-        bridge.useFallback = true;
-        return fallbackRunCode(code);
+        console.warn('[CodeChecker] Сбой моста песочницы (runCode):', err);
+        return { stdout: '', error: 'SandboxError: ' + (err && err.message ? err.message : String(err)) };
       }
     }
     return fallbackRunCode(code);

@@ -840,6 +840,33 @@ async function runStorageValidation() {
       checkerFile.includes('fallbackRunCode') &&
       checkerFile.includes('fallbackInitPyodideInThread');
     check('Issue #2 Web Worker: checker.js содержит in-thread fallback для окружений без Worker', hasWorkerFallback);
+
+    // 19.1 Харднинг «Антифриза» (P1/P2 фиксы)
+    check('Антифриз: краш воркера не отключает песочницу навсегда (счётчик крашей + respawn)',
+      checkerFile.includes('MAX_CONSECUTIVE_CRASHES') && checkerFile.includes('this._crashCount'));
+
+    check('Антифриз: сбой воркера после взятия payload НЕ перезапускает код в главном потоке',
+      checkerFile.includes('sandboxFailureResult') &&
+      checkerFile.includes('return sandboxFailureResult(err);') &&
+      checkerFile.includes('res = sandboxFailureResult(err);'));
+
+    check('Антифриз: ensureReady ограничен JS-таймаутом INIT (90с)',
+      checkerFile.includes('INIT_TIMEOUT_MS = 90000'));
+
+    check('Антифриз: класс моста без ES2022 static-поля (совместимость со старыми браузерами)',
+      !/static\s+DEFAULT_TIMEOUT_MS/.test(checkerFile) &&
+      checkerFile.includes('this.DEFAULT_TIMEOUT_MS = 7000'));
+
+    check('Антифриз: loop-guard 1M итераций срабатывает раньше 7s watchdog',
+      workerFile.includes('max_iters=1000000') && !workerFile.includes('max_iters=5000000'));
+
+    const baseExceptionCount = (checkerFile.match(/except BaseException/g) || []).length;
+    check('Антифриз: SystemExit ловится как BaseException (worker + fallback)',
+      workerFile.includes('except BaseException') && baseExceptionCount >= 2);
+
+    check('Антифриз: breakpoint и help убраны из _SAFE_BUILTINS',
+      !workerFile.includes("'breakpoint'") && !workerFile.includes("'help'") &&
+      !checkerFile.includes("'breakpoint'") && !checkerFile.includes("'help'"));
   }
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);

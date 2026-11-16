@@ -1286,6 +1286,28 @@ except Exception as e:
     print(f"  × [regression_bootstrap_ast] Исключение при синтаксическом разборе bootstrap: {e}")
     failed_tests += 1
 
+# Регрессия 3b: Python bootstrap из app/checker-worker.js не содержит SyntaxError
+node_script_worker = (
+    "const fs = require('fs');\n"
+    "const content = fs.readFileSync('app/checker-worker.js', 'utf8');\n"
+    "const start = content.indexOf('await pyodide.runPythonAsync(`');\n"
+    "const end = content.indexOf('`);', start);\n"
+    "const lit = content.substring(start + 'await pyodide.runPythonAsync(`'.length - 1, end + 1);\n"
+    "process.stdout.write(eval(lit));"
+)
+try:
+    n_res_w = subprocess.run(['node', '-e', node_script_worker], capture_output=True, text=True, encoding='utf-8')
+    if n_res_w.returncode == 0:
+        ast.parse(n_res_w.stdout)
+        print("  ✓ [regression_bootstrap_ast_worker] Встроенный код Python в app/checker-worker.js синтаксически корректен")
+        passed_tests += 1
+    else:
+        print(f"  × [regression_bootstrap_ast_worker] Ошибка извлечения bootstrap через Node: {n_res_w.stderr}")
+        failed_tests += 1
+except Exception as e:
+    print(f"  × [regression_bootstrap_ast_worker] Исключение при синтаксическом разборе bootstrap: {e}")
+    failed_tests += 1
+
 # Регрессия 4: Интеллектуальная валидация вывода (flexible output validation)
 flex_cases = [
     ("В пределах нормы.", "В пределах нормы", True, "Точка в конце вывода зачтена"),

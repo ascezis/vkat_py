@@ -821,6 +821,25 @@ async function runStorageValidation() {
 
     const enterDispatchesInput = /e\.key === 'Enter'[\s\S]*?dispatchEvent\(new Event\('input'/.test(appFile);
     check('Issue #14: перенос строки (Enter) генерирует событие input и обновляет подсветку', enterDispatchesInput);
+
+    // 19. Валидация Web Worker Sandbox ("Антифриз", Issue #2)
+    const workerFile = fs.readFileSync(path.join(appDir, 'checker-worker.js'), 'utf8');
+    check('Issue #2 Web Worker: файл app/checker-worker.js существует', workerFile.length > 0);
+
+    const workerHandlers = workerFile.includes("'INIT'") && workerFile.includes("'CHECK'") && workerFile.includes("'RUN'");
+    check('Issue #2 Web Worker: checker-worker.js обрабатывает сообщения INIT, CHECK, RUN', workerHandlers);
+
+    const hasWorkerBridge = /class PyodideWorkerBridge/.test(checkerFile);
+    check('Issue #2 Web Worker: checker.js реализует класс PyodideWorkerBridge', hasWorkerBridge);
+
+    const hasWatchdogTimeout = /DEFAULT_TIMEOUT_MS\s*=\s*7000/.test(checkerFile) || /timeoutMs\s*=\s*7000/.test(checkerFile);
+    check('Issue #2 Web Worker: сторожевой таймер (watchdog timeout) настроен на 7000 мс', hasWatchdogTimeout);
+
+    const hasWorkerFallback = typeof checkerFile === 'string' &&
+      checkerFile.includes('fallbackCheckSolution') &&
+      checkerFile.includes('fallbackRunCode') &&
+      checkerFile.includes('fallbackInitPyodideInThread');
+    check('Issue #2 Web Worker: checker.js содержит in-thread fallback для окружений без Worker', hasWorkerFallback);
   }
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);

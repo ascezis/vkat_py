@@ -65,7 +65,7 @@
   /**
    * Инициализация Pyodide с локального пути
    */
-  async function initPyodide(onProgress) {
+  async function initPyodideInThread(onProgress) {
     if (pyodideInstance) {
       return pyodideInstance;
     }
@@ -708,7 +708,7 @@ def _match_output_proxy(actual_str, expected_str):
   /**
    * Публичный запуск кода с перехватом stdout и защитой от бесконечных циклов
    */
-  async function runCode(code) {
+  async function fallbackRunCode(code) {
     if (!pyodideInstance) {
       await initPyodide();
     }
@@ -738,7 +738,10 @@ def _match_output_proxy(actual_str, expected_str):
   /**
    * Запуск трёхслойной проверки
    */
-  async function checkSolution(userCode, task) {
+  async function fallbackCheckSolution(userCode, task) {
+    if (!pyodideInstance) {
+      await initPyodideInThread();
+    }
     if (!pyodideInstance) {
       await initPyodide();
     }
@@ -949,8 +952,274 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
     };
   }
 
+
+  // ─── Фоновый Web Worker («Антифриз» — Sandbox Worker) ─────────────────────
+
+  class PyodideWorkerBridge {
+    static DEFAULT_TIMEOUT_MS = 7000;
+
+    constructor() {
+      this.worker = null;
+      this.isReady = false;
+      this.initPromise = null;
+      this.reqId = 0;
+      this.pending = new Map();
+      this.workerSupported = (typeof window !== 'undefined' && typeof window.Worker === 'function');
+      this.useFallback = !this.workerSupported;
+      this.workerUrl = this.resolveWorkerUrl();
+    }
+
+    resolveWorkerUrl() {
+      try {
+        if (typeof document !== 'undefined') {
+          if (document.currentScript && document.currentScript.src) {
+            return new URL('checker-worker.js', document.currentScript.src).href;
+          }
+          const scriptEl = document.querySelector('script[src*="checker.js"]');
+          if (scriptEl && scriptEl.src) {
+            return new URL('checker-worker.js', scriptEl.src).href;
+          }
+        }
+      } catch (_) {}
+      return 'app/checker-worker.js';
+    }
+
+    spawnWorker() {
+      if (this.worker) {
+        try { this.worker.terminate(); } catch (_) {}
+        this.worker = null;
+      }
+      this.isReady = false;
+      this.initPromise = null;
+
+      if (!this.workerSupported || this.useFallback) return;
+
+      try {
+        this.worker = new Worker(this.workerUrl);
+        this.worker.onmessage = (e) => this.handleMessage(e.data);
+        this.worker.onerror = (err) => {
+          console.warn('[PyodideWorkerBridge] Ошибка в воркере, переключение на локальный рантайм:', err);
+          this.handleWorkerCrash(err);
+        };
+      } catch (err) {
+        console.warn('[PyodideWorkerBridge] Не удалось создать Worker, переключение на локальный рантайм:', err);
+        this.useFallback = true;
+        this.worker = null;
+      }
+    }
+
+    handleWorkerCrash(err) {
+      this.useFallback = true;
+      for (const [id, req] of this.pending.entries()) {
+        clearTimeout(req.timer);
+        req.reject(err || new Error('Worker crash'));
+      }
+      this.pending.clear();
+      if (this.worker) {
+        try { this.worker.terminate(); } catch (_) {}
+        this.worker = null;
+      }
+    }
+
+    handleMessage(data) {
+      if (!data) return;
+      const { type, id, result, error } = data;
+
+      if (type === 'INIT_OK') {
+        this.isReady = true;
+        if (this._initResolve) {
+          this._initResolve(true);
+          this._initResolve = null;
+        }
+      } else if (type === 'INIT_ERROR') {
+        if (this._initReject) {
+          this._initReject(new Error(error || 'Worker init failed'));
+          this._initReject = null;
+        }
+      } else if (type === 'CHECK_RESULT' || type === 'RUN_RESULT') {
+        const req = this.pending.get(id);
+        if (req) {
+          clearTimeout(req.timer);
+          this.pending.delete(id);
+          req.resolve(result);
+        }
+      } else if (type === 'CHECK_ERROR' || type === 'RUN_ERROR') {
+        const req = this.pending.get(id);
+        if (req) {
+          clearTimeout(req.timer);
+          this.pending.delete(id);
+          req.reject(new Error(error || 'Worker execution error'));
+        }
+      }
+    }
+
+    ensureReady() {
+      if (this.useFallback) return Promise.resolve(false);
+      if (this.isReady) return Promise.resolve(true);
+      if (this.initPromise) return this.initPromise;
+
+      if (!this.worker) {
+        this.spawnWorker();
+        if (this.useFallback) return Promise.resolve(false);
+      }
+
+      this.initPromise = new Promise((resolve) => {
+        this._initResolve = () => resolve(true);
+        this._initReject = () => {
+          this.useFallback = true;
+          resolve(false);
+        };
+        try {
+          this.worker.postMessage({ type: 'INIT' });
+        } catch (_) {
+          this.useFallback = true;
+          resolve(false);
+        }
+      });
+
+      return this.initPromise;
+    }
+
+    terminateAndRespawn() {
+      if (this.worker) {
+        try { this.worker.terminate(); } catch (_) {}
+        this.worker = null;
+      }
+      this.isReady = false;
+      this.initPromise = null;
+      this.spawnWorker();
+    }
+
+    async checkSolution(code, task, timeoutMs = 7000) {
+      const ready = await this.ensureReady();
+      if (!ready || this.useFallback || !this.worker) {
+        return fallbackCheckSolution(code, task);
+      }
+
+      const id = ++this.reqId;
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          this.pending.delete(id);
+          this.terminateAndRespawn();
+          this.ensureReady().catch(() => {});
+
+          resolve({
+            passed: false,
+            title: 'Превышено время выполнения',
+            sub: `Программа выполнялась дольше ${Math.round(timeoutMs / 1000)} секунд. Возможно, в коде бесконечный цикл (проверь while).`,
+            stdout: `TimeoutError: Превышено время выполнения программы (${timeoutMs}мс). Код был принудительно остановлен фоновой песочницей («Антифриз»).`,
+            isRuntimeError: true,
+            friendlyExplain: 'Программа зависла в бесконечном цикле и была принудительно остановлена («Антифриз»). Проверь, изменяются ли переменные внутри цикла while.',
+            improveTips: []
+          });
+        }, timeoutMs);
+
+        this.pending.set(id, { timer, resolve, reject });
+        try {
+          this.worker.postMessage({
+            type: 'CHECK',
+            id,
+            payload: { code, task }
+          });
+        } catch (err) {
+          clearTimeout(timer);
+          this.pending.delete(id);
+          this.useFallback = true;
+          resolve(fallbackCheckSolution(code, task));
+        }
+      });
+    }
+
+    async runCode(code, timeoutMs = 7000) {
+      const ready = await this.ensureReady();
+      if (!ready || this.useFallback || !this.worker) {
+        return fallbackRunCode(code);
+      }
+
+      const id = ++this.reqId;
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          this.pending.delete(id);
+          this.terminateAndRespawn();
+          this.ensureReady().catch(() => {});
+
+          resolve({
+            stdout: '',
+            error: `TimeoutError: Превышено время выполнения (${timeoutMs}мс).`
+          });
+        }, timeoutMs);
+
+        this.pending.set(id, { timer, resolve, reject });
+        try {
+          this.worker.postMessage({
+            type: 'RUN',
+            id,
+            payload: { code }
+          });
+        } catch (err) {
+          clearTimeout(timer);
+          this.pending.delete(id);
+          this.useFallback = true;
+          resolve(fallbackRunCode(code));
+        }
+      });
+    }
+  }
+
+  const bridge = new PyodideWorkerBridge();
+
+  async function initPyodide(onProgress) {
+    if (!bridge.useFallback && bridge.workerSupported) {
+      if (onProgress) onProgress('Запуск песочницы Python...');
+      const ok = await bridge.ensureReady();
+      if (ok) {
+        if (onProgress) onProgress('Python готов');
+        return true;
+      }
+    }
+    return initPyodideInThread(onProgress);
+  }
+
+  async function checkSolution(userCode, task, timeoutMs = 7000) {
+    let res;
+    if (!bridge.useFallback && bridge.workerSupported) {
+      try {
+        res = await bridge.checkSolution(userCode, task, timeoutMs);
+      } catch (err) {
+        console.warn('[CodeChecker] Ошибка вызова воркере, переключение на локальный fallback:', err);
+        bridge.useFallback = true;
+        res = await fallbackCheckSolution(userCode, task);
+      }
+    } else {
+      res = await fallbackCheckSolution(userCode, task);
+    }
+
+    if (res && (res.isRuntimeError || res.isSyntaxError) && !res.friendlyExplain && window.FriendlyErrors) {
+      res.friendlyExplain = window.FriendlyErrors.explain(res.stdout);
+    }
+    return res;
+  }
+
+  async function runCode(code, timeoutMs = 7000) {
+    if (!bridge.useFallback && bridge.workerSupported) {
+      try {
+        return await bridge.runCode(code, timeoutMs);
+      } catch (err) {
+        console.warn('[CodeChecker] Ошибка вызова воркера runCode, переключение на локальный fallback:', err);
+        bridge.useFallback = true;
+        return fallbackRunCode(code);
+      }
+    }
+    return fallbackRunCode(code);
+  }
+
+  const fallbackInitPyodideInThread = initPyodideInThread;
+
   window.CodeChecker = {
+    getBridge: () => bridge,
+    PyodideWorkerBridge,
     initPyodide,
+    fallbackInitPyodideInThread,
     checkSolution,
     runCode,
     fuzzyMatchOutputJS

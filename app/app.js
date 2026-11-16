@@ -211,7 +211,7 @@
         const topic = topicMap.get(topId);
         if (topic) {
           topic.stageId = stage.id;
-          topic.items = topic.items || topic.tasks || [];
+          topic.items = topic.items || /** @type {TaskItem[]} */ (/** @type {unknown} */ (topic.tasks)) || [];
           flatTopics.push(topic);
           usedTopicIds.add(topId);
         } else {
@@ -242,6 +242,7 @@
 
       state.codeDrafts = (data && data.drafts) || {};
 
+      /** @type {any} */
       const pos = (data && data.position) || {};
       let topicIdx = 0;
       let taskIdx = 0;
@@ -250,7 +251,7 @@
         const tIdx = state.topics.findIndex(t => t.id === pos.topicId);
         if (tIdx !== -1) {
           topicIdx = tIdx;
-          const items = state.topics[tIdx].items || state.topics[tIdx].tasks || [];
+          const items = state.topics[tIdx].items || /** @type {TaskItem[]} */ (/** @type {unknown} */ (state.topics[tIdx].tasks)) || [];
           if (pos.itemId) {
             const iIdx = items.findIndex(it => it.id === pos.itemId);
             if (iIdx !== -1) taskIdx = iIdx;
@@ -642,7 +643,12 @@
       dom.highlighter = new window.PythonHighlighter(dom.editor, dom.editorHighlight);
     }
 
+    /**
+     * @param {KeyboardEvent} e
+     */
     dom.editor.addEventListener('keydown', function (e) {
+      // this = DOM-элемент редактора (addEventListener); алиас для точных типов
+      const ed = /** @type {HTMLTextAreaElement} */ (this);
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         window.VkatCheckers.runCheck();
@@ -657,9 +663,9 @@
 
       if (e.key === 'Tab') {
         e.preventDefault();
-        const start = this.selectionStart;
-        const end = this.selectionEnd;
-        const val = this.value;
+        const start = ed.selectionStart;
+        const end = ed.selectionEnd;
+        const val = ed.value;
         let inserted = false;
         try {
           inserted = Boolean(document.execCommand && document.execCommand('insertText', false, '    '));
@@ -667,18 +673,18 @@
           inserted = false;
         }
         if (!inserted) {
-          this.value = val.substring(0, start) + '    ' + val.substring(end);
-          this.selectionStart = this.selectionEnd = start + 4;
-          this.dispatchEvent(new Event('input', { bubbles: true }));
+          ed.value = val.substring(0, start) + '    ' + val.substring(end);
+          ed.selectionStart = ed.selectionEnd = start + 4;
+          ed.dispatchEvent(new Event('input', { bubbles: true }));
         }
         if (dom.highlighter) {
           dom.highlighter.update();
         }
         onEditorChange();
       } else if (e.key === 'Enter') {
-        const start = this.selectionStart;
-        const end = this.selectionEnd;
-        const val = this.value;
+        const start = ed.selectionStart;
+        const end = ed.selectionEnd;
+        const val = ed.value;
         const lineStart = val.lastIndexOf('\n', start - 1) + 1;
         const currentLine = val.substring(lineStart, start);
         const match = currentLine.match(/^(\s*)/);
@@ -698,9 +704,9 @@
             inserted = false;
           }
           if (!inserted) {
-            this.value = val.substring(0, start) + insertText + val.substring(end);
-            this.selectionStart = this.selectionEnd = start + insertText.length;
-            this.dispatchEvent(new Event('input', { bubbles: true }));
+            ed.value = val.substring(0, start) + insertText + val.substring(end);
+            ed.selectionStart = ed.selectionEnd = start + insertText.length;
+            ed.dispatchEvent(new Event('input', { bubbles: true }));
           }
           if (dom.highlighter) {
             dom.highlighter.update();

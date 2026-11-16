@@ -812,6 +812,78 @@ tasks_data = {
         "ref": 'def columns(records):\n    keys = []\n    for record in records:\n        for key in record:\n            if key not in keys:\n                keys.append(key)\n    result = {}\n    for key in keys:\n        result[key] = []\n        for record in records:\n            result[key].append(record.get(key))\n    return result\n\nprint(columns([{"a": 1}, {"a": 2, "b": 3}]))',
         "wrong": [('код не изменён', '# Напиши функцию columns(records)')]
     },
+    'l2_alg_c1': {
+        "astRequirements": {"forbid_methods": ["index"]},
+        "tests": [{'call': 'find_first([1, 2, 3], 2)', 'returns': 1}, {'call': 'find_first([7], 7)', 'returns': 0}, {'call': 'find_first([1, 3], 5)', 'returns': -1}, {'call': 'find_first([2, 2, 2], 2)', 'returns': 0, 'hidden': True}, {'call': 'find_first([], 1)', 'returns': -1, 'hidden': True}],
+        "ref": 'def find_first(nums, x):\n    for i in range(len(nums)):\n        if nums[i] == x:\n            return i\n    return -1\n\nprint(find_first([1, 2, 3], 2))',
+        "wrong": [('использует метод .index()', 'def find_first(nums, x):\n    try:\n        return nums.index(x)\n    except ValueError:\n        return -1\n\nprint(find_first([1, 2, 3], 2))'), ('возвращает 0 вместо -1', 'def find_first(nums, x):\n    for i in range(len(nums)):\n        if nums[i] == x:\n            return i\n    return 0\n\nprint(find_first([1, 2, 3], 2))')]
+    },
+    'l2_alg_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'count_greater([1, 5, 8], 4)', 'returns': 2}, {'call': 'count_greater([3, 3, 3], 3)', 'returns': 0}, {'call': 'count_greater([2, 9], 0)', 'returns': 2}, {'call': 'count_greater([], 1)', 'returns': 0, 'hidden': True}, {'call': 'count_greater([-5, 10], 0)', 'returns': 1, 'hidden': True}],
+        "ref": 'def count_greater(nums, limit):\n    count = 0\n    for n in nums:\n        if n > limit:\n            count += 1\n    return count\n\nprint(count_greater([1, 5, 8], 4))',
+        "wrong": [('сравнивает нестрого (>=)', 'def count_greater(nums, limit):\n    count = 0\n    for n in nums:\n        if n >= limit:\n            count += 1\n    return count\n\nprint(count_greater([1, 5, 8], 4))'), ('теряет последний элемент', 'def count_greater(nums, limit):\n    count = 0\n    for n in nums[:-1]:\n        if n > limit:\n            count += 1\n    return count\n\nprint(count_greater([1, 5, 8], 4))')]
+    },
+    'l2_alg_c3': {
+        "astRequirements": {},
+        "tests": [{'call': 'running_total([1, 2, 3])', 'returns': [1, 3, 6]}, {'call': 'running_total([5])', 'returns': [5]}, {'call': 'running_total([2, -1, 1])', 'returns': [2, 1, 2], 'hidden': True}, {'call': 'running_total([])', 'returns': [], 'hidden': True}],
+        "ref": 'def running_total(nums):\n    result = []\n    total = 0\n    for n in nums:\n        total += n\n        result.append(total)\n    return result\n\nprint(running_total([1, 2, 3]))',
+        "wrong": [('возвращает только итоговую сумму', 'def running_total(nums):\n    return [sum(nums)]\n\nprint(running_total([1, 2, 3]))'), ('добавляет элемент, а не накопленную сумму', 'def running_total(nums):\n    result = []\n    total = 0\n    for n in nums:\n        total += n\n        result.append(n)\n    return result\n\nprint(running_total([1, 2, 3]))')]
+    },
+    'l2_alg_c4': {
+        "astRequirements": {"forbid_calls": ["sorted"], "forbid_methods": ["sort"]},
+        "tests": [{'call': 'merge_sorted([1, 3, 5], [2, 4])', 'returns': [1, 2, 3, 4, 5]}, {'call': 'merge_sorted([1, 2], [1, 3])', 'returns': [1, 1, 2, 3]}, {'call': 'merge_sorted([], [7])', 'returns': [7], 'hidden': True}, {'call': 'merge_sorted([5], [1, 2])', 'returns': [1, 2, 5], 'hidden': True}],
+        "ref": 'def merge_sorted(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    while i < len(a):\n        result.append(a[i])\n        i += 1\n    while j < len(b):\n        result.append(b[j])\n        j += 1\n    return result\n\nprint(merge_sorted([1, 3, 5], [2, 4]))',
+        "wrong": [('использует sorted()', 'def merge_sorted(a, b):\n    return sorted(a + b)\n\nprint(merge_sorted([1, 3, 5], [2, 4]))'), ('забыл дописать хвосты списков', 'def merge_sorted(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    return result\n\nprint(merge_sorted([1, 3, 5], [2, 4]))')]
+    },
+    'l2_alg_c5': {
+        "astRequirements": {},
+        "tests": [{'call': 'chunk([1, 2, 3, 4], 2)', 'returns': [[1, 2], [3, 4]]}, {'call': 'chunk([1, 2, 3], 2)', 'returns': [[1, 2], [3]]}, {'call': 'chunk([], 3)', 'returns': [], 'hidden': True}, {'call': 'chunk([1, 2, 3, 4, 5], 2)', 'returns': [[1, 2], [3, 4], [5]], 'hidden': True}],
+        "ref": 'def chunk(nums, k):\n    result = []\n    for i in range(0, len(nums), k):\n        result.append(nums[i:i + k])\n    return result\n\nprint(chunk([1, 2, 3, 4], 2))',
+        "wrong": [('кусочки на один элемент короче', 'def chunk(nums, k):\n    result = []\n    for i in range(0, len(nums), k):\n        result.append(nums[i:i + k - 1])\n    return result\n\nprint(chunk([1, 2, 3, 4], 2))'), ('перекрывающиеся окна вместо кусков', 'def chunk(nums, k):\n    result = []\n    for i in range(len(nums)):\n        result.append(nums[i:i + k])\n    return result\n\nprint(chunk([1, 2, 3, 4], 2))')]
+    },
+    'l2_alg_c6': {
+        "astRequirements": {},
+        "tests": [{'call': 'sliding_max([2, 1, 3, 5, 4], 2)', 'returns': [2, 3, 5, 5]}, {'call': 'sliding_max([4], 1)', 'returns': [4]}, {'call': 'sliding_max([1, 2, 3], 3)', 'returns': [3], 'hidden': True}, {'call': 'sliding_max([5, 1, 1, 5], 3)', 'returns': [5, 5], 'hidden': True}, {'call': 'sliding_max([1], 3)', 'returns': [], 'hidden': True}],
+        "ref": 'def sliding_max(nums, k):\n    result = []\n    for i in range(len(nums) - k + 1):\n        best = nums[i]\n        for j in range(i, i + k):\n            if nums[j] > best:\n                best = nums[j]\n        result.append(best)\n    return result\n\nprint(sliding_max([2, 1, 3, 5, 4], 2))',
+        "wrong": [('теряет последнее окно', 'def sliding_max(nums, k):\n    result = []\n    for i in range(len(nums) - k):\n        best = nums[i]\n        for j in range(i, i + k):\n            if nums[j] > best:\n                best = nums[j]\n        result.append(best)\n    return result\n\nprint(sliding_max([2, 1, 3, 5, 4], 2))'), ('возвращает начало окна вместо максимума', 'def sliding_max(nums, k):\n    result = []\n    for i in range(len(nums) - k + 1):\n        result.append(nums[i])\n    return result\n\nprint(sliding_max([2, 1, 3, 5, 4], 2))')]
+    },
+    'l2_alg_f1': {
+        "astRequirements": {},
+        "tests": [{'call': 'find_last([1, 2, 1], 1)', 'returns': 2}, {'call': 'find_last([5], 3)', 'returns': -1}, {'call': 'find_last([2, 2], 2)', 'returns': 1, 'hidden': True}, {'call': 'find_last([], 1)', 'returns': -1, 'hidden': True}],
+        "ref": 'def find_last(nums, x):\n    position = -1\n    for i in range(len(nums)):\n        if nums[i] == x:\n            position = i\n    return position\n\nprint(find_last([1, 2, 1], 1))',
+        "wrong": [('код не изменён (IndexError)', 'def find_last(nums, x):\n    position = -1\n    for i in range(len(nums) + 1):\n        if nums[i] == x:\n            position = i\n    return position\n\nprint(find_last([1, 2, 1], 1))'), ('перестарался с границей (-1)', 'def find_last(nums, x):\n    position = -1\n    for i in range(len(nums) - 1):\n        if nums[i] == x:\n            position = i\n    return position\n\nprint(find_last([1, 2, 1], 1))')]
+    },
+    'l2_alg_f2': {
+        "astRequirements": {},
+        "tests": [{'call': "(lambda src: keep_positive(src) == [3, 2] and src == [3, -1, 2])([3, -1, 2])", 'returns': True}, {'call': 'keep_positive([-1, -2])', 'returns': []}, {'call': 'keep_positive([1, 2, 3])', 'returns': [1, 2, 3]}, {'call': "(lambda src: keep_positive(src) == [] and src == [-1, 0])([-1, 0])", 'returns': True, 'hidden': True}],
+        "ref": 'def keep_positive(nums):\n    result = []\n    for n in nums:\n        if n > 0:\n            result.append(n)\n    return result\n\nprint(keep_positive([3, -1, 2]))',
+        "wrong": [('код не изменён (портит вход)', 'def keep_positive(nums):\n    for n in nums:\n        if n <= 0:\n            nums.remove(n)\n    return nums\n\nprint(keep_positive([3, -1, 2]))'), ('дополнительно сортирует результат', 'def keep_positive(nums):\n    result = []\n    for n in nums:\n        if n > 0:\n            result.append(n)\n    return sorted(result)\n\nprint(keep_positive([3, -1, 2]))')]
+    },
+    'l2_alg_c7': {
+        "astRequirements": {"forbid_calls": ["sorted"], "forbid_methods": ["sort"]},
+        "tests": [{'call': 'is_sorted([1, 2, 3])', 'returns': True}, {'call': 'is_sorted([3, 1])', 'returns': False}, {'call': 'is_sorted([1, 1, 2])', 'returns': True, 'hidden': True}, {'call': 'is_sorted([])', 'returns': True, 'hidden': True}, {'call': 'is_sorted([7])', 'returns': True, 'hidden': True}],
+        "ref": 'def is_sorted(nums):\n    for i in range(len(nums) - 1):\n        if nums[i] > nums[i + 1]:\n            return False\n    return True\n\nprint(is_sorted([1, 2, 3]))',
+        "wrong": [('использует sorted()', 'def is_sorted(nums):\n    return nums == sorted(nums)\n\nprint(is_sorted([1, 2, 3]))'), ('отвергает списки с повторами', 'def is_sorted(nums):\n    for i in range(len(nums) - 1):\n        if nums[i] >= nums[i + 1]:\n            return False\n    return True\n\nprint(is_sorted([1, 2, 3]))')]
+    },
+    'l2_alg_c8': {
+        "astRequirements": {},
+        "tests": [{'call': 'remove_all([1, 2, 1, 3], 1)', 'returns': [2, 3]}, {'call': 'remove_all([5], 5)', 'returns': []}, {'call': 'remove_all([1, 2], 9)', 'returns': [1, 2], 'hidden': True}, {'call': 'remove_all([], 1)', 'returns': [], 'hidden': True}],
+        "ref": 'def remove_all(nums, x):\n    result = []\n    for n in nums:\n        if n != x:\n            result.append(n)\n    return result\n\nprint(remove_all([1, 2, 1, 3], 1))',
+        "wrong": [('перепутано условие (оставляет x)', 'def remove_all(nums, x):\n    result = []\n    for n in nums:\n        if n == x:\n            result.append(n)\n    return result\n\nprint(remove_all([1, 2, 1, 3], 1))'), ('удаляет только первое вхождение', 'def remove_all(nums, x):\n    if x in nums:\n        nums.remove(x)\n    return nums\n\nprint(remove_all([1, 2, 1, 3], 1))')]
+    },
+    'l2_alg_c9': {
+        "astRequirements": {"forbid_methods": ["index"]},
+        "tests": [{'call': 'binary_search([1, 3, 5, 7, 9], 5)', 'returns': 2}, {'call': 'binary_search([1, 3], 2)', 'returns': -1}, {'call': 'binary_search([1, 3, 5, 7, 9], 1)', 'returns': 0, 'hidden': True}, {'call': 'binary_search([1, 3, 5, 7, 9], 9)', 'returns': 4, 'hidden': True}, {'call': 'binary_search([], 5)', 'returns': -1, 'hidden': True}],
+        "ref": 'def binary_search(a, x):\n    low = 0\n    high = len(a) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if a[mid] == x:\n            return mid\n        if a[mid] < x:\n            low = mid + 1\n        else:\n            high = mid - 1\n    return -1\n\nprint(binary_search([1, 3, 5, 7, 9], 5))',
+        "wrong": [('использует метод .index()', 'def binary_search(a, x):\n    try:\n        return a.index(x)\n    except ValueError:\n        return -1\n\nprint(binary_search([1, 3, 5, 7, 9], 5))'), ('перепутаны направления сдвига границ', 'def binary_search(a, x):\n    low = 0\n    high = len(a) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if a[mid] == x:\n            return mid\n        if a[mid] < x:\n            high = mid - 1\n        else:\n            low = mid + 1\n    return -1\n\nprint(binary_search([1, 3, 5, 7, 9], 5))')]
+    },
+    'l2_alg_c10': {
+        "astRequirements": {},
+        "tests": [{'call': 'pairs_with_sum([1, 2, 3], 4)', 'returns': True}, {'call': 'pairs_with_sum([1, 2], 5)', 'returns': False}, {'call': 'pairs_with_sum([5, 5], 10)', 'returns': True, 'hidden': True}, {'call': 'pairs_with_sum([5], 10)', 'returns': False, 'hidden': True}, {'call': 'pairs_with_sum([], 3)', 'returns': False, 'hidden': True}],
+        "ref": 'def pairs_with_sum(nums, s):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == s:\n                return True\n    return False\n\nprint(pairs_with_sum([1, 2, 3], 4))',
+        "wrong": [('использует один элемент дважды', 'def pairs_with_sum(nums, s):\n    for i in range(len(nums)):\n        for j in range(len(nums)):\n            if nums[i] + nums[j] == s:\n                return True\n    return False\n\nprint(pairs_with_sum([1, 2, 3], 4))'), ('перепутаны True и False', 'def pairs_with_sum(nums, s):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == s:\n                return False\n    return True\n\nprint(pairs_with_sum([1, 2, 3], 4))')]
+    }
 }
 
 passed_tests = 0
@@ -872,6 +944,10 @@ predict_tests = [
     ('l1_nest_p1', 'words = ["кот", "коза", "сова", "сом", "корова"]\ngroups = {}\nfor w in words:\n    groups.setdefault(w[0], []).append(w)\n\nprint(len(groups))\nprint(len(groups["к"]))\nprint(groups["с"][-1])', '2\n3\nсом'),
     ('l1_nest_p2', 'row = [0, 0]\ngrid = {"a": row, "b": row}\ngrid["a"][0] = 5\n\nprint(grid["b"][0], row[0])', '5 5'),
     ('l1_nest_p3', 'user = {"name": "Анна", "address": {"city": "Омск"}}\n\nprint(user.get("phone", {}).get("code", "нет"))\nprint(user["address"].get("street", "-"))\nprint(user.get("address", {}).get("city"))', 'нет\n-\nОмск'),
+    ('l2_alg_p1', 'total = 0\nfor n in [4, -1, 5]:\n    total += n\n    print(total)', '4\n3\n8'),
+    ('l2_alg_p2', 'def find_first(nums, x):\n    for i in range(len(nums)):\n        if nums[i] == x:\n            return i\n    return -1\n\nprint(find_first([10, 20, 30, 40], 30))\nprint(find_first([10, 20], 99))', '2\n-1'),
+    ('l2_alg_p3', 'result = []\nfor i in range(3):\n    row = []\n    for j in range(i + 1):\n        row.append(j)\n    result.append(row)\nprint(result)', '[[0], [0, 1], [0, 1, 2]]'),
+    ('l2_alg_p4', 'def merge_sorted(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    while i < len(a):\n        result.append(a[i])\n        i += 1\n    while j < len(b):\n        result.append(b[j])\n        j += 1\n    return result\n\nprint(merge_sorted([1, 4], [2, 3, 5]))', '[1, 2, 3, 4, 5]')
 ]
 
 for pid, pcode, pexp in predict_tests:

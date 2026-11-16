@@ -309,7 +309,8 @@ def _run_task_tests(tests_json, user_ns):
                 func_not_found = fn
             else:
                 call_err = _clean_tb(traceback.format_exc())
-        except Exception:
+        except BaseException:
+            # BaseException: SystemExit из функции ученика не должен ронять тесты.
             call_err = _clean_tb(traceback.format_exc())
         finally:
             sys.stdout = old_out
@@ -409,7 +410,8 @@ def check_solution(user_code, task):
     try:
         code_obj = _compile_user_code(user_code)
         exec(code_obj, user_ns)
-    except Exception:
+    except BaseException:
+        # BaseException: SystemExit ученика фиксируем как runtime-ошибку.
         runtime_err = _clean_tb(traceback.format_exc())
     finally:
         sys.stdout = old_stdout

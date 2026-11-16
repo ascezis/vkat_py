@@ -21,30 +21,15 @@ try {
   } catch (_) {}
 }
 
-function base64ToUint8Array(base64) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-// Перехват fetch для отдачи встроенных локальных бинарников
+// Перехват fetch: отдаём пустой pyodide-lock.json, чтобы Pyodide не пытался
+// резолвить внешние пакеты. Встроенные base64-бинарники (wasm_binary.js /
+// stdlib_binary.js) в воркер не загружаются: они присваивают window.PYODIDE_*,
+// которого в воркере нет, а на file:// создание Worker блокируется браузером
+// ещё до этого — поэтому воркер всегда грузит бинарники нативным fetch по http.
 if (typeof self.fetch === 'function') {
   const nativeFetch = self.fetch;
   self.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
-
-    if (url.includes('python_stdlib.zip') && self.PYODIDE_STDLIB_BASE64) {
-      const bytes = base64ToUint8Array(self.PYODIDE_STDLIB_BASE64);
-      return new Response(bytes, {
-        status: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/zip' }
-      });
-    }
 
     if (url.includes('pyodide-lock.json')) {
       const lockJson = JSON.stringify({
@@ -55,15 +40,6 @@ if (typeof self.fetch === 'function') {
         status: 200,
         statusText: 'OK',
         headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (url.includes('pyodide.asm.wasm') && self.PYODIDE_WASM_BASE64) {
-      const bytes = base64ToUint8Array(self.PYODIDE_WASM_BASE64);
-      return new Response(bytes, {
-        status: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/wasm' }
       });
     }
 
@@ -92,20 +68,6 @@ async function initPyodide(indexURL) {
         indexURL: indexURL || '../assets/pyodide/',
         checkAPIVersion: false
       };
-
-      if (self.PYODIDE_WASM_BASE64) {
-        pyodideConfig.instantiateWasm = function (imports, successCallback) {
-          const wasmBytes = base64ToUint8Array(self.PYODIDE_WASM_BASE64);
-          WebAssembly.instantiate(wasmBytes, imports)
-            .then(result => {
-              successCallback(result.instance, result.module);
-            })
-            .catch(err => {
-              console.error('Ошибка компиляции WebAssembly в воркере:', err);
-            });
-          return {};
-        };
-      }
 
       const loadPromise = loadPyodide(pyodideConfig);
       const timeoutPromise = new Promise((_, reject) => {
@@ -153,11 +115,14 @@ def _student_import(name, globals=None, locals=None, fromlist=(), level=0):
 # ── Безопасный набор встроенных функций для студенческого кода ────────────
 _SAFE_BUILTINS = {
     k: getattr(_builtins_mod, k) for k in (
-        'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'breakpoint',
+        # ВНИМАНИЕ: breakpoint (pdb вешает воркер до срабатывания watchdog) и
+        # help (интерактивный pydoc требует stdin, которого в воркере нет)
+        # сознательно НЕ входят в набор.
+        'abs', 'all', 'any', 'ascii', 'bin', 'bool',
         'bytearray', 'bytes', 'callable', 'chr', 'complex',
         'dict', 'dir', 'divmod', 'enumerate', 'filter',
         'float', 'format', 'frozenset', 'hasattr', 'hash',
-        'help', 'hex', 'id', 'input', 'int', 'isinstance',
+        'hex', 'id', 'input', 'int', 'isinstance',
         'issubclass', 'iter', 'len', 'list', 'locals', 'map',
         'max', 'min', 'next', 'object', 'oct', 'ord', 'pow',
         'print', 'property', 'range', 'repr', 'reversed',
@@ -359,7 +324,9 @@ def _match_output(actual, expected):
 
 _checker_mod._match_output = _match_output
 
-def _inject_loop_guard_ast(tree, max_iters=5000000):
+# 1 млн итераций, а не больше: в Pyodide 5M итераций идут дольше 7-секундного
+# watchdog, и ученик получает общий таймаут вместо точного сообщения loop-guard.
+def _inject_loop_guard_ast(tree, max_iters=1000000):
     counter_id = 0
     class LoopGuardInjector(_ast.NodeTransformer):
         def _inject(self, node):
@@ -420,7 +387,7 @@ def _clean_tb(tb):
 
 _checker_mod._clean_tb = _clean_tb
 
-def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
+def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000):
     """Выполняет код студента в изолированном пространстве имён."""
     import sys as _sys_
     import io as _io_
@@ -452,7 +419,10 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=5000000):
         exec(code_obj, target_ns)
         if save_user_ns:
             _checker_mod._user_ns = target_ns
-    except Exception:
+    except BaseException:
+        # BaseException, а не Exception: SystemExit есть в _SAFE_BUILTINS,
+        # и raise SystemExit иначе пролетает мимо _runtime_err, уходит в
+        # CHECK_ERROR и отключает песочницу до конца сессии.
         _checker_mod._runtime_err = _clean_tb(_tb_.format_exc())
     finally:
         _sys_.stdout = old_out
@@ -498,7 +468,9 @@ def _run_task_tests(tests_json):
                 func_not_found = fn
             else:
                 call_err = _clean_tb(_tb_.format_exc())
-        except Exception:
+        except BaseException:
+            # BaseException: SystemExit из функции ученика не должен ронять
+            # весь вызов _run_task_tests (иначе CHECK_ERROR отключает песочницу).
             call_err = _clean_tb(_tb_.format_exc())
         finally:
             _sys_.stdout = old_out
@@ -569,7 +541,7 @@ _checker_mod._run_task_tests = _run_task_tests
 def analyze_ast(code_str, requirements_json):
     return _checker_mod.analyze_ast(code_str, requirements_json)
 
-def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=5000000):
+def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=1000000):
     _checker_mod._exec_user_code(code_str, save_user_ns, max_iters)
 
 def _run_task_tests_proxy(tests_json):

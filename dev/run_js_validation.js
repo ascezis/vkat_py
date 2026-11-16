@@ -910,6 +910,28 @@ async function runStorageValidation() {
       !checkerFile.includes("'breakpoint'") && !checkerFile.includes("'help'"));
   }
 
+  // 20. Контракты схем для IDE (jsconfig.json + docs/types.d.ts, TECH-DEBT P2)
+  {
+    const fsRoot = path.join(__dirname, '..');
+    const jsconfigPath = path.join(fsRoot, 'jsconfig.json');
+    const typesPath = path.join(fsRoot, 'docs', 'types.d.ts');
+    let jsconfigOk = false;
+    let typesOk = false;
+    try {
+      const cfg = JSON.parse(fs.readFileSync(jsconfigPath, 'utf8'));
+      jsconfigOk = cfg.compilerOptions && cfg.compilerOptions.noEmit === true;
+    } catch (e) {}
+    try {
+      const types = fs.readFileSync(typesPath, 'utf8');
+      typesOk = types.includes('interface AstRequirements') &&
+                types.includes('interface TaskItem') &&
+                types.includes('interface TaskTest') &&
+                types.includes('interface ProfileData');
+    } catch (e) {}
+    check('jsconfig.json существует и noEmit (zero-build)', jsconfigOk);
+    check('docs/types.d.ts объявляет контракты AstRequirements/TaskItem/TaskTest/ProfileData', typesOk);
+  }
+
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);
 }

@@ -1,10 +1,10 @@
 {
-  "$comment": "Типизация схем без шага сборки (TECH-DEBT P2). Zero-build: конфиг используется только IDE (VS Code / Cursor / WebStorm), в рантайме и деплое ничего не меняется. Контракты описаны в docs/types.d.ts. ВАЖНО: checkJs=false — прогон tsc на текущем коде даёт ~660 ошибок (нетипизированные window.*-модули, worker self и т.п.); включать checkJs стоит отдельным спринтом после чистки. Автодополнение по контрактам работает и без checkJs.",
+  "$comment": "Типизация схем без шага сборки (TECH-DEBT P2). Zero-build: конфиг используется только IDE (VS Code / Cursor / WebStorm), в рантайме и деплое ничего не меняется. Контракты описаны в docs/types.d.ts. checkJs=true включён в Sprint 3: контент-схема и модули storage/checker строго типизированы; UI-модули сознательно any (их контракты — отдельная задача).",
   "compilerOptions": {
     "target": "ES2022",
     "module": "esnext",
     "moduleResolution": "classic",
-    "checkJs": false,
+    "checkJs": true,
     "strict": false,
     "noEmit": true
   },

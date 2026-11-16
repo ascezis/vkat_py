@@ -25,6 +25,10 @@
   // Перехват fetch для отдачи встроенных локальных бинарников без сетевых/CORS запросов
   if (typeof window.fetch === 'function') {
     const nativeFetch = window.fetch;
+    /**
+     * @param {any} input
+     * @param {RequestInit} [init]
+     */
     window.fetch = async function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
 
@@ -542,7 +546,12 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       this.INIT_TIMEOUT_MS = 90000;      // JS-таймаут на INIT воркера (в воркере свой, 60с)
       this.MAX_CONSECUTIVE_CRASHES = 3;  // после стольких крашей подряд — перманентный fallback
       this._crashCount = 0;
+      /** @type {number | null} */
       this._initTimer = null;
+      /** @type {((ok: boolean) => void) | null} */
+      this._initResolve = null;
+      /** @type {((err?: unknown) => void) | null} */
+      this._initReject = null;
       this.worker = null;
       this.isReady = false;
       this.initPromise = null;
@@ -556,10 +565,11 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
     resolveWorkerUrl() {
       try {
         if (typeof document !== 'undefined') {
-          if (document.currentScript && document.currentScript.src) {
-            return new URL('checker-worker.js', document.currentScript.src).href;
+          const current = /** @type {HTMLScriptElement | null} */ (document.currentScript);
+          if (current && current.src) {
+            return new URL('checker-worker.js', current.src).href;
           }
-          const scriptEl = document.querySelector('script[src*="checker.js"]');
+          const scriptEl = /** @type {HTMLScriptElement | null} */ (document.querySelector('script[src*="checker.js"]'));
           if (scriptEl && scriptEl.src) {
             return new URL('checker-worker.js', scriptEl.src).href;
           }

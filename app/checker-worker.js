@@ -28,6 +28,10 @@ try {
 // ещё до этого — поэтому воркер всегда грузит бинарники нативным fetch по http.
 if (typeof self.fetch === 'function') {
   const nativeFetch = self.fetch;
+  /**
+   * @param {any} input
+   * @param {RequestInit} [init]
+   */
   self.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
 

@@ -43,6 +43,47 @@
     return null;
   }
 
+  // ─── Переполнение квоты localStorage (TECH-DEBT P1) ────────────────────────
+  // Сценарий: школьный класс, 15–20 учеников за один ПК за четверть.
+  // Лимит домена ~5 МБ; без обработки QuotaExceededError прогресс и черновики
+  // молча перестают сохраняться, а у учеников растёт фрустрация.
+
+  let quotaWarnedThisSession = false;
+
+  function isQuotaError(e) {
+    return Boolean(e) && (
+      e.name === 'QuotaExceededError' ||
+      e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code === 22 // Веб-кит: DOMException QUOTA_EXCEEDED_ERR
+    );
+  }
+
+  /**
+   * Обработка переполнения квоты: раз в сессию пишет явное предупреждение
+   * в консоль и шлёт событие vkat-storage-quota для UI-слоя (тостов в ядре нет).
+   */
+  function handleQuotaError(key, e) {
+    if (!isQuotaError(e)) return;
+    if (quotaWarnedThisSession) return;
+    quotaWarnedThisSession = true;
+    // Раз предупреждение одно — не надо его терять: console.error, не warn.
+    console.error(
+      '[VkatStorage] Хранилище браузера ПЕРЕПОЛНЕНО (~5 МБ на домен). ' +
+      'Прогресс и черновики НЕ СОХРАНЯЮТСЯ. ' +
+      'Решение: экспортируйте и удалите старые профили в менеджере профилей.'
+    );
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      try {
+        window.dispatchEvent(new CustomEvent('vkat-storage-quota', {
+          detail: {
+            key,
+            message: 'Хранилище переполнено — прогресс не сохраняется. Экспортируйте и удалите старые профили.'
+          }
+        }));
+      } catch (_) { /* CustomEvent может отсутствовать в старых окружениях */ }
+    }
+  }
+
   /**
    * Безопасная запись в localStorage
    */
@@ -52,6 +93,7 @@
         window.localStorage.setItem(key, value);
       }
     } catch (e) {
+      handleQuotaError(key, e);
       console.warn('localStorage write error:', e);
     }
   }

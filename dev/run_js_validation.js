@@ -33,10 +33,27 @@ const context = {
   clearInterval: clearInterval,
   localStorage: localStorageMock,
   sessionStorage: sessionStorageMock,
-  crypto: globalThis.crypto
+  crypto: globalThis.crypto,
+  CustomEvent: CustomEvent
 };
 context.window = context;
 context.globalThis = context;
+
+// Простейшая шина событий: нужно для проверки dispatchEvent('vkat-storage-quota')
+const eventBus = new Map();
+context.addEventListener = (type, fn) => {
+  if (!eventBus.has(type)) eventBus.set(type, []);
+  eventBus.get(type).push(fn);
+};
+context.removeEventListener = (type, fn) => {
+  const arr = eventBus.get(type);
+  if (arr) eventBus.set(type, arr.filter(f => f !== fn));
+};
+context.dispatchEvent = (ev) => {
+  const arr = eventBus.get(ev && ev.type);
+  if (arr) arr.slice().forEach(fn => { try { fn(ev); } catch (e) {} });
+  return true;
+};
 
 function loadScript(relPath) {
   const fullPath = path.join(__dirname, '..', relPath);
@@ -612,6 +629,30 @@ async function runStorageValidation() {
   storage.flushSync();
   const dataAfterFlush = await storage.load();
   check('flushSync немедленно синхронизирует отложенные черновики в хранилище', dataAfterFlush.drafts['l1_fn_c2'] === 'print("test")');
+
+  // 7.1 Переполнение квоты: приложение не падает, предупреждение ровно одно (TECH-DEBT P1)
+  {
+    const origSetItem = localStorageMock.setItem;
+    const quotaError = new Error('The quota has been exceeded');
+    quotaError.name = 'QuotaExceededError';
+    let quotaEvents = 0;
+    let lastDetail = null;
+    const onQuota = (e) => { quotaEvents++; lastDetail = e && e.detail; };
+    context.addEventListener('vkat-storage-quota', onQuota);
+    localStorageMock.setItem = () => { throw quotaError; };
+    let survived = true;
+    try {
+      await storage.save({ drafts: { 'l1_fn_c1': 'x = 1' } });
+      // Повторная запись при той же переполненной квоте: второе событие не должно слаться
+      await storage.save({ drafts: { 'l1_fn_c1': 'x = 2' } });
+    } catch (e) {
+      survived = false;
+    }
+    localStorageMock.setItem = origSetItem;
+    context.removeEventListener('vkat-storage-quota', onQuota);
+    check('QuotaExceededError: storage.save не роняет приложение', survived);
+    check('QuotaExceededError: событие vkat-storage-quota шлётся ровно один раз с подсказкой', quotaEvents === 1 && Boolean(lastDetail && lastDetail.message));
+  }
 
   // 8. Переключение на профиль Артёма — изоляция данных
   await storage.selectProfile(p1.id);

@@ -78,6 +78,7 @@ loadScript('content/core/06-loops-adv.js');
 loadScript('content/core/07-nested-structures.js');
 loadScript('content/core/08-exceptions.js');
 loadScript('content/core/11-code-style.js');
+loadScript('content/practice/l2-algorithms.js');
 loadScript('content/cheatsheet.js');
 loadScript('app/code-hints.js');
 loadScript('app/version.js');
@@ -110,9 +111,10 @@ function check(desc, condition) {
 }
 
 console.log('\n=== Валидация этапов и тем ===');
-check('COURSE_STAGES объявлен и содержит 2 этапа', Array.isArray(stages) && stages.length === 2);
+check('COURSE_STAGES объявлен и содержит 3 этапа', Array.isArray(stages) && stages.length === 3);
 check('Этап start содержит 6 тем', stages[0].id === 'start' && stages[0].topics.length === 6);
 check('Этап core содержит l1_functions и l1_dicts', stages[1].id === 'core' && stages[1].topics.includes('l1_functions') && stages[1].topics.includes('l1_dicts'));
+check('Этап practice содержит l2_algorithms', stages[2].id === 'practice' && stages[2].topics.includes('l2_algorithms'));
 
 const topicMap = new Map(topics.map(t => [t.id, t]));
 stages.forEach(st => {
@@ -386,6 +388,35 @@ check('[l1_code_style] Обязательных проверяемых элем�
 check('[l1_code_style] Необязательных (★) элементов 1', optCountSty === 1);
 check('[l1_code_style] Элементов теории 5', theoryCountSty === 5);
 
+console.log('\n=== Валидация элементов темы l2_algorithms (Практикум) ===');
+const l2alg = topicMap.get('l2_algorithms');
+check('Тема l2_algorithms содержит items[]', l2alg && Array.isArray(l2alg.items));
+check('Тема l2_algorithms содержит 21 элемент', l2alg && l2alg.items.length === 21);
+
+const expectedAlgOrder = [
+  'l2_alg_t1', 'l2_alg_q1', 'l2_alg_p1', 'l2_alg_p2', 'l2_alg_c1',
+  'l2_alg_c2', 'l2_alg_q2', 'l2_alg_p3', 'l2_alg_c3', 'l2_alg_c4',
+  'l2_alg_p4', 'l2_alg_c5', 'l2_alg_c6', 'l2_alg_f1', 'l2_alg_f2',
+  'l2_alg_t2', 'l2_alg_c7', 'l2_alg_c8', 'l2_alg_c9', 'l2_alg_c10',
+  'l2_alg_t3'
+];
+expectedAlgOrder.forEach((id, idx) => {
+  check(`[l2_algorithms] Элемент #${idx + 1} равен ${id}`, l2alg && l2alg.items[idx] && l2alg.items[idx].id === id);
+});
+
+let reqCountAlg = 0, optCountAlg = 0, theoryCountAlg = 0;
+if (l2alg) {
+  l2alg.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountAlg++;
+    else if (it.optional || it.tier === 'star') optCountAlg++;
+    else reqCountAlg++;
+  });
+}
+check('[l2_algorithms] Обязательных проверяемых элементов 16', reqCountAlg === 16);
+check('[l2_algorithms] Необязательных (★) элементов 2', optCountAlg === 2);
+check('[l2_algorithms] Элементов теории 3', theoryCountAlg === 3);
+
 console.log('\n=== Валидация уникальности ID во всём курсе ===');
 const allIds = new Set();
 let hasDuplicates = false;
@@ -558,7 +589,7 @@ for (const file of selftestFiles) {
 }
 const selftestMap = context.window.COURSE_SELFTEST || {};
 let missingSelftest = [];
-const coreTopics = (context.window.COURSE_TOPICS || []).filter(t => t.id.startsWith('l1_'));
+const coreTopics = (context.window.COURSE_TOPICS || []).filter(t => t.id.startsWith('l1_') || t.id.startsWith('l2_'));
 let totalCoreCodeTasks = 0;
 for (const topic of coreTopics) {
   for (const item of (topic.items || [])) {
@@ -571,7 +602,7 @@ for (const topic of coreTopics) {
     }
   }
 }
-check(`COURSE_SELFTEST покрывает 100% практических задач Core (${totalCoreCodeTasks} задач)`, missingSelftest.length === 0, missingSelftest.join(', '));
+check(`COURSE_SELFTEST покрывает 100% практических задач Core и Practice (${totalCoreCodeTasks} задач)`, missingSelftest.length === 0, missingSelftest.join(', '));
 check(`Все эталоны COURSE_SELFTEST являются непустыми строками`, Object.values(selftestMap).every(st => typeof st.reference === 'string' && st.reference.trim().length > 0));
 
 async function runStorageValidation() {

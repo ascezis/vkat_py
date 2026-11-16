@@ -720,25 +720,28 @@ async function runStorageValidation() {
   }
   check('Изоляция VkatStorage: нет прямого localStorage/sessionStorage в app/*.js кроме storage.js', directStorageLeaks.length === 0, directStorageLeaks.join('; '));
 
-  // 14. Валидация экранирования строк Python внутри template literal в app/checker.js
+  // 14. Единый Python-бутстрап чекера (Sprint 3):
+  //     index.html (script#vkat-checker-python) → воркер + in-thread fallback + run_tests.py
   const checkerFile = fs.readFileSync(path.join(appDir, 'checker.js'), 'utf8');
-  const startMarker = 'await pyodide.runPythonAsync(`';
-  const endMarker = '`);';
-  const sIdx = checkerFile.indexOf(startMarker);
-  let bootstrapSyntaxOk = false;
-  if (sIdx !== -1) {
-    const eIdx = checkerFile.indexOf(endMarker, sIdx);
-    const lit = checkerFile.substring(sIdx + startMarker.length - 1, eIdx + 1);
-    const evaluated = eval(lit);
-    const pyLines = evaluated.split('\n');
-    const brokenLine = pyLines.find(l => {
-      const trimmed = l.trim();
-      return (trimmed.startsWith("return '") && trimmed.length === 8) ||
-             (trimmed.includes("[line + '") && !trimmed.includes("' for line"));
-    });
-    bootstrapSyntaxOk = !brokenLine;
-  }
-  check('Python bootstrap в checker.js не содержит незакрытых строковых литералов (экранирование \\n)', bootstrapSyntaxOk);
+  const workerFile = fs.readFileSync(path.join(appDir, 'checker-worker.js'), 'utf8');
+  const indexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const pyBlockMatch = indexHtml.match(/<script type="text\/x-python" id="vkat-checker-python">([\s\S]*?)<\/script>/);
+  check('Единый бутстрап: index.html содержит script#vkat-checker-python', Boolean(pyBlockMatch));
+  const pySrc = pyBlockMatch ? pyBlockMatch[1] : '';
+  check('Единый бутстрап: определяет analyze_ast/_exec_user_code/_run_task_tests/_match_output',
+    pySrc.includes('def analyze_ast') && pySrc.includes('def _exec_user_code') &&
+    pySrc.includes('def _run_task_tests') && pySrc.includes('def _match_output'));
+  check('Единый бутстрап: inline-копий Python в checker.js и checker-worker.js больше нет',
+    !checkerFile.includes('def analyze_ast') && !checkerFile.includes('def _match_output') &&
+    !workerFile.includes('def analyze_ast') && !workerFile.includes('def _match_output'));
+  check('Единый бутстрап: checker.js читает index.html и передаёт бутстрап воркеру через INIT',
+    checkerFile.includes('getCheckerPythonSource') &&
+    checkerFile.includes('runPythonAsync(bootstrapSource)') &&
+    checkerFile.includes('payload: { bootstrap: getCheckerPythonSource() }'));
+  // Регрессия: в template literal браузер «съедал» одиночные \s и \( — регекс
+  // ветки «функция не найдена» был невалидным (re.error в рантайме Pyodide).
+  check('Единый бутстрап: регекс func-not-found содержит \\s*\\( (не съеден экранированием)',
+    pySrc.includes('\\s*\\('));
 
   // 15. Проверка логики быстрого гостевого входа при наличии профиля Гость с PIN
   const pGuestWithPin = await storage.createProfile('Гость', '4321');
@@ -864,7 +867,7 @@ async function runStorageValidation() {
     check('Issue #14: перенос строки (Enter) генерирует событие input и обновляет подсветку', enterDispatchesInput);
 
     // 19. Валидация Web Worker Sandbox ("Антифриз", Issue #2)
-    const workerFile = fs.readFileSync(path.join(appDir, 'checker-worker.js'), 'utf8');
+    // workerFile и pySrc объявлены в секции 14 (единый бутстрап)
     check('Issue #2 Web Worker: файл app/checker-worker.js существует', workerFile.length > 0);
 
     const workerHandlers = workerFile.includes("'INIT'") && workerFile.includes("'CHECK'") && workerFile.includes("'RUN'");
@@ -899,15 +902,14 @@ async function runStorageValidation() {
       checkerFile.includes('this.DEFAULT_TIMEOUT_MS = 7000'));
 
     check('Антифриз: loop-guard 1M итераций срабатывает раньше 7s watchdog',
-      workerFile.includes('max_iters=1000000') && !workerFile.includes('max_iters=5000000'));
+      pySrc.includes('max_iters=1000000') && !pySrc.includes('max_iters=5000000'));
 
-    const baseExceptionCount = (checkerFile.match(/except BaseException/g) || []).length;
-    check('Антифриз: SystemExit ловится как BaseException (worker + fallback)',
-      workerFile.includes('except BaseException') && baseExceptionCount >= 2);
+    const baseExceptionCount = (pySrc.match(/except BaseException/g) || []).length;
+    check('Антифриз: SystemExit ловится как BaseException (боевой бутстрап)',
+      baseExceptionCount >= 2);
 
     check('Антифриз: breakpoint и help убраны из _SAFE_BUILTINS',
-      !workerFile.includes("'breakpoint'") && !workerFile.includes("'help'") &&
-      !checkerFile.includes("'breakpoint'") && !checkerFile.includes("'help'"));
+      !pySrc.includes("'breakpoint'") && !pySrc.includes("'help'"));
   }
 
   // 20. Контракты схем для IDE (jsconfig.json + docs/types.d.ts, TECH-DEBT P2)
@@ -932,8 +934,153 @@ async function runStorageValidation() {
     check('docs/types.d.ts объявляет контракты AstRequirements/TaskItem/TaskTest/ProfileData', typesOk);
   }
 
+  await runBridgeValidation();
+
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);
+}
+
+// ── 21. Поведенческие тесты моста «Антифриз» (PyodideWorkerBridge) ──────────
+// checker.js загружается в изолированный vm-контекст с MockWorker: проверяем
+// РЕАЛЬНОЕ поведение моста (INIT/CHECK, CHECK_ERROR, краши, таймауты),
+// а не только наличие строк в файле.
+async function runBridgeValidation() {
+  console.log('\n=== Поведенческие тесты моста «Антифриз» (MockWorker) ===');
+
+  class MockWorker {
+    constructor(url) {
+      this.url = url;
+      this.onmessage = null;
+      this.onerror = null;
+      this.terminated = false;
+      this.received = [];
+      MockWorker.instances.push(this);
+    }
+    postMessage(msg) {
+      this.received.push(msg);
+      const respond = MockWorker.respond;
+      if (respond) Promise.resolve().then(() => respond(msg, this));
+    }
+    terminate() { this.terminated = true; }
+    emitFromWorker(data) { if (this.onmessage) this.onmessage({ data }); }
+    crash(err) { if (this.onerror) this.onerror(err); }
+  }
+  MockWorker.instances = [];
+  MockWorker.respond = null;
+
+  const sandbox = {
+    console: console,
+    setTimeout: setTimeout,
+    clearTimeout: clearTimeout
+  };
+  sandbox.window = sandbox;
+  sandbox.self = sandbox;
+  sandbox.document = { currentScript: null, querySelector: () => null };
+  sandbox.Worker = MockWorker;
+  vm.createContext(sandbox);
+
+  const checkerSrc = fs.readFileSync(path.join(__dirname, '..', 'app', 'checker.js'), 'utf8');
+  vm.runInContext(checkerSrc, sandbox, { filename: 'app/checker.js' });
+
+  const CC = sandbox.window.CodeChecker;
+  check('bridge: checker.js загружается в изолированном контексте с MockWorker',
+    Boolean(CC && typeof CC.getBridge === 'function'));
+  if (!CC) return;
+
+  const answerInit = (msg, w) => w.emitFromWorker({ type: 'INIT_OK', id: msg.id });
+
+  // 21.1 Happy path
+  MockWorker.instances = [];
+  MockWorker.respond = (msg, w) => {
+    if (msg.type === 'INIT') answerInit(msg, w);
+    else if (msg.type === 'CHECK') w.emitFromWorker({ type: 'CHECK_RESULT', id: msg.id, result: { passed: true, title: 'ok', sub: '', stdout: '', improveTips: [] } });
+  };
+  const r1 = await CC.checkSolution('print(1)', {});
+  check('bridge: INIT → CHECK_RESULT доходит до вызывающего кода', Boolean(r1) && r1.passed === true);
+
+  // 21.2 CHECK_ERROR: sandboxFailureResult, БЕЗ повторного исполнения payload
+  let checkCount = 0;
+  MockWorker.instances = [];
+  MockWorker.respond = (msg, w) => {
+    if (msg.type === 'INIT') answerInit(msg, w);
+    else if (msg.type === 'CHECK') { checkCount++; w.emitFromWorker({ type: 'CHECK_ERROR', id: msg.id, error: 'boom' }); }
+  };
+  const r2 = await CC.checkSolution('while True: pass', {});
+  check('bridge: CHECK_ERROR конвертируется в sandboxFailureResult', Boolean(r2) && r2.isSandboxError === true);
+  check('bridge: payload не перезапускается (ровно 1 CHECK, fallback не включён)',
+    checkCount === 1 && CC.getBridge().useFallback === false);
+
+  // 21.3 Краш воркера после взятия payload: respawn, без inline-повтора
+  const before3 = MockWorker.instances.length;
+  const w3 = CC.getBridge().worker;
+  MockWorker.respond = (msg, w) => {
+    if (msg.type === 'INIT') answerInit(msg, w);
+    else if (msg.type === 'CHECK') w.crash(new Error('wasm OOM'));
+  };
+  const r3 = await CC.checkSolution('x = 1', {});
+  check('bridge: краш воркера → sandboxFailureResult', Boolean(r3) && r3.isSandboxError === true);
+  check('bridge: после краша песочница пересоздана (воркер терминирован, инстанс +1)',
+    w3.terminated === true && MockWorker.instances.length === before3 + 1);
+  check('bridge: одиночный краш не даёт перманентного fallback', CC.getBridge().useFallback === false);
+
+  // 21.4 Таймаут CHECK: friendly-ошибка + respawn (respond молчит по CHECK)
+  const before4 = MockWorker.instances.length;
+  const w4 = CC.getBridge().worker;
+  MockWorker.respond = (msg, w) => { if (msg.type === 'INIT') answerInit(msg, w); };
+  const r4 = await CC.checkSolution('while True: pass', {}, 40);
+  check('bridge: таймаут CHECK возвращает friendly-ошибку таймаута',
+    Boolean(r4) && r4.isRuntimeError === true && /Превышено время/.test(r4.title));
+  check('bridge: после таймаута воркер терминирован и пересоздан',
+    w4.terminated === true && MockWorker.instances.length === before4 + 1);
+
+  // 21.5 Серия из 3 крашей подряд → перманентный fallback.
+  // Белый ящик: сбрасываем счётчик крашей — изолируем тест от краша из 21.3.
+  MockWorker.instances = [];
+  CC.getBridge()._crashCount = 0;
+  MockWorker.respond = (msg, w) => {
+    if (msg.type === 'INIT') answerInit(msg, w);
+    else if (msg.type === 'CHECK') w.crash(new Error('OOM again'));
+  };
+  let allSandbox = true;
+  for (let i = 0; i < 3; i++) {
+    const r = await CC.checkSolution('x = 1', {});
+    if (!r || !r.isSandboxError) allSandbox = false;
+  }
+  check('bridge: 3 краша подряд → перманентный fallback',
+    allSandbox && CC.getBridge().useFallback === true);
+  const workersBeforePoison = MockWorker.instances.length;
+  let settled5 = false;
+  try {
+    await CC.checkSolution('x = 1', {});
+    settled5 = true;
+  } catch (_) {
+    settled5 = true; // в vm fallback-путь без Pyodide кидает исключение — это тоже «завершился»
+  }
+  check('bridge: после перманентного fallback новые воркеры не создаются',
+    settled5 && MockWorker.instances.length === workersBeforePoison);
+
+  // 21.6 Зависший воркер: INIT без ответа → JS-таймаут → fallback.
+  // Белый ящик: снимаем перманентный fallback, поставленный в 21.5.
+  const b6 = CC.getBridge();
+  b6.useFallback = false;
+  b6.terminateAndRespawn();
+  b6.INIT_TIMEOUT_MS = 50;
+  MockWorker.respond = () => {}; // тишина: воркер не отвечает на INIT
+  const ok6 = await b6.ensureReady();
+  check('bridge: INIT без ответа → ensureReady=false и перманентный fallback',
+    ok6 === false && b6.useFallback === true);
+
+  // 21.7 Итоговая деградация: вызов не зависает и завершается (результатом
+  // или ошибкой — в vm-песочнице in-thread Pyodide недоступен, поэтому там
+  // ожидаем исключение; в браузере это будет обычный результат fallback).
+  let settled7 = false;
+  try {
+    await CC.checkSolution('x = 1', {});
+    settled7 = true;
+  } catch (_) {
+    settled7 = true;
+  }
+  check('bridge: отравленный мост деградирует без зависания (вызов завершается)', settled7);
 }
 
 runStorageValidation().catch(err => {

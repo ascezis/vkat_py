@@ -945,6 +945,124 @@ async function runStorageValidation() {
 
   await runBridgeValidation();
 
+  // ── 22. Модуль пет-проекта «Игра «Жизнь» (Game of Life) ────────────────────
+  console.log('\n=== Валидация модуля пет-проекта Life ===');
+
+  const lifePath = path.join(__dirname, '..', 'content', 'projects', 'life', 'tasks.js');
+  check('Life: файл content/projects/life/tasks.js существует на диске', fs.existsSync(lifePath));
+
+  let LM = null;
+  if (fs.existsSync(lifePath)) {
+    try {
+      loadScript('content/projects/life/tasks.js');
+      LM = context.LIFE_MODULE;
+    } catch (e) {
+      console.error('  Life: tasks.js выбросил исключение при загрузке:', e.message);
+    }
+  }
+  check('Life: window.LIFE_MODULE успешно экспортирован', Boolean(LM) && typeof LM === 'object');
+
+  const lifeSteps = LM && Array.isArray(LM.steps) ? LM.steps : [];
+  check('Life: корректный ID, экран и заголовок модуля', Boolean(LM && LM.id === 'life' && LM.title && LM.description && LM.screen === 'life'));
+  check('Life: модуль содержит ровно 4 шага', lifeSteps.length === 4);
+
+  const lifeStepShape = lifeSteps.every(s =>
+    s.id && s.title && s.narrative && s.taskHtml && s.glyph && s.worldMode &&
+    s.initialCode && Array.isArray(s.tests) && s.tests.length > 0
+  );
+  check('Life: каждый шаг содержит id/title/narrative/taskHtml/glyph/worldMode/initialCode и непустой tests', lifeStepShape);
+
+  check('Life: id шагов уникальны', new Set(lifeSteps.map(s => s.id)).size === lifeSteps.length);
+
+  const worldModesOk = lifeSteps.length === 4 &&
+    lifeSteps[0].worldMode === 'frozen' && lifeSteps[1].worldMode === 'chaos' &&
+    lifeSteps[2].worldMode === 'chaos' && lifeSteps[3].worldMode === 'sandbox';
+  check('Life: worldMode шагов образуют прогрессию «Сломанного мира» (frozen→chaos→chaos→sandbox)', worldModesOk);
+
+  const testsTaskTestFormat = lifeSteps.every(s => s.tests.every(t =>
+    typeof t.call === 'string' && t.call.length > 0 && 'returns' in t && !/assert/.test(t.call)
+  ));
+  check('Life: все тесты в контракте TaskTest (call + returns, без assert-кода)', testsTaskTestFormat);
+
+  // Поведенческая проверка содержимого: эталонное решение должно проходить
+  // ВСЕ тесты всех шагов (ловит опечатки в ожидаемых значениях контента).
+  // call-выражения в проде исполняются в Python, поэтому шимим Python-литералы.
+  if (testsTaskTestFormat) {
+    try {
+      vm.runInContext(`
+        var True = true; var False = false;
+        function is_alive(grid, x, y) {
+          if (x < 0 || y < 0 || y >= grid.length || x >= grid[0].length) return false;
+          return grid[y][x] === 1;
+        }
+        function count_neighbors(grid, x, y) {
+          var n = 0;
+          for (var dy = -1; dy <= 1; dy++) {
+            for (var dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              var nx = x + dx, ny = y + dy;
+              if (ny >= 0 && ny < grid.length && nx >= 0 && nx < grid[0].length && grid[ny][nx] === 1) n++;
+            }
+          }
+          return n;
+        }
+        function should_live(alive, n) { return n === 3 || (Boolean(alive) && n === 2); }
+        function step_rules(alive, n, birth, survival) {
+          return (!alive && birth.indexOf(n) !== -1) || (Boolean(alive) && survival.indexOf(n) !== -1);
+        }
+      `, context);
+
+      let lifeBehaviorOk = true;
+      let lifeBehaviorDetail = '';
+      let lifeTestCount = 0;
+      for (const s of lifeSteps) {
+        for (const t of s.tests) {
+          lifeTestCount++;
+          try {
+            const actual = vm.runInContext('(' + t.call + ')', context);
+            if (actual !== t.returns) {
+              lifeBehaviorOk = false;
+              lifeBehaviorDetail = s.id + ': ' + t.call + ' → ' + actual + ' (ожидалось ' + t.returns + ')';
+            }
+          } catch (e) {
+            lifeBehaviorOk = false;
+            lifeBehaviorDetail = s.id + ': ' + t.call + ' → ' + e.message;
+          }
+        }
+      }
+      check(`Life: эталонное решение проходит все ${lifeTestCount} тестов шагов (поведение = ожиданиям)`, lifeBehaviorOk, lifeBehaviorDetail);
+    } catch (e) {
+      check('Life: поведенческая проверка эталона выполнима', false, e.message);
+    }
+  }
+
+  const lifeIndexHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  check('Life: index.html содержит контейнер <div id="screen-life">', lifeIndexHtml.includes('id="screen-life"'));
+  check('Life: index.html содержит холст <canvas id="life-main-canvas">', lifeIndexHtml.includes('id="life-main-canvas"'));
+  check('Life: index.html содержит карточку пет-проекта life-start-card', lifeIndexHtml.includes('id="life-start-card"'));
+  check('Life: index.html содержит Python-скаффолд <script id="vkat-life-scaffold">', lifeIndexHtml.includes('id="vkat-life-scaffold"'));
+  check('Life: index.html подключает tasks.js и life-renderer.js',
+    lifeIndexHtml.includes('content/projects/life/tasks.js') && lifeIndexHtml.includes('app/life-renderer.js'));
+  check('Life: скаффолд содержит __STUDENT_CODE__, simulate_step и get_grid_json',
+    lifeIndexHtml.includes('__STUDENT_CODE__') && lifeIndexHtml.includes('def simulate_step(grid)') && lifeIndexHtml.includes('def get_grid_json(grid)'));
+
+  const lifeStylesCss = fs.readFileSync(path.join(__dirname, '..', 'app', 'styles.css'), 'utf8');
+  check('Life: styles.css содержит селекторы .life-canvas-container и .life-hud',
+    lifeStylesCss.includes('.life-canvas-container') && lifeStylesCss.includes('.life-hud'));
+
+  const lifeGlyphsCode = fs.readFileSync(path.join(__dirname, '..', 'app', 'glyphs.js'), 'utf8');
+  check('Life: glyphs.js содержит регистрацию схем lifeNeighbors, lifeRules, lifePatterns',
+    lifeGlyphsCode.includes('lifeNeighbors') && lifeGlyphsCode.includes('lifeRules') && lifeGlyphsCode.includes('lifePatterns'));
+
+  const lifeRendererPath = path.join(__dirname, '..', 'app', 'life-renderer.js');
+  check('Life: файл app/life-renderer.js существует на диске', fs.existsSync(lifeRendererPath));
+
+  const lifeRendererCode = fs.existsSync(lifeRendererPath) ? fs.readFileSync(lifeRendererPath, 'utf8') : '';
+  check('Life: life-renderer.js не содержит запрещённых npm/require импортов',
+    !lifeRendererCode.includes('require(') && !lifeRendererCode.includes('import '));
+  check('Life: модуль Life не обращается к localStorage/sessionStorage напрямую',
+    !lifeRendererCode.includes('localStorage') && !lifeRendererCode.includes('sessionStorage'));
+
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);
 }

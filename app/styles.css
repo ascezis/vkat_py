@@ -2802,3 +2802,603 @@ body {
 .hint-popover-more-link:hover {
   color: var(--text);
 }
+
+/* ==========================================================================
+   МОДУЛЬ ПЕТ-ПРОЕКТА: GAME OF LIFE (.life-*)
+   ========================================================================== */
+
+#screen-life {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#screen-life.active {
+  display: flex;
+}
+
+.life-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.life-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.life-header-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.life-step-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--border);
+  color: var(--brand-orange);
+  border: 1px solid var(--border-strong);
+}
+
+.life-step-dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.life-dot {
+  width: 22px;
+  height: 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.life-dot:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.life-dot.current {
+  color: var(--fill-text);
+  background: var(--fill);
+  border-color: var(--fill);
+}
+
+.life-dot.done {
+  color: var(--brand-orange);
+  border-color: var(--brand-orange);
+}
+
+.life-dot.done.current {
+  color: var(--fill-text);
+  background: var(--brand-orange);
+}
+
+.life-body {
+  display: grid;
+  grid-template-columns: 560px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Левая колонка (Canvas) */
+.life-canvas-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+.life-canvas-container {
+  position: relative;
+  width: 500px;
+  height: 500px;
+  background: #000000;
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+}
+
+#life-main-canvas {
+  width: 500px;
+  height: 500px;
+  display: block;
+  cursor: crosshair;
+}
+
+/* HUD поверх Canvas */
+.life-hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(236, 236, 236, 0.7);
+  z-index: 2;
+}
+
+.hud-item {
+  background: rgba(10, 10, 10, 0.75);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  margin-right: 6px;
+}
+
+.hud-item strong {
+  color: var(--brand-orange);
+}
+
+/* Панель управления */
+.life-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 500px;
+  margin-top: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.life-controls-bar-secondary {
+  margin-top: 10px;
+  justify-content: flex-start;
+}
+
+.life-btn-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.life-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 7px 14px;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: 1px solid var(--fill);
+  cursor: pointer;
+}
+
+.life-btn:hover:not(:disabled) {
+  background: var(--fill-hover);
+}
+
+.life-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.life-btn.active {
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+.life-btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+.life-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-panel);
+  border-color: var(--text-muted);
+}
+
+.life-btn-sm {
+  font-size: 11px;
+  padding: 5px 10px;
+}
+
+.life-speed-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.life-speed-control input[type="range"] {
+  width: 70px;
+  accent-color: var(--brand-orange);
+}
+
+.life-select {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.life-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.life-canvas-hint {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Правая колонка (Задание и Редактор) */
+.life-editor-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow-y: auto;
+  gap: 16px;
+  background: var(--bg-panel);
+  min-width: 0;
+}
+
+.life-task-card {
+  border: 1px solid var(--border);
+  padding: 16px;
+  background: var(--bg);
+}
+
+.life-task-card h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.life-glyph-slot {
+  margin: 12px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.life-task-desc {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.life-task-desc ul {
+  margin: 8px 0 8px 20px;
+}
+
+.life-task-desc li {
+  margin-bottom: 4px;
+}
+
+.life-task-desc code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+}
+
+.life-narrative {
+  color: var(--text-muted);
+  border-left: 2px solid var(--brand-orange);
+  padding-left: 10px;
+  margin-bottom: 10px;
+}
+
+.life-hint-box {
+  margin-top: 12px;
+}
+
+.life-hint-content {
+  margin-top: 8px;
+}
+
+.life-hint-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.life-hint-code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--brand-orange);
+  padding: 10px 12px;
+  margin: 6px 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.life-code-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 220px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+}
+
+.life-editor-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-panel-alt);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.editor-status.ok {
+  color: var(--brand-orange);
+}
+
+.editor-status.err {
+  color: var(--error);
+}
+
+#life-code-editor {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px;
+  border: none;
+  resize: none;
+  outline: none;
+}
+
+.life-action-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.life-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Обратная связь проверки */
+.life-feedback-msg {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  display: none;
+}
+
+.life-feedback-msg.ok,
+.life-feedback-msg.err {
+  display: block;
+}
+
+.life-fb-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.life-fb-mark {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.life-fb-mark.ok {
+  color: var(--brand-orange);
+}
+
+.life-fb-mark.err {
+  color: var(--error);
+}
+
+.life-fb-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.life-fb-sub {
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: pre-wrap;
+}
+
+.life-fb-explain {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.life-fb-console {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--error);
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  margin-top: 8px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  max-height: 140px;
+}
+
+/* Кнопка «Следующий шаг» в фидбеке */
+.life-feedback-msg .life-btn {
+  margin-top: 10px;
+}
+
+/* Карточка пет-проекта на стартовом экране */
+.life-start-card-host {
+  width: 100%;
+  max-width: 640px;
+}
+
+.life-start-card {
+  margin-top: 16px;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--brand-orange);
+  background: var(--bg-panel);
+  padding: 18px 20px;
+}
+
+.life-start-card-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-orange);
+}
+
+.life-start-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 6px;
+}
+
+.life-start-card-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.life-start-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.life-start-card-progress {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Оверлей WORLD_BIRTH */
+.life-birth-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 106, 0, 0.2) 0%, rgba(10, 10, 10, 0.85) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: life-fade-in 0.4s ease-out;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.birth-message {
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.birth-message h2 {
+  font-size: 28px;
+  color: #ffffff;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 16px var(--brand-orange);
+}
+
+.birth-message p {
+  color: var(--brand-orange);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Тост обнаружения паттерна */
+.life-pattern-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a1a1a;
+  border: 1px solid var(--brand-orange);
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #fff;
+  animation: life-pop 0.3s ease-out;
+}
+
+.life-pattern-toast .toast-icon {
+  color: var(--brand-orange);
+}
+
+@keyframes life-pop {
+  0% { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes life-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Адаптив: узкие экраны */
+@media (max-width: 1100px) {
+  .life-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .life-canvas-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .life-canvas-container,
+  #life-main-canvas,
+  .life-controls-bar {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  #life-main-canvas {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-pattern-toast,
+  .life-birth-overlay {
+    animation: none;
+  }
+}

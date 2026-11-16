@@ -50,6 +50,7 @@
     dom.screenStart = document.getElementById('screen-start');
     dom.screenLesson = document.getElementById('screen-lesson');
     dom.screenFinish = document.getElementById('screen-finish');
+    dom.screenLife = document.getElementById('screen-life');
 
     dom.topbar = document.getElementById('app-topbar');
     dom.mark = document.getElementById('app-mark');
@@ -436,10 +437,17 @@
   // ─── Навигация экранов ────────────────────────────────────────────────────────
 
   function showScreen(screen) {
+    // Экран пет-проекта: перед уходом остановить live-режим и сбросить ввод
+    const wasLife = dom.screenLife && dom.screenLife.classList.contains('active');
+    if (window.VkatLife && wasLife && screen !== 'life') {
+      window.VkatLife.leave();
+    }
+
     if (dom.screenProfiles) dom.screenProfiles.classList.remove('active');
     dom.screenStart.classList.remove('active');
     dom.screenLesson.classList.remove('active');
     dom.screenFinish.classList.remove('active');
+    if (dom.screenLife) dom.screenLife.classList.remove('active');
 
     updateProfileBadges();
 
@@ -447,6 +455,7 @@
       dom.screenStart.classList.add('active');
       dom.topbar.style.display = 'none';
       window.VkatRenderers.renderStartCards();
+      if (window.VkatLife) window.VkatLife.renderStartCard();
       startTypewriter();
       if (state.gridWarp) state.gridWarp.resume();
     } else {
@@ -459,6 +468,10 @@
       } else if (screen === 'lesson') {
         dom.screenLesson.classList.add('active');
         dom.topbar.style.display = 'flex';
+      } else if (screen === 'life') {
+        dom.screenLife.classList.add('active');
+        dom.topbar.style.display = 'none';
+        if (window.VkatLife) window.VkatLife.enter();
       } else if (screen === 'finish') {
         dom.screenFinish.classList.add('active');
         dom.topbar.style.display = 'flex';
@@ -867,6 +880,7 @@
     buildCourseStructure();
     setupEditor();
     setupEvents();
+    if (window.VkatLife) window.VkatLife.init();
 
     if (window.VkatGridWarp && dom.startGridCanvas) {
       state.gridWarp = window.VkatGridWarp.init(dom.startGridCanvas, dom.screenStart);

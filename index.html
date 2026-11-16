@@ -230,6 +230,9 @@
       <!-- Карточки этапов курса (генерируются динамически из COURSE_STAGES) -->
       <div id="stage-cards" class="stage-cards"></div>
 
+      <!-- Карточка пет-проекта «Игра «Жизнь» (генерируется из LIFE_MODULE) -->
+      <div id="life-start-card" class="life-start-card-host"></div>
+
       <div class="start-note">прогресс сохраняется на этом устройстве</div>
       <div id="start-status" class="status-badge">Загрузка Python...</div>
     </div>
@@ -429,6 +432,143 @@
       <span>этап завершён</span>
     </div>
   </div>
+
+  <!-- ЭКРАН 4: ПЕТ-ПРОЕКТ «ИГРА «ЖИЗНЬ» КОНВЕЯ» -->
+  <div id="screen-life" class="screen">
+    <header class="life-header">
+      <div class="life-header-left">
+        <button type="button" id="btn-life-back" class="btn-ghost-sm" title="Вернуться в курс">← В меню курса</button>
+        <span class="life-header-title">ПЕТ-ПРОЕКТ: ИГРА «ЖИЗНЬ» КОНВЕЯ</span>
+        <span class="life-step-badge" id="life-step-indicator">ШАГ 1 ИЗ 4</span>
+        <span class="life-step-dots" id="life-step-dots"></span>
+      </div>
+      <div class="life-header-right">
+        <div class="life-pattern-toast" id="life-pattern-toast" style="display: none;">
+          <span class="toast-icon" id="life-toast-icon">▪</span>
+          <span class="toast-text" id="life-toast-text">Обнаружен паттерн</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="life-body">
+      <!-- Левая колонка: интерактивная вселенная -->
+      <section class="life-canvas-panel">
+        <div class="life-canvas-container">
+          <div class="life-hud">
+            <div class="hud-left">
+              <span class="hud-item">GEN: <strong id="life-stat-gen">0000</strong></span>
+              <span class="hud-item">POP: <strong id="life-stat-pop">0</strong></span>
+              <span class="hud-item">Δ: <strong id="life-stat-density">0.00%</strong></span>
+            </div>
+            <div class="hud-right">
+              <canvas id="life-sparkline" width="100" height="24" title="История популяции"></canvas>
+            </div>
+          </div>
+
+          <canvas id="life-main-canvas" width="500" height="500"></canvas>
+
+          <div id="life-birth-overlay" class="life-birth-overlay" style="display: none;">
+            <div class="birth-message">
+              <h2>МИР ОЖИЛ</h2>
+              <p>Законы вселенной Конвея активированы</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="life-controls-bar">
+          <div class="life-btn-group">
+            <button type="button" id="btn-life-play" class="life-btn life-btn-sm">▶ Старт</button>
+            <button type="button" id="btn-life-step" class="life-btn life-btn-sm life-btn-ghost">⏭ Шаг</button>
+            <button type="button" id="btn-life-clear" class="life-btn life-btn-sm life-btn-ghost">↺ Очистить</button>
+            <button type="button" id="btn-life-random" class="life-btn life-btn-sm life-btn-ghost">🎲 Рандом</button>
+          </div>
+
+          <div class="life-speed-control">
+            <label for="life-speed-slider">Скорость:</label>
+            <input type="range" id="life-speed-slider" min="1" max="30" value="10">
+            <span id="life-speed-val">10/с</span>
+          </div>
+        </div>
+
+        <div class="life-controls-bar life-controls-bar-secondary">
+          <div class="life-presets-dropdown">
+            <select id="life-preset-select" class="life-select" disabled title="Пресеты откроются после Шага 4">
+              <option value="" disabled selected>Пресеты...</option>
+              <option value="glider">Глайдер</option>
+              <option value="blinker">Мигалка</option>
+              <option value="pulsar">Пульсар</option>
+              <option value="gosper">Пушка Госпера</option>
+              <option value="acorn">Жёлудь (Хаос)</option>
+            </select>
+          </div>
+          <div class="life-presets-dropdown">
+            <select id="life-universe-select" class="life-select" style="display: none;" title="Вселенная правил">
+            </select>
+          </div>
+        </div>
+
+        <div class="life-canvas-hint">
+          <span>ЛКМ — рисовать клетки</span> · <span>ПКМ / Shift+ЛКМ — стирать</span>
+        </div>
+      </section>
+
+      <!-- Правая колонка: задание, глиф, редактор Python -->
+      <section class="life-editor-panel">
+        <div class="life-task-card">
+          <h2 id="life-task-title">Шаг 1: Сенсор границ мира</h2>
+          <div id="life-glyph-slot" class="life-glyph-slot"></div>
+          <div id="life-task-desc" class="life-task-desc"></div>
+          <div class="life-hint-box">
+            <button type="button" id="btn-life-hint" class="life-btn life-btn-sm life-btn-ghost" style="display: none;">Подсказка</button>
+            <div id="life-hint-content" class="life-hint-content"></div>
+          </div>
+        </div>
+
+        <div class="life-code-wrapper">
+          <div class="life-editor-header">
+            <span>РЕШЕНИЕ (PYTHON 3)</span>
+            <span id="life-editor-status" class="editor-status">Не проверено</span>
+          </div>
+          <textarea id="life-code-editor" class="life-code-area" spellcheck="false"></textarea>
+        </div>
+
+        <div class="life-action-bar">
+          <div id="life-feedback" class="life-feedback-msg"></div>
+          <div class="life-action-buttons">
+            <button type="button" id="btn-life-run-local" class="life-btn life-btn-ghost" disabled title="Откроется после сдачи шагов 1-3">Испытать на поле</button>
+            <button type="button" id="btn-life-submit" class="life-btn" title="Ctrl + Enter">Проверить решение (Ctrl+Enter)</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Эталонный Python-скаффолд симулятора (инжекция кода ученика через __STUDENT_CODE__) -->
+  <script type="text/x-python" id="vkat-life-scaffold">
+# === ДВИЖОК СИМУЛЯТОРА GAME OF LIFE (СКАФФОЛД) ===
+import json
+
+WIDTH = 50
+HEIGHT = 50
+
+# Сюда инжектируется код студента:
+__STUDENT_CODE__
+
+def create_empty_grid(w=WIDTH, h=HEIGHT):
+    return [[0 for _ in range(w)] for _ in range(h)]
+
+def simulate_step(grid):
+    new_grid = create_empty_grid(len(grid[0]), len(grid))
+    for y in range(len(grid)):
+        for x in range(len(grid[0])):
+            alive = is_alive(grid, x, y)
+            neighbors = count_neighbors(grid, x, y)
+            new_grid[y][x] = 1 if should_live(alive, neighbors) else 0
+    return new_grid
+
+def get_grid_json(grid):
+    return json.dumps(grid)
+  </script>
 
   <!-- ДЕРЕВО ОГЛАВЛЕНИЯ КУРСА (ВЫДВИЖНОЙ САЙДБАР) -->
   <div id="tree-drawer" class="tree-drawer">
@@ -959,6 +1099,7 @@ def _match_output_proxy(actual_str, expected_str):
 
   <!-- База конструкций и подсказки по коду в теории -->
   <script src="content/cheatsheet.js"></script>
+  <script src="content/projects/life/tasks.js"></script>
   <script src="app/code-hints.js"></script>
 
   <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
@@ -980,6 +1121,7 @@ def _match_output_proxy(actual_str, expected_str):
 
   <!-- Интерактивная выпуклая сетка Antigravity (Grid Warp) -->
   <script src="app/grid-warp.js"></script>
+  <script src="app/life-renderer.js"></script>
 
   <!-- Оркестратор приложения (инициализация, навигация, состояние) -->
   <script src="app/app.js"></script>

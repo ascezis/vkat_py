@@ -1049,7 +1049,9 @@
     S.dom.btnSubmit.textContent = 'Проверяем...';
 
     try {
-      const code = S.dom.editor.value;
+      // Композиция: принятый код предыдущих шагов + текущий черновик
+      const accepted = acceptedCodeBefore(S.currentStepIndex);
+      const code = accepted ? accepted + '\n\n' + S.dom.editor.value : S.dom.editor.value;
       const result = await window.CodeChecker.checkSolution(code, buildCheckTask(step));
 
       if (result.passed) {
@@ -1142,10 +1144,15 @@
     return JSON.stringify(rows);
   }
 
-  function acceptedCodeOfSteps() {
+  /**
+   * Принятый код шагов до stepIndex (сплит-композиция): функции шагов строятся
+   * друг на друге, поэтому проверка шага N исполняет принятые шаги 1..N-1 +
+   * текущий черновик. Тесты шага N вызывают только функцию шага N.
+   */
+  function acceptedCodeBefore(stepIndex) {
     const drafts = (window.VkatApp && window.VkatApp.state.codeDrafts) || {};
     const parts = [];
-    for (let i = 0; i < 3 && i < S.module.steps.length; i++) {
+    for (let i = 0; i < stepIndex && i < S.module.steps.length; i++) {
       const code = drafts[S.module.steps[i].id + '::accepted'];
       if (code) parts.push(code);
     }
@@ -1155,7 +1162,7 @@
   function composeLiveScript() {
     const scaffoldEl = document.getElementById('vkat-life-scaffold');
     const scaffold = scaffoldEl ? scaffoldEl.textContent : '';
-    const student = acceptedCodeOfSteps();
+    const student = acceptedCodeBefore(S.module.steps.length);
     return scaffold.replace('__STUDENT_CODE__', student) +
       '\n\nGRID_JSON = """' + gridToJson() + '"""\n' +
       '__g = json.loads(GRID_JSON)\n' +
@@ -1488,5 +1495,6 @@
     S.rafId = requestAnimationFrame(frame);
   }
 
-  window.VkatLife = { init, enter, leave, renderStartCard };
+  // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
+  window.VkatLife = { init, enter, leave, renderStartCard, _state: S };
 })(window, document);

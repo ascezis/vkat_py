@@ -397,15 +397,24 @@
       }
 
       if (!isMatch) {
-        const normActual = normalizeOutput(stdout);
-        const normExpected = normalizeOutput(task.expectedOutput || '');
-        return {
-          passed: false,
-          title: 'Вывод не совпадает с ожидаемым',
-          sub: `Ожидалось: "${normExpected.replace(/\n/g, '↵')}", получено: "${normActual.replace(/\n/g, '↵')}"`,
-          stdout: stdout,
-          improveTips: []
-        };
+        if (task.lenientOutput && normalizeOutput(stdout)) {
+          // Мягкий режим (первое задание): любой непустой вывод зачитывается,
+          // красную ошибку не показываем — вместо неё даём наводку на целевую фразу.
+          if (!outputTip) {
+            outputTip = 'Зачтено! print() работает — ты вывел свой текст. ' +
+              'В этом задании просили вывести: "' + normalizeOutput(task.expectedOutput || '') + '". Попробуй и этот вариант.';
+          }
+        } else {
+          const normActual = normalizeOutput(stdout);
+          const normExpected = normalizeOutput(task.expectedOutput || '');
+          return {
+            passed: false,
+            title: 'Вывод не совпадает с ожидаемым',
+            sub: `Ожидалось: "${normExpected.replace(/\n/g, '↵')}", получено: "${normActual.replace(/\n/g, '↵')}"`,
+            stdout: stdout,
+            improveTips: []
+          };
+        }
       }
     }
 

@@ -80,6 +80,9 @@ def check_solution(user_code, task):
 
     if "expectedOutput" in task:
         matched, _tip = _match_output(out, task["expectedOutput"])
+        if not matched and task.get("lenientOutput") and out.strip():
+            # Мягкий режим: любой непустой вывод зачитывается (зеркало checker).
+            matched = True
         if not matched:
             norm_out = "\n".join([l.rstrip() for l in out.replace("\r\n", "\n").split("\n")]).strip()
             norm_exp = "\n".join([l.rstrip() for l in task["expectedOutput"].replace("\r\n", "\n").split("\n")]).strip()
@@ -1020,6 +1023,27 @@ if fn2_res["passed"]:
     passed_tests += 1
 else:
     print(f"  × [regression_testcode_sys] ОШИБКА: {fn2_res}")
+    failed_tests += 1
+
+# Регрессия 8: мягкий режим первого задания (lenientOutput) —
+# любой непустой вывод зачитывается, а без флага — строгое отклонение
+lenient_res = check_solution('print("Чел чел")', {
+    "expectedOutput": "вкат в python",
+    "lenientOutput": True
+})
+if lenient_res["passed"]:
+    print("  ✓ [regression_lenient_first] Первое задание зачитывает любой непустой вывод (print('Чел чел'))")
+    passed_tests += 1
+else:
+    print(f"  × [regression_lenient_first] ОШИБКА: {lenient_res}")
+    failed_tests += 1
+
+strict_res = check_solution('print("Чел чел")', {"expectedOutput": "вкат в python"})
+if not strict_res["passed"]:
+    print("  ✓ [regression_strict_default] Без флага несовпадение по-прежнему отклоняется")
+    passed_tests += 1
+else:
+    print(f"  × [regression_strict_default] ОШИБКА: вывод принят без флага: {strict_res}")
     failed_tests += 1
 
 print(f"\nИТОГ: {passed_tests} пройдено, {failed_tests} ошибок.")

@@ -23,6 +23,9 @@ window.COURSE_TOPICS.push({
       starterCode: '# Напиши вызов print ниже\n',
       hint: 'Используй команду print("вкат в python")',
       expectedOutput: "вкат в python",
+      // Первое задание не наказывает: любой непустой вывод зачитывается,
+      // а ученику показываем наводку на целевую фразу (см. lenientOutput в checker).
+      lenientOutput: true,
       astRequirements: {},
       improveTip: "Когда выводишь одну простую строку, привыкай использовать одинарные или двойные кавычки единообразно во всём проекте.",
       successMessage: "Первая программа на Python выполнена успешно!"

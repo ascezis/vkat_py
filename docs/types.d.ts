@@ -113,6 +113,11 @@ interface TaskItem {
   code?: string;
   /** Стартовая заготовка кода для практического задания (fix-задания). */
   starterCode?: string;
+  /**
+   * Мягкий режим (onboarding): при несовпадении expectedOutput любой непустой
+   * вывод зачитывается, вместо ошибки показывается наводка на целевую фразу.
+   */
+  lenientOutput?: boolean;
   expectedOutput?: string;
   explain?: string;
 

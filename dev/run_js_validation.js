@@ -934,6 +934,15 @@ async function runStorageValidation() {
     check('docs/types.d.ts объявляет контракты AstRequirements/TaskItem/TaskTest/ProfileData', typesOk);
   }
 
+  // 20.1 Мягкий режим первого задания (onboarding)
+  {
+    const startTopic = topicMap.get('variables');
+    // Стартовые темы хранят элементы в legacy-ключе tasks, а не items
+    const var1 = startTopic && (startTopic.items || startTopic.tasks || []).find(it => it.id === 'var_1');
+    check('Первое задание var_1 имеет lenientOutput: true (не наказывает за неверную фразу)',
+      Boolean(var1 && var1.lenientOutput === true));
+  }
+
   await runBridgeValidation();
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);

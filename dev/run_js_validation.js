@@ -33,10 +33,27 @@ const context = {
   clearInterval: clearInterval,
   localStorage: localStorageMock,
   sessionStorage: sessionStorageMock,
-  crypto: globalThis.crypto
+  crypto: globalThis.crypto,
+  CustomEvent: CustomEvent
 };
 context.window = context;
 context.globalThis = context;
+
+// Простейшая шина событий: нужно для проверки dispatchEvent('vkat-storage-quota')
+const eventBus = new Map();
+context.addEventListener = (type, fn) => {
+  if (!eventBus.has(type)) eventBus.set(type, []);
+  eventBus.get(type).push(fn);
+};
+context.removeEventListener = (type, fn) => {
+  const arr = eventBus.get(type);
+  if (arr) eventBus.set(type, arr.filter(f => f !== fn));
+};
+context.dispatchEvent = (ev) => {
+  const arr = eventBus.get(ev && ev.type);
+  if (arr) arr.slice().forEach(fn => { try { fn(ev); } catch (e) {} });
+  return true;
+};
 
 function loadScript(relPath) {
   const fullPath = path.join(__dirname, '..', relPath);
@@ -613,6 +630,30 @@ async function runStorageValidation() {
   const dataAfterFlush = await storage.load();
   check('flushSync немедленно синхронизирует отложенные черновики в хранилище', dataAfterFlush.drafts['l1_fn_c2'] === 'print("test")');
 
+  // 7.1 Переполнение квоты: приложение не падает, предупреждение ровно одно (TECH-DEBT P1)
+  {
+    const origSetItem = localStorageMock.setItem;
+    const quotaError = new Error('The quota has been exceeded');
+    quotaError.name = 'QuotaExceededError';
+    let quotaEvents = 0;
+    let lastDetail = null;
+    const onQuota = (e) => { quotaEvents++; lastDetail = e && e.detail; };
+    context.addEventListener('vkat-storage-quota', onQuota);
+    localStorageMock.setItem = () => { throw quotaError; };
+    let survived = true;
+    try {
+      await storage.save({ drafts: { 'l1_fn_c1': 'x = 1' } });
+      // Повторная запись при той же переполненной квоте: второе событие не должно слаться
+      await storage.save({ drafts: { 'l1_fn_c1': 'x = 2' } });
+    } catch (e) {
+      survived = false;
+    }
+    localStorageMock.setItem = origSetItem;
+    context.removeEventListener('vkat-storage-quota', onQuota);
+    check('QuotaExceededError: storage.save не роняет приложение', survived);
+    check('QuotaExceededError: событие vkat-storage-quota шлётся ровно один раз с подсказкой', quotaEvents === 1 && Boolean(lastDetail && lastDetail.message));
+  }
+
   // 8. Переключение на профиль Артёма — изоляция данных
   await storage.selectProfile(p1.id);
   const dataP1 = await storage.load();
@@ -821,6 +862,74 @@ async function runStorageValidation() {
 
     const enterDispatchesInput = /e\.key === 'Enter'[\s\S]*?dispatchEvent\(new Event\('input'/.test(appFile);
     check('Issue #14: перенос строки (Enter) генерирует событие input и обновляет подсветку', enterDispatchesInput);
+
+    // 19. Валидация Web Worker Sandbox ("Антифриз", Issue #2)
+    const workerFile = fs.readFileSync(path.join(appDir, 'checker-worker.js'), 'utf8');
+    check('Issue #2 Web Worker: файл app/checker-worker.js существует', workerFile.length > 0);
+
+    const workerHandlers = workerFile.includes("'INIT'") && workerFile.includes("'CHECK'") && workerFile.includes("'RUN'");
+    check('Issue #2 Web Worker: checker-worker.js обрабатывает сообщения INIT, CHECK, RUN', workerHandlers);
+
+    const hasWorkerBridge = /class PyodideWorkerBridge/.test(checkerFile);
+    check('Issue #2 Web Worker: checker.js реализует класс PyodideWorkerBridge', hasWorkerBridge);
+
+    const hasWatchdogTimeout = /DEFAULT_TIMEOUT_MS\s*=\s*7000/.test(checkerFile) || /timeoutMs\s*=\s*7000/.test(checkerFile);
+    check('Issue #2 Web Worker: сторожевой таймер (watchdog timeout) настроен на 7000 мс', hasWatchdogTimeout);
+
+    const hasWorkerFallback = typeof checkerFile === 'string' &&
+      checkerFile.includes('fallbackCheckSolution') &&
+      checkerFile.includes('fallbackRunCode') &&
+      checkerFile.includes('fallbackInitPyodideInThread');
+    check('Issue #2 Web Worker: checker.js содержит in-thread fallback для окружений без Worker', hasWorkerFallback);
+
+    // 19.1 Харднинг «Антифриза» (P1/P2 фиксы)
+    check('Антифриз: краш воркера не отключает песочницу навсегда (счётчик крашей + respawn)',
+      checkerFile.includes('MAX_CONSECUTIVE_CRASHES') && checkerFile.includes('this._crashCount'));
+
+    check('Антифриз: сбой воркера после взятия payload НЕ перезапускает код в главном потоке',
+      checkerFile.includes('sandboxFailureResult') &&
+      checkerFile.includes('return sandboxFailureResult(err);') &&
+      checkerFile.includes('res = sandboxFailureResult(err);'));
+
+    check('Антифриз: ensureReady ограничен JS-таймаутом INIT (90с)',
+      checkerFile.includes('INIT_TIMEOUT_MS = 90000'));
+
+    check('Антифриз: класс моста без ES2022 static-поля (совместимость со старыми браузерами)',
+      !/static\s+DEFAULT_TIMEOUT_MS/.test(checkerFile) &&
+      checkerFile.includes('this.DEFAULT_TIMEOUT_MS = 7000'));
+
+    check('Антифриз: loop-guard 1M итераций срабатывает раньше 7s watchdog',
+      workerFile.includes('max_iters=1000000') && !workerFile.includes('max_iters=5000000'));
+
+    const baseExceptionCount = (checkerFile.match(/except BaseException/g) || []).length;
+    check('Антифриз: SystemExit ловится как BaseException (worker + fallback)',
+      workerFile.includes('except BaseException') && baseExceptionCount >= 2);
+
+    check('Антифриз: breakpoint и help убраны из _SAFE_BUILTINS',
+      !workerFile.includes("'breakpoint'") && !workerFile.includes("'help'") &&
+      !checkerFile.includes("'breakpoint'") && !checkerFile.includes("'help'"));
+  }
+
+  // 20. Контракты схем для IDE (jsconfig.json + docs/types.d.ts, TECH-DEBT P2)
+  {
+    const fsRoot = path.join(__dirname, '..');
+    const jsconfigPath = path.join(fsRoot, 'jsconfig.json');
+    const typesPath = path.join(fsRoot, 'docs', 'types.d.ts');
+    let jsconfigOk = false;
+    let typesOk = false;
+    try {
+      const cfg = JSON.parse(fs.readFileSync(jsconfigPath, 'utf8'));
+      jsconfigOk = cfg.compilerOptions && cfg.compilerOptions.noEmit === true;
+    } catch (e) {}
+    try {
+      const types = fs.readFileSync(typesPath, 'utf8');
+      typesOk = types.includes('interface AstRequirements') &&
+                types.includes('interface TaskItem') &&
+                types.includes('interface TaskTest') &&
+                types.includes('interface ProfileData');
+    } catch (e) {}
+    check('jsconfig.json существует и noEmit (zero-build)', jsconfigOk);
+    check('docs/types.d.ts объявляет контракты AstRequirements/TaskItem/TaskTest/ProfileData', typesOk);
   }
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);

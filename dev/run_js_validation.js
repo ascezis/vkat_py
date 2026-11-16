@@ -813,6 +813,14 @@ async function runStorageValidation() {
     check('CONNECT: resolveEndpoint читает настройку VkatStorage и нормализует слэш',
           connect.resolveEndpoint() === 'http://fallback:8090');
     context.window.VkatStorage.setSetting('connect_endpoint', '');
+
+    // 18. Валидация фикса Issue #14 (синхронизация подсветки и переноса строки в редакторе)
+    const appFile = fs.readFileSync(path.join(appDir, 'app.js'), 'utf8');
+    const onEditorChangeHasHighlighter = /function onEditorChange\(\)\s*\{[\s\S]*?dom\.highlighter\.update\(\)/.test(appFile);
+    check('Issue #14: onEditorChange() синхронизирует dom.highlighter', onEditorChangeHasHighlighter);
+
+    const enterDispatchesInput = /e\.key === 'Enter'[\s\S]*?dispatchEvent\(new Event\('input'/.test(appFile);
+    check('Issue #14: перенос строки (Enter) генерирует событие input и обновляет подсветку', enterDispatchesInput);
   }
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);

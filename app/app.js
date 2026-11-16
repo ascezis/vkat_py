@@ -660,14 +660,27 @@
         const start = this.selectionStart;
         const end = this.selectionEnd;
         const val = this.value;
-        this.value = val.substring(0, start) + '    ' + val.substring(end);
-        this.selectionStart = this.selectionEnd = start + 4;
+        let inserted = false;
+        try {
+          inserted = Boolean(document.execCommand && document.execCommand('insertText', false, '    '));
+        } catch (_) {
+          inserted = false;
+        }
+        if (!inserted) {
+          this.value = val.substring(0, start) + '    ' + val.substring(end);
+          this.selectionStart = this.selectionEnd = start + 4;
+          this.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (dom.highlighter) {
+          dom.highlighter.update();
+        }
         onEditorChange();
       } else if (e.key === 'Enter') {
-        const pos = this.selectionStart;
+        const start = this.selectionStart;
+        const end = this.selectionEnd;
         const val = this.value;
-        const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-        const currentLine = val.substring(lineStart, pos);
+        const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+        const currentLine = val.substring(lineStart, start);
         const match = currentLine.match(/^(\s*)/);
         let indent = match ? match[1] : '';
 
@@ -677,8 +690,21 @@
 
         if (indent.length > 0) {
           e.preventDefault();
-          this.value = val.substring(0, pos) + '\n' + indent + val.substring(pos);
-          this.selectionStart = this.selectionEnd = pos + 1 + indent.length;
+          const insertText = '\n' + indent;
+          let inserted = false;
+          try {
+            inserted = Boolean(document.execCommand && document.execCommand('insertText', false, insertText));
+          } catch (_) {
+            inserted = false;
+          }
+          if (!inserted) {
+            this.value = val.substring(0, start) + insertText + val.substring(end);
+            this.selectionStart = this.selectionEnd = start + insertText.length;
+            this.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          if (dom.highlighter) {
+            dom.highlighter.update();
+          }
           onEditorChange();
         }
       }
@@ -694,6 +720,9 @@
       if (window.VkatStorage) {
         window.VkatStorage.saveDraftDebounced(task.id, dom.editor.value);
       }
+    }
+    if (dom.highlighter) {
+      dom.highlighter.update();
     }
     window.VkatRenderers.updateLineNumbers();
   }

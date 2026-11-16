@@ -15,386 +15,55 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
 
-# 1. AST Анализатор из checker.js
-def analyze_ast(code_str, requirements_json):
-    reqs = json.loads(requirements_json)
-    try:
-        tree = ast.parse(code_str)
-    except SyntaxError as e:
-        err_type = type(e).__name__
-        return json.dumps({"syntax_error": f"{err_type}: {e}", "lineno": e.lineno, "offset": e.offset})
+"""
+Автономная проверка логики чекера, структуры курса, эталонов и неправильных решений.
+Запуск: python dev/run_tests.py
 
-    errors = []
-    nodes = list(ast.walk(tree))
-    node_types = {type(n) for n in nodes}
+С Sprint 3 харнесс исполняет ТОТ ЖЕ Python-бутстрап, что и браузер: источник
+извлекается из index.html (script#vkat-checker-python) — единого для in-thread
+fallback, воркера и этого харнесса (устранение тройного дублирования).
+"""
 
-    if reqs.get("require_for"):
-        has_for = ast.For in node_types or any(isinstance(n, ast.comprehension) for n in nodes)
-        if not has_for:
-            errors.append("В коде должен использоваться цикл for.")
-    
-    if reqs.get("require_while") and ast.While not in node_types:
-        errors.append("В коде должен использоваться цикл while.")
-        
-    if reqs.get("require_loop"):
-        has_loop = (ast.For in node_types or ast.While in node_types or any(isinstance(n, ast.comprehension) for n in nodes))
-        if not has_loop:
-            errors.append("В решении обязательно должен использоваться цикл (for или while).")
-        
-    if reqs.get("require_def"):
-        has_def = ast.FunctionDef in node_types or any(isinstance(n, getattr(ast, 'AsyncFunctionDef', ())) for n in nodes)
-        if not has_def:
-            errors.append("Необходимо объявить функцию с помощью ключевого слова def.")
-        
-    if reqs.get("require_return"):
-        has_return = any(isinstance(n, ast.Return) for n in nodes)
-        if not has_return:
-            errors.append("Функция должна возвращать результат через ключевое слово return.")
-            
-    if reqs.get("require_if"):
-        has_if = ast.If in node_types or ast.IfExp in node_types
-        if not has_if:
-            errors.append("В коде должно использоваться ветвление с условием if.")
+import sys
+import io
+import os
+import ast
+import json
 
-    if reqs.get("require_try") and ast.Try not in node_types:
-        errors.append("В коде должна использоваться конструкция try/except.")
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
-    if reqs.get("require_raise") and ast.Raise not in node_types:
-        errors.append("В коде должен использоваться оператор raise.")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    forbid_calls = reqs.get("forbid_calls", [])
-    if forbid_calls:
-        for n in nodes:
-            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name):
-                if n.func.id in forbid_calls:
-                    errors.append(f"В этом задании нельзя использовать {n.func.id}().")
-                    break
-
-    forbid_methods = reqs.get("forbid_methods", [])
-    if forbid_methods:
-        for n in nodes:
-            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute):
-                if n.func.attr in forbid_methods:
-                    errors.append(f"В этом задании нельзя использовать метод {n.func.attr}().")
-                    break
-
-    require_calls = reqs.get("require_calls", [])
-    if require_calls:
-        for call_name in require_calls:
-            called = any(
-                isinstance(n, ast.Call) and (
-                    (isinstance(n.func, ast.Name) and n.func.id == call_name) or
-                    (isinstance(n.func, ast.Attribute) and n.func.attr == call_name)
-                )
-                for n in nodes
-            )
-            if not called:
-                errors.append(f"В решении нужно вызвать функцию {call_name}.")
-                break
-
-    names = []
-    for n in nodes:
-        if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):
-            names.append(n.id)
-
-    return json.dumps({
-        "errors": errors,
-        "variables": names
-    })
-
-def _inject_loop_guard_ast(tree, max_iters=5000000):
-    counter_id = 0
-    class LoopGuardInjector(ast.NodeTransformer):
-        def _inject(self, node):
-            nonlocal counter_id
-            counter_id += 1
-            var = f"_lc{counter_id}"
-            init = ast.Assign(
-                targets=[ast.Name(id=var, ctx=ast.Store())],
-                value=ast.Constant(value=0)
-            )
-            ast.copy_location(init, node)
-            inc = ast.AugAssign(
-                target=ast.Name(id=var, ctx=ast.Store()),
-                op=ast.Add(),
-                value=ast.Constant(value=1)
-            )
-            ast.copy_location(inc, node)
-            check = ast.If(
-                test=ast.Compare(
-                    left=ast.Name(id=var, ctx=ast.Load()),
-                    ops=[ast.Gt()],
-                    comparators=[ast.Constant(value=max_iters)]
-                ),
-                body=[ast.Raise(
-                    exc=ast.Call(
-                        func=ast.Name(id='RuntimeError', ctx=ast.Load()),
-                        args=[ast.Constant(value=f'Цикл выполнился больше {max_iters} раз — похоже на бесконечный. Проверь условие цикла.')],
-                        keywords=[]
-                    ),
-                    cause=None
-                )],
-                orelse=[]
-            )
-            ast.copy_location(check, node)
-            node.body = [inc, check] + node.body
-            self.generic_visit(node)
-            return [init, node]
-
-        def visit_For(self, node):
-            return self._inject(node)
-        def visit_While(self, node):
-            return self._inject(node)
-
-    tree = LoopGuardInjector().visit(tree)
-    ast.fix_missing_locations(tree)
-    return tree
-
-def _clean_tb(tb):
-    lines = tb.splitlines()
-    cleaned = []
-    in_student = False
-    for l in lines:
-        if '<student>' in l:
-            in_student = True
-        if in_student or l.startswith('Traceback'):
-            cleaned.append(l)
-    return '\n'.join(cleaned) if cleaned else tb
-
-def _inject_loop_guard(code_str, max_iters=5000000):
-    """Внедряет счётчик итераций в каждый цикл for/while для защиты от бесконечных циклов."""
-    try:
-        tree = ast.parse(code_str)
-        tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
-        return ast.unparse(tree)
-    except SyntaxError:
-        return code_str
-
-def _compile_user_code(code_str, filename='<student>', max_iters=5000000):
-    import linecache
-    linecache.cache[filename] = (
-        len(code_str),
-        None,
-        [line + '\n' for line in code_str.splitlines()],
-        filename
+# ── Единый боевой бутстрап чекера из index.html ─────────────────────────────
+def load_checker_bootstrap():
+    with open(os.path.join(ROOT, 'index.html'), encoding='utf-8') as f:
+        html = f.read()
+    m = re.search(
+        r'<script type="text/x-python" id="vkat-checker-python">(.*?)</script>',
+        html, re.S
     )
-    try:
-        tree = ast.parse(code_str, filename=filename)
-        tree = _inject_loop_guard_ast(tree, max_iters=max_iters)
-        return compile(tree, filename, 'exec')
-    except SyntaxError:
-        return compile(code_str, filename, 'exec')
+    if not m:
+        raise RuntimeError(
+            'Python-бутстрап чекера не найден в index.html (script#vkat-checker-python)'
+        )
+    return m.group(1)
 
-def _match_output(actual, expected):
-    """Интеллектуальное сопоставление вывода программы с эталоном."""
-    if actual is None:
-        actual = ""
-    if expected is None:
-        expected = ""
+import re  # noqa: E402  (нужен для регэкспа выше)
 
-    act_str = str(actual).replace('\r\n', '\n').strip()
-    exp_str = str(expected).replace('\r\n', '\n').strip()
+BOOTSTRAP_SRC = load_checker_bootstrap()
+ast.parse(BOOTSTRAP_SRC)  # боевой Python обязан быть синтаксически корректным
 
-    if act_str == exp_str:
-        return True, None
-
-    act_lines = [l.rstrip() for l in act_str.split('\n')]
-    exp_lines = [l.rstrip() for l in exp_str.split('\n')]
-
-    while act_lines and not act_lines[0].strip():
-        act_lines.pop(0)
-    while act_lines and not act_lines[-1].strip():
-        act_lines.pop()
-
-    while exp_lines and not exp_lines[0].strip():
-        exp_lines.pop(0)
-    while exp_lines and not exp_lines[-1].strip():
-        exp_lines.pop()
-
-    if '\n'.join(act_lines) == '\n'.join(exp_lines):
-        return True, None
-
-    def norm_yo(s):
-        return s.replace('ё', 'е').replace('Ё', 'Е')
-
-    act_collapsed = '\n'.join([re.sub(r'[ \t]+', ' ', l).strip() for l in act_lines])
-    exp_collapsed = '\n'.join([re.sub(r'[ \t]+', ' ', l).strip() for l in exp_lines])
-    if act_collapsed == exp_collapsed or norm_yo(act_collapsed) == norm_yo(exp_collapsed):
-        return True, None
-
-    def strip_punct(lines):
-        return '\n'.join([re.sub(r'[.!?]+$', '', l).strip() for l in lines])
-
-    if norm_yo(strip_punct(act_lines)) == norm_yo(strip_punct(exp_lines)):
-        return True, "Зачтено! Совет: точку в конце вывода ставить не обязательно."
-
-    if len(act_lines) == len(exp_lines):
-        all_lines_match = True
-        for a_l, e_l in zip(act_lines, exp_lines):
-            a_clean = re.sub(r'[ \t]+', ' ', a_l).strip()
-            e_clean = re.sub(r'[ \t]+', ' ', e_l).strip()
-            if a_clean == e_clean or norm_yo(a_clean) == norm_yo(e_clean):
-                continue
-            try:
-                if ast.literal_eval(a_clean) == ast.literal_eval(e_clean):
-                    continue
-            except Exception:
-                pass
-            try:
-                if math.isclose(float(a_clean), float(e_clean), rel_tol=0.01, abs_tol=0.01):
-                    continue
-            except Exception:
-                pass
-            a_toks = a_clean.split()
-            e_toks = e_clean.split()
-            if len(a_toks) == len(e_toks) and len(a_toks) > 1:
-                toks_ok = True
-                for at, et in zip(a_toks, e_toks):
-                    if at == et or norm_yo(at) == norm_yo(et):
-                        continue
-                    try:
-                        if math.isclose(float(at), float(et), rel_tol=0.01, abs_tol=0.01):
-                            continue
-                    except Exception:
-                        pass
-                    try:
-                        if ast.literal_eval(at) == ast.literal_eval(et):
-                            continue
-                    except Exception:
-                        pass
-                    toks_ok = False
-                    break
-                if toks_ok:
-                    continue
-            all_lines_match = False
-            break
-        if all_lines_match:
-            return True, None
-
-    if len(act_lines) == len(exp_lines) == 1:
-        m = re.match(r'^(?:[a-zA-Zа-яА-ЯёЁ_ ]+[:=]\s*)(.+)$', act_lines[0].strip())
-        if m:
-            sub_res, _ = _match_output(m.group(1).strip(), exp_lines[0].strip())
-            if sub_res:
-                return True, f"Зачтено! Твой код вывел '{act_lines[0]}'. Совет: в задании достаточно выводить только значение."
-
-    if norm_yo(strip_punct(act_lines)).lower() == norm_yo(strip_punct(exp_lines)).lower():
-        return True, "Зачтено! Обрати внимание на регистр букв."
-
-    return False, None
-
-def _run_task_tests(tests_json, user_ns):
-    tests = json.loads(tests_json)
-    for t in tests:
-        call_expr = t["call"]
-        expected_ret = t.get("returns")
-        has_expected_ret = "returns" in t
-        expected_stdout = t.get("stdout")
-        has_expected_stdout = "stdout" in t
-        is_hidden = bool(t.get("hidden"))
-
-        buf = io.StringIO()
-        old_out = sys.stdout
-        sys.stdout = buf
-        call_err = None
-        func_not_found = None
-        ret_val = None
-
-        try:
-            ret_val = eval(call_expr, user_ns)
-        except NameError as ne:
-            m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", call_expr.strip())
-            fn = m.group(1) if m else None
-            if fn and f"name '{fn}' is not defined" in str(ne):
-                func_not_found = fn
-            else:
-                call_err = _clean_tb(traceback.format_exc())
-        except BaseException:
-            # BaseException: SystemExit из функции ученика не должен ронять тесты.
-            call_err = _clean_tb(traceback.format_exc())
-        finally:
-            sys.stdout = old_out
-            captured_stdout = buf.getvalue()
-
-        if func_not_found:
-            return json.dumps({
-                "passed": False,
-                "type": "not_found",
-                "func": func_not_found,
-                "call": call_expr,
-                "hidden": is_hidden
-            })
-
-        if call_err:
-            return json.dumps({
-                "passed": False,
-                "type": "error",
-                "call": call_expr,
-                "error": call_err,
-                "hidden": is_hidden
-            })
-
-        if has_expected_ret:
-            ret_mismatch = False
-            if isinstance(expected_ret, bool):
-                if not (isinstance(ret_val, bool) and ret_val == expected_ret):
-                    ret_mismatch = True
-            elif expected_ret is None:
-                if ret_val is not None:
-                    ret_mismatch = True
-            elif isinstance(expected_ret, (int, float)):
-                if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)):
-                    ret_mismatch = True
-                else:
-                    if isinstance(expected_ret, float) or isinstance(ret_val, float):
-                        if not math.isclose(ret_val, expected_ret, rel_tol=1e-5, abs_tol=1e-5):
-                            ret_mismatch = True
-                    else:
-                        if ret_val != expected_ret:
-                            ret_mismatch = True
-            elif isinstance(expected_ret, str):
-                if not isinstance(ret_val, str):
-                    ret_mismatch = True
-                elif ret_val != expected_ret:
-                    r_clean = ret_val.replace('\r\n', '\n').strip()
-                    e_clean = expected_ret.replace('\r\n', '\n').strip()
-                    if r_clean == e_clean:
-                        pass
-                    elif r_clean.replace('ё', 'е').replace('Ё', 'Е') == e_clean.replace('ё', 'е').replace('Ё', 'Е'):
-                        pass
-                    elif r_clean.rstrip('.') == e_clean.rstrip('.'):
-                        pass
-                    else:
-                        ret_mismatch = True
-            else:
-                if ret_val != expected_ret:
-                    ret_mismatch = True
-
-            if ret_mismatch:
-                return json.dumps({
-                    "passed": False,
-                    "type": "returns_mismatch",
-                    "call": call_expr,
-                    "expected": expected_ret,
-                    "actual": repr(ret_val),
-                    "hidden": is_hidden
-                })
-
-        if has_expected_stdout:
-            is_match, _ = _match_output(captured_stdout, expected_stdout)
-            if not is_match:
-                return json.dumps({
-                    "passed": False,
-                    "type": "stdout_mismatch",
-                    "call": call_expr,
-                    "expected": expected_stdout,
-                    "actual": captured_stdout.strip(),
-                    "hidden": is_hidden
-                })
-
-    return json.dumps({"passed": True})
+_checker_ns = {'__name__': '_vkat_bootstrap'}
+exec(compile(BOOTSTRAP_SRC, '<checker-bootstrap>', 'exec'), _checker_ns)
+_checker_mod = _checker_ns['_checker_mod']
+analyze_ast = _checker_ns['analyze_ast']
+_match_output = _checker_ns['_match_output']
+_exec_user_code = _checker_ns['_exec_user_code']
+_run_task_tests = _checker_ns['_run_task_tests']
 
 def check_solution(user_code, task):
+    """Тот же трёхслойный путь, что и в браузере, поверх боевого бутстрапа."""
     reqs = task.get("astRequirements", {})
     ast_res = json.loads(analyze_ast(user_code, json.dumps(reqs)))
     if ast_res.get("syntax_error"):
@@ -402,38 +71,28 @@ def check_solution(user_code, task):
     if ast_res.get("errors"):
         return {"passed": False, "title": "ASTError", "sub": ast_res["errors"][0]}
 
-    user_ns = {}
-    buf = io.StringIO()
-    old_stdout = sys.stdout
-    sys.stdout = buf
-    runtime_err = None
-    try:
-        code_obj = _compile_user_code(user_code)
-        exec(code_obj, user_ns)
-    except BaseException:
-        # BaseException: SystemExit ученика фиксируем как runtime-ошибку.
-        runtime_err = _clean_tb(traceback.format_exc())
-    finally:
-        sys.stdout = old_stdout
-        out = buf.getvalue()
-
+    # Слой 1: исполнение с loop-guard и _SAFE_BUILTINS, namespace сохраняется
+    _exec_user_code(user_code, save_user_ns=True)
+    runtime_err = _checker_mod._runtime_err
+    out = _checker_mod._captured_output
     if runtime_err:
         return {"passed": False, "title": "RuntimeError", "sub": runtime_err}
 
     if "expectedOutput" in task:
-        matched, tip = _match_output(out, task["expectedOutput"])
+        matched, _tip = _match_output(out, task["expectedOutput"])
         if not matched:
             norm_out = "\n".join([l.rstrip() for l in out.replace("\r\n", "\n").split("\n")]).strip()
             norm_exp = "\n".join([l.rstrip() for l in task["expectedOutput"].replace("\r\n", "\n").split("\n")]).strip()
             return {"passed": False, "title": "OutputMismatch", "sub": f"Expected: {norm_exp}, got: {norm_out}"}
 
     if task.get("tests"):
-        test_res = json.loads(_run_task_tests(json.dumps(task["tests"]), user_ns))
+        test_res = json.loads(_run_task_tests(json.dumps(task["tests"])))
         if not test_res.get("passed"):
             return {"passed": False, "title": "TestFailed", "sub": str(test_res)}
 
     if task.get("testCode"):
-        trusted = {k: v for k, v in user_ns.items() if not k.startswith('_')}
+        raw_ns = getattr(_checker_mod, '_user_ns', {})
+        trusted = {k: v for k, v in raw_ns.items() if not k.startswith('_')}
         trusted['__builtins__'] = __import__('builtins')
         trusted['_user_ns'] = dict(trusted)
         trusted['sys'] = sys
@@ -1251,12 +910,8 @@ def buggy():
 
 buggy()
 """
-err_tb = ""
-try:
-    c_obj = _compile_user_code(commented_error_code)
-    exec(c_obj, {})
-except Exception:
-    err_tb = _clean_tb(traceback.format_exc())
+_exec_user_code(commented_error_code)
+err_tb = _checker_mod._runtime_err or ""
 
 if 'line 5, in buggy' in err_tb:
     print("  ✓ [regression_lineno] Номер строки с ошибкой в коде с комментариями точно указывает на строку 5")
@@ -1265,50 +920,11 @@ else:
     print(f"  × [regression_lineno] ОШИБКА: ожидалась строка 5 в traceback, получено:\n{err_tb}")
     failed_tests += 1
 
-# Регрессия 3: Python bootstrap из app/checker.js не содержит SyntaxError (unterminated string literal)
-import subprocess
-node_script = (
-    "const fs = require('fs');\n"
-    "const content = fs.readFileSync('app/checker.js', 'utf8');\n"
-    "const start = content.indexOf('await pyodide.runPythonAsync(`');\n"
-    "const end = content.indexOf('`);', start);\n"
-    "const lit = content.substring(start + 'await pyodide.runPythonAsync(`'.length - 1, end + 1);\n"
-    "process.stdout.write(eval(lit));"
-)
-try:
-    n_res = subprocess.run(['node', '-e', node_script], capture_output=True, text=True, encoding='utf-8')
-    if n_res.returncode == 0:
-        ast.parse(n_res.stdout)
-        print("  ✓ [regression_bootstrap_ast] Встроенный код Python в app/checker.js синтаксически корректен")
-        passed_tests += 1
-    else:
-        print(f"  × [regression_bootstrap_ast] Ошибка извлечения bootstrap через Node: {n_res.stderr}")
-        failed_tests += 1
-except Exception as e:
-    print(f"  × [regression_bootstrap_ast] Исключение при синтаксическом разборе bootstrap: {e}")
-    failed_tests += 1
-
-# Регрессия 3b: Python bootstrap из app/checker-worker.js не содержит SyntaxError
-node_script_worker = (
-    "const fs = require('fs');\n"
-    "const content = fs.readFileSync('app/checker-worker.js', 'utf8');\n"
-    "const start = content.indexOf('await pyodide.runPythonAsync(`');\n"
-    "const end = content.indexOf('`);', start);\n"
-    "const lit = content.substring(start + 'await pyodide.runPythonAsync(`'.length - 1, end + 1);\n"
-    "process.stdout.write(eval(lit));"
-)
-try:
-    n_res_w = subprocess.run(['node', '-e', node_script_worker], capture_output=True, text=True, encoding='utf-8')
-    if n_res_w.returncode == 0:
-        ast.parse(n_res_w.stdout)
-        print("  ✓ [regression_bootstrap_ast_worker] Встроенный код Python в app/checker-worker.js синтаксически корректен")
-        passed_tests += 1
-    else:
-        print(f"  × [regression_bootstrap_ast_worker] Ошибка извлечения bootstrap через Node: {n_res_w.stderr}")
-        failed_tests += 1
-except Exception as e:
-    print(f"  × [regression_bootstrap_ast_worker] Исключение при синтаксическом разборе bootstrap: {e}")
-    failed_tests += 1
+# Регрессия 3: Python bootstrap из app/checker.js не содержит SyntaxError (unterminated string lite# Регрессия 3: единый источник бутстрапа (index.html) синтаксически корректен.
+# С Sprint 3 inline-копий в checker.js/checker-worker.js больше нет — этот
+# харнесс исполняет ровно тот же исходник, что и браузер (см. загрузку выше).
+print("  ✓ [regression_bootstrap_single_source] Единый бутстрап из index.html синтаксически корректен и исполним")
+passed_tests += 1
 
 # Регрессия 4: Интеллектуальная валидация вывода (flexible output validation)
 flex_cases = [

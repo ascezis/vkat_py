@@ -386,7 +386,7 @@
         const reader = new FileReader();
         reader.onload = async (evt) => {
           try {
-            const jsonStr = evt.target.result;
+            const jsonStr = /** @type {string} */ (evt.target.result);
             const importedMeta = await window.VkatStorage.importProfile(jsonStr);
             await renderProfilesScreen();
             alert(`Профиль "${importedMeta.name}" успешно импортирован!`);

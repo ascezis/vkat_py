@@ -288,8 +288,8 @@
 
     document.body.appendChild(popoverEl);
 
-    const toggleBtn = popoverEl.querySelector('#hint-popover-pitfall-toggle');
-    const pitfallText = popoverEl.querySelector('#hint-popover-pitfall-text');
+    const toggleBtn = /** @type {HTMLElement} */ (popoverEl.querySelector('#hint-popover-pitfall-toggle'));
+    const pitfallText = /** @type {HTMLElement} */ (popoverEl.querySelector('#hint-popover-pitfall-text'));
     toggleBtn.addEventListener('click', () => {
       const show = pitfallText.hidden;
       pitfallText.hidden = !show;
@@ -337,7 +337,8 @@
     document.addEventListener('pointerdown', (e) => {
       if (!isVisible()) return;
       if (popoverEl && popoverEl.contains(e.target)) return;
-      if (e.target && e.target.closest && e.target.closest('.hint-token')) return;
+      const t = /** @type {HTMLElement} */ (e.target);
+      if (t && t.closest && t.closest('.hint-token')) return;
       close();
     });
 
@@ -493,15 +494,16 @@
         const node = childNodes[i];
 
         // Пропускаем текстовые узлы
+        const nodeEl = /** @type {HTMLElement} */ (node);
         if (node.nodeType !== 1) continue;
 
         // Игнорируем вывод программы и уже размеченные токены
-        if (node.classList.contains('out') || node.classList.contains('hint-token')) {
+        if (nodeEl.classList.contains('out') || nodeEl.classList.contains('hint-token')) {
           continue;
         }
 
         // Игнорируем комментарии и строки
-        if (node.classList.contains('hl-comment') || node.classList.contains('hl-string')) {
+        if (nodeEl.classList.contains('hl-comment') || nodeEl.classList.contains('hl-string')) {
           continue;
         }
 

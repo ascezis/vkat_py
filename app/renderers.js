@@ -614,9 +614,13 @@
   (function bindVisualToggle() {
     const el = document.getElementById('visual');
     if (!el) return;
-    el.addEventListener('click', (e) => { if (e.target.closest('.visual-cap')) toggleVisual(el); });
+    el.addEventListener('click', (e) => {
+      const t = /** @type {HTMLElement} */ (e.target);
+      if (t.closest('.visual-cap')) toggleVisual(el);
+    });
     el.addEventListener('keydown', (e) => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.visual-cap')) {
+      const t2 = /** @type {HTMLElement} */ (e.target);
+      if ((e.key === 'Enter' || e.key === ' ') && t2.closest('.visual-cap')) {
         e.preventDefault();
         toggleVisual(el);
       }

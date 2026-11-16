@@ -14,13 +14,3 @@ desktop.ini
 *.tmp
 __pycache__/
 *.pyc
-
-# AI
-AI-PROMPTS/
-AI-promts/
-AI-prompts/
-ai-promts/
-ai-prompts/
-CLAUDE/
-CLAUDE-*/
-patches/

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>вкат.py — интерактивная карта курса</title>
+  <style>
+    @import url('../app/fonts.css');
+
+    :root {
+      --bg-app: #0e1117;
+      --bg-panel: #161b22;
+      --bg-card: #1c2128;
+      --bg-card-hover: #22272e;
+      --border: #30363d;
+      --border-strong: #6e7681;
+      --border-accent: #f0f6fc;
+      --text-main: #e6edf3;
+      --text-muted: #8b949e;
+      --text-dim: #484f58;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-app);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Верхняя панель управления */
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: rgba(22, 27, 34, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-btn {
+      color: var(--text-muted);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      transition: all 0.15s;
+    }
+    .back-btn:hover {
+      color: var(--text-main);
+      border-color: var(--border-strong);
+    }
+
+    .brand {
+      color: var(--text-main);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .top-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-app);
+      border: 1px solid var(--border);
+      padding: 2px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-btn.active {
+      background: var(--bg-panel);
+      color: var(--text-main);
+      border: 1px solid var(--border-strong);
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .zoom-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .zoom-btn:hover {
+      border-color: var(--border-strong);
+    }
+
+    .student-badge {
+      color: var(--text-muted);
+      font-size: 11px;
+      border-left: 1px solid var(--border);
+      padding-left: 12px;
+    }
+
+    /* Холст графа */
+    #viewport {
+      width: 100vw;
+      height: 100vh;
+      cursor: grab;
+      position: relative;
+    }
+    #viewport.dragging {
+      cursor: grabbing;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    /* Фоновая сетка терминала */
+    .grid-bg {
+      position: absolute;
+      width: 4000px;
+      height: 3000px;
+      background-image:
+        radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    /* SVG для ребер */
+    #edges-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4000px;
+      height: 3000px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .edge-linear {
+      stroke: var(--border);
+      stroke-width: 2px;
+      fill: none;
+      transition: stroke 0.2s;
+    }
+    .edge-linear.completed {
+      stroke: var(--border-strong);
+    }
+
+    .edge-cross {
+      stroke: var(--border-strong);
+      stroke-width: 1.5px;
+      stroke-dasharray: 4 4;
+      fill: none;
+      opacity: 0.6;
+    }
+    .edge-cross.completed {
+      stroke: var(--text-muted);
+      opacity: 0.9;
+    }
+
+    /* Карточки тем на холсте */
+    .nodes-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 20;
+    }
+
+    /* Заголовки этапов */
+    .stage-section-label {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+      pointer-events: none;
+    }
+
+    .node-card {
+      position: absolute;
+      width: 240px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s, opacity 0.2s;
+    }
+    .node-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+    }
+
+    /* Состояния темы */
+    .node-card.current {
+      border: 1px solid var(--text-main);
+      box-shadow: 0 0 12px rgba(230, 237, 243, 0.12);
+    }
+
+    .node-card.done {
+      border-color: var(--border-strong);
+    }
+
+    .node-card.locked {
+      opacity: 0.35;
+      border-style: dashed;
+      cursor: default;
+    }
+    .node-card.locked:hover {
+      background: var(--bg-card);
+      border-color: var(--border);
+    }
+
+    .node-card.fog {
+      opacity: 0.12;
+      filter: blur(1.5px);
+      pointer-events: none;
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .node-status-icon {
+      font-size: 11px;
+    }
+    .node-card.done .node-status-icon {
+      color: var(--text-main);
+    }
+    .node-card.current .node-status-icon {
+      color: var(--text-main);
+    }
+
+    .node-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .node-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(48, 54, 61, 0.5);
+      padding-top: 6px;
+    }
+
+    .node-progress-bar {
+      height: 3px;
+      background: var(--border);
+      width: 100%;
+      margin-top: 6px;
+      position: relative;
+    }
+    .node-progress-fill {
+      height: 100%;
+      background: var(--border-strong);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .node-card.current .node-progress-fill {
+      background: var(--text-main);
+    }
+
+    /* Подвал / Легенда */
+    .bottom-legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(22, 27, 34, 0.9);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+      z-index: 100;
+      backdrop-filter: blur(6px);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint-toast {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(22, 27, 34, 0.9);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Верхняя панель -->
+  <header class="top-bar">
+    <div class="top-left">
+      <a href="../index.html" class="back-btn">&larr; В тренажёр</a>
+      <span class="brand">вкат.py / карта курса</span>
+    </div>
+
+    <div class="top-center">
+      <button class="mode-btn active" id="btn-mode-student" title="Режим ученика: туман войны для неизученного">Ученик</button>
+      <button class="mode-btn" id="btn-mode-teacher" title="Режим учителя: полный граф всех тем и связей">Учитель</button>
+    </div>
+
+    <div class="top-right">
+      <button class="zoom-btn" id="btn-zoom-out" title="Уменьшить">-</button>
+      <button class="zoom-btn" id="btn-zoom-reset" title="Сбросить масштаб" style="width: 44px;">100%</button>
+      <button class="zoom-btn" id="btn-zoom-in" title="Увеличить">+</button>
+      <span class="student-badge" id="student-label">Профиль: Загрузка...</span>
+    </div>
+  </header>
+
+  <!-- Интерактивный холст -->
+  <main id="viewport">
+    <div id="canvas">
+      <div class="grid-bg"></div>
+      <svg id="edges-svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#6e7681" />
+          </marker>
+          <marker id="arrow-linear" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#30363d" />
+          </marker>
+        </defs>
+      </svg>
+      <div class="nodes-container" id="nodes-container"></div>
+    </div>
+  </main>
+
+  <!-- Легенда -->
+  <footer class="bottom-legend">
+    <div class="legend-item"><span style="color: var(--text-main);">✓</span> Пройдено</div>
+    <div class="legend-item"><span style="color: var(--text-main);">●</span> Текущая</div>
+    <div class="legend-item"><span style="color: var(--text-muted);">○</span> Доступно</div>
+    <div class="legend-item"><span style="color: var(--text-dim); font-family: var(--font-mono);">[–]</span> Заблокировано</div>
+    <div class="legend-item"><span style="border-bottom: 2px dashed var(--border-strong); width: 14px; display: inline-block;"></span> Кросс-связь</div>
+  </footer>
+
+  <div class="hint-toast">
+    Перетаскивай холст мышью &bull; Zoom колёсиком
+  </div>
+
+  <!-- Подключение конфигураций и данных -->
+  <script src="../content/stages.js"></script>
+
+  <script>
+    (function() {
+      // Реестр всех тем курса (включая темы на разработке)
+      var ALL_TOPICS_METADATA = [
+        // Этап 1: Начало
+        { id: 'variables', stageId: 'start', title: '1. Переменные и числа', totalItems: 6, col: 0, row: 0 },
+        { id: 'conditions', stageId: 'start', title: '2. Условия (if/else)', totalItems: 6, col: 1, row: 0 },
+        { id: 'loops', stageId: 'start', title: '3. Циклы for', totalItems: 6, col: 2, row: 0 },
+        { id: 'functions', stageId: 'start', title: '4. Функции', totalItems: 6, col: 2, row: 1 },
+        { id: 'lists-dicts', stageId: 'start', title: '5. Списки и словари', totalItems: 6, col: 3, row: 0 },
+        { id: 'strings', stageId: 'start', title: '6. Строки', totalItems: 6, col: 4, row: 0 },
+
+        // Этап 2: Основной курс
+        { id: 'l1_functions', stageId: 'core', title: 'Функции углублённо', totalItems: 20, col: 0, row: 3 },
+        { id: 'l1_dicts', stageId: 'core', title: 'Словари и частоты', totalItems: 19, col: 1, row: 3 },
+        { id: 'l1_lists', stageId: 'core', title: 'Списки и срезы', totalItems: 18, col: 2, row: 3 },
+        { id: 'l1_tuples', stageId: 'core', title: 'Кортежи и распаковка', totalItems: 14, col: 3, row: 3 },
+        { id: 'l1_strings', stageId: 'core', title: 'Строки и методы', totalItems: 18, col: 4, row: 3 },
+        { id: 'l1_loops_adv', stageId: 'core', title: 'Циклы (while/break)', totalItems: 16, col: 2, row: 4 },
+        { id: 'l1_nested_structures', stageId: 'core', title: 'Вложенные структуры', totalItems: 17, col: 1, row: 4 },
+
+        // Перспективные темы v2.0 (для учителя)
+        { id: 'l1_functions_adv', stageId: 'core_future', title: '8. *args, **kwargs, lambda', totalItems: 18, col: 0, row: 4, planned: true },
+        { id: 'l1_exceptions', stageId: 'core_future', title: '9. Исключения (try/except)', totalItems: 16, col: 3, row: 4, planned: true },
+        { id: 'l1_modules_stdlib', stageId: 'core_future', title: '10. Модули и stdlib', totalItems: 16, col: 4, row: 4, planned: true },
+        { id: 'l1_algorithms_lab', stageId: 'core_future', title: '11. Практикум отладки', totalItems: 15, col: 2, row: 5, planned: true }
+      ];
+
+      var links = window.COURSE_TOPIC_LINKS || {};
+
+      // Состояние Canvas
+      var scale = 1.0;
+      var panX = 80;
+      var panY = 80;
+      var isDragging = false;
+      var startX = 0;
+      var startY = 0;
+      var currentMode = 'student'; // 'student' | 'teacher'
+
+      // Прогресс ученика
+      var completedMap = {};
+      var activeTopicId = 'variables';
+
+      function loadStudentProgress() {
+        try {
+          var activeId = localStorage.getItem('vkat_active_profile');
+          if (activeId) {
+            var raw = localStorage.getItem('vkat_p:' + activeId);
+            if (raw) {
+              var data = JSON.parse(raw);
+              if (data.completed && Array.isArray(data.completed)) {
+                data.completed.forEach(function(taskId) {
+                  completedMap[taskId] = true;
+                });
+              }
+              if (data.position && data.position.topicId) {
+                activeTopicId = data.position.topicId;
+              }
+              document.getElementById('student-label').textContent = 'Профиль: ' + (data.name || activeId);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Не удалось загрузить прогресс:', e);
+        }
+        document.getElementById('student-label').textContent = 'Профиль: Гость';
+      }
+
+      loadStudentProgress();
+
+      var viewport = document.getElementById('viewport');
+      var canvas = document.getElementById('canvas');
+      var nodesContainer = document.getElementById('nodes-container');
+      var edgesSvg = document.getElementById('edges-svg');
+
+      function updateTransform() {
+        canvas.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + scale + ')';
+      }
+
+      // Перетаскивание (Pan)
+      viewport.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.node-card')) return;
+        isDragging = true;
+        viewport.classList.add('dragging');
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
+      });
+
+      window.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        updateTransform();
+      });
+
+      window.addEventListener('mouseup', function() {
+        isDragging = false;
+        viewport.classList.remove('dragging');
+      });
+
+      // Зум колёсиком (Zoom)
+      viewport.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+        var newScale = Math.min(Math.max(scale * zoomFactor, 0.4), 2.2);
+
+        var rect = viewport.getBoundingClientRect();
+        var mouseX = e.clientX - rect.left;
+        var mouseY = e.clientY - rect.top;
+
+        panX = mouseX - (mouseX - panX) * (newScale / scale);
+        panY = mouseY - (mouseY - panY) * (newScale / scale);
+        scale = newScale;
+        updateTransform();
+      }, { passive: false });
+
+      // Кнопки зума
+      document.getElementById('btn-zoom-in').onclick = function() {
+        scale = Math.min(scale * 1.15, 2.2);
+        updateTransform();
+      };
+      document.getElementById('btn-zoom-out').onclick = function() {
+        scale = Math.max(scale * 0.85, 0.4);
+        updateTransform();
+      };
+      document.getElementById('btn-zoom-reset').onclick = function() {
+        scale = 1.0;
+        panX = 80;
+        panY = 80;
+        updateTransform();
+      };
+
+      // Переключение режимов
+      var btnStudent = document.getElementById('btn-mode-student');
+      var btnTeacher = document.getElementById('btn-mode-teacher');
+
+      btnStudent.onclick = function() {
+        currentMode = 'student';
+        btnStudent.classList.add('active');
+        btnTeacher.classList.remove('active');
+        renderGraph();
+      };
+
+      btnTeacher.onclick = function() {
+        currentMode = 'teacher';
+        btnTeacher.classList.add('active');
+        btnStudent.classList.remove('active');
+        renderGraph();
+      };
+
+      // Координаты размещения нод
+      var COL_WIDTH = 290;
+      var ROW_HEIGHT = 160;
+      var ORIGIN_X = 60;
+      var ORIGIN_Y = 60;
+
+      function getNodeCoords(t) {
+        return {
+          x: ORIGIN_X + t.col * COL_WIDTH,
+          y: ORIGIN_Y + t.row * ROW_HEIGHT,
+          w: 240,
+          h: 110
+        };
+      }
+
+      function renderGraph() {
+        nodesContainer.innerHTML = '';
+        edgesSvg.innerHTML = '<defs>' +
+          '<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 10 5 L 0 9 z" fill="#8b949e" /></marker>' +
+          '<marker id="arrow-dim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 10 5 L 0 9 z" fill="#484f58" /></marker>' +
+        '</defs>';
+
+        // Заголовки секций
+        var stage1Title = document.createElement('div');
+        stage1Title.className = 'stage-section-label';
+        stage1Title.style.left = ORIGIN_X + 'px';
+        stage1Title.style.top = (ORIGIN_Y - 32) + 'px';
+        stage1Title.textContent = 'Этап 1: Начало (Базовый синтаксис)';
+        nodesContainer.appendChild(stage1Title);
+
+        var stage2Title = document.createElement('div');
+        stage2Title.className = 'stage-section-label';
+        stage2Title.style.left = ORIGIN_X + 'px';
+        stage2Title.style.top = (ORIGIN_Y + 3 * ROW_HEIGHT - 32) + 'px';
+        stage2Title.textContent = 'Этап 2: Основной курс (Практика и глубина)';
+        nodesContainer.appendChild(stage2Title);
+
+        var topicCoordsMap = {};
+
+        // Рендер нод
+        ALL_TOPICS_METADATA.forEach(function(t) {
+          var coords = getNodeCoords(t);
+          topicCoordsMap[t.id] = coords;
+
+          // Расчёт статуса
+          var isCurrent = (t.id === activeTopicId);
+          var isDone = false;
+          var isPlanned = !!t.planned;
+
+          // Подсчёт выполненных шагов (примерный, исходя из префикса ID)
+          var doneCount = 0;
+          Object.keys(completedMap).forEach(function(k) {
+            if (k.indexOf(t.id) !== -1 || (t.id === 'l1_functions' && k.indexOf('l1_fn_') !== -1) ||
+                (t.id === 'l1_dicts' && k.indexOf('l1_dict_') !== -1) ||
+                (t.id === 'l1_nested_structures' && k.indexOf('l1_nest_') !== -1)) {
+              doneCount++;
+            }
+          });
+
+          if (doneCount >= t.totalItems && t.totalItems > 0) {
+            isDone = true;
+          }
+
+          var card = document.createElement('div');
+          card.className = 'node-card';
+          card.style.left = coords.x + 'px';
+          card.style.top = coords.y + 'px';
+
+          var statusClass = '';
+          var icon = '○';
+
+          if (isDone) {
+            statusClass = 'done';
+            icon = '✓';
+          } else if (isCurrent) {
+            statusClass = 'current';
+            icon = '●';
+          } else if (isPlanned) {
+            statusClass = 'locked';
+            icon = '[–]';
+          }
+
+          // Режим ученика: туман войны для неначатого
+          if (currentMode === 'student' && isPlanned) {
+            statusClass += ' fog';
+          }
+
+          if (statusClass) {
+            card.className += ' ' + statusClass;
+          }
+
+          var progressPercent = t.totalItems > 0 ? Math.min(100, Math.round((doneCount / t.totalItems) * 100)) : 0;
+
+          card.innerHTML =
+            '<div class="node-header">' +
+              '<span>' + (t.stageId === 'start' ? 'ЭТАП 1' : 'ЭТАП 2') + '</span>' +
+              '<span class="node-status-icon">' + icon + '</span>' +
+            '</div>' +
+            '<div class="node-title">' + t.title + '</div>' +
+            '<div class="node-footer">' +
+              '<span>' + (isPlanned ? 'в разработке' : (isDone ? 'пройдено' : doneCount + '/' + t.totalItems)) + '</span>' +
+              '<span>' + (isPlanned ? 'v2.0' : progressPercent + '%') + '</span>' +
+            '</div>' +
+            '<div class="node-progress-bar">' +
+              '<div class="node-progress-fill" style="width: ' + progressPercent + '%;"></div>' +
+            '</div>';
+
+          card.onclick = function() {
+            if (!isPlanned) {
+              window.location.href = '../index.html?topic=' + t.id;
+            }
+          };
+
+          nodesContainer.appendChild(card);
+        });
+
+        // Рендер рёбер
+        Object.keys(links).forEach(function(targetId) {
+          var targetCoords = topicCoordsMap[targetId];
+          if (!targetCoords) return;
+
+          var sources = links[targetId] || [];
+          sources.forEach(function(srcId) {
+            var srcCoords = topicCoordsMap[srcId];
+            if (!srcCoords) return;
+
+            // Точки соединения: от правого/нижнего края к левому/верхнему
+            var startX = srcCoords.x + srcCoords.w;
+            var startY = srcCoords.y + srcCoords.h / 2;
+            var endX = targetCoords.x;
+            var endY = targetCoords.y + targetCoords.h / 2;
+
+            // Если соединение сверху вниз
+            if (targetCoords.y > srcCoords.y + srcCoords.h) {
+              startX = srcCoords.x + srcCoords.w / 2;
+              startY = srcCoords.y + srcCoords.h;
+              endX = targetCoords.x + targetCoords.w / 2;
+              endY = targetCoords.y;
+            }
+
+            var dx = endX - startX;
+            var dy = endY - startY;
+            var cx1 = startX + dx * 0.4;
+            var cy1 = startY;
+            var cx2 = startX + dx * 0.6;
+            var cy2 = endY;
+
+            var d = 'M ' + startX + ' ' + startY + ' C ' + cx1 + ' ' + cy1 + ', ' + cx2 + ' ' + cy2 + ', ' + endX + ' ' + endY;
+
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', d);
+
+            var isCross = (targetCoords.row !== srcCoords.row);
+            path.setAttribute('class', isCross ? 'edge-cross' : 'edge-linear');
+            path.setAttribute('marker-end', isCross ? 'url(#arrow)' : 'url(#arrow-dim)');
+
+            edgesSvg.appendChild(path);
+          });
+        });
+      }
+
+      renderGraph();
+      updateTransform();
+    })();
+  </script>
+</body>
+</html>

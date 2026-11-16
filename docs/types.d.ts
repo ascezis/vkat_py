@@ -165,6 +165,44 @@ interface SelftestEntry {
   wrong: Array<[string, string]>;
 }
 
+// ─── Пет-проект «Игра «Жизнь» (content/projects/life/tasks.js) ──────────────
+
+/** Режим JS-зеркала симуляции (app/life-renderer.js). */
+type LifeWorldMode = 'frozen' | 'chaos' | 'conway' | 'sandbox';
+
+/**
+ * Шаг пет-проекта. Тесты — тот же контракт TaskTest, что и у обычных
+ * code-заданий: сетка передаётся инлайном в выражении `call`.
+ */
+interface LifeStep {
+  id: string;
+  title: string;
+  /** Имя глифа из реестра Glyphs (app/glyphs.js). */
+  glyph: string;
+  worldMode: LifeWorldMode;
+  /** Нарратив «Сломанного мира» — что не так с вселенной на холсте. */
+  narrative: string;
+  /** HTML условия шага. */
+  taskHtml: string;
+  initialCode: string;
+  tests: TaskTest[];
+  /** Прогрессивные подсказки: текст, затем {code} с заготовкой. */
+  hints?: Array<string | { code: string }>;
+  improveTip?: string;
+  successMessage?: string;
+}
+
+/** Модуль пет-проекта (window.LIFE_MODULE, вне COURSE_TOPICS/COURSE_STAGES). */
+interface LifeModule {
+  id: string;
+  title: string;
+  kicker: string;
+  description: string;
+  /** Имя экрана в index.html (#screen-<screen>). */
+  screen: string;
+  steps: LifeStep[];
+}
+
 // ─── Профили и хранилище (app/storage.js) ───────────────────────────────────
 
 interface ProfilePosition {
@@ -255,6 +293,7 @@ interface Window {
   COURSE_TOPICS?: CourseTopic[];
   COURSE_SELFTEST?: Record<string, SelftestEntry>;
   CHEATSHEET_SECTIONS?: Array<Record<string, unknown>>;
+  LIFE_MODULE?: LifeModule;
   PYODIDE_WASM_BASE64?: string;
   PYODIDE_STDLIB_BASE64?: string;
   VKAT_CONNECT_ENDPOINT?: string;
@@ -267,6 +306,8 @@ interface Window {
   PythonHighlighter?: any;
   Glyphs?: Record<string, any>;
   VkatGridWarp?: Record<string, any>;
+  /** Экран пет-проекта «Игра «Жизнь» (app/life-renderer.js). */
+  VkatLife?: Record<string, any>;
 
   VkatStorage?: VkatStorageApi;
   CodeChecker?: CodeCheckerApi;

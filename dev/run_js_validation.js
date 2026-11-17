@@ -1239,6 +1239,44 @@ async function runBridgeValidation() {
     settled7 = true;
   }
   check('bridge: отравленный мост деградирует без зависания (вызов завершается)', settled7);
+
+  // ── 22. Модуль «Песочница Python» (Sandbox) ──────────────────────────────────
+  console.log('\n=== Валидация модуля Песочница (Sandbox) ===');
+
+  const sandboxPath = path.join(__dirname, '..', 'app', 'sandbox.js');
+  check('Sandbox: файл app/sandbox.js существует на диске', fs.existsSync(sandboxPath));
+
+  const sandboxCode = fs.existsSync(sandboxPath) ? fs.readFileSync(sandboxPath, 'utf8') : '';
+  check('Sandbox: app/sandbox.js не содержит запрещённых npm/require импортов',
+    !sandboxCode.includes('require(') && !/import\s+.*from\s+['"]/.test(sandboxCode));
+  check('Sandbox: модуль не обращается к localStorage/sessionStorage напрямую',
+    !sandboxCode.includes('localStorage') && !sandboxCode.includes('sessionStorage'));
+
+  if (fs.existsSync(sandboxPath)) {
+    try {
+      loadScript('app/sandbox.js');
+    } catch (e) {
+      console.error('  Sandbox: app/sandbox.js выбросил исключение при загрузке:', e.message);
+    }
+  }
+
+  const SB = context.VkatSandbox;
+  check('Sandbox: window.VkatSandbox успешно экспортирован', Boolean(SB) && typeof SB === 'object');
+  check('Sandbox: методы init, enter, leave, runCode, stopExecution, selectPreset объявлены',
+    Boolean(SB && typeof SB.init === 'function' && typeof SB.enter === 'function' &&
+            typeof SB.leave === 'function' && typeof SB.runCode === 'function' &&
+            typeof SB.stopExecution === 'function' && typeof SB.selectPreset === 'function'));
+  check('Sandbox: содержит встроенные пресеты empty, benchmark, binary_search, freq_dict, comprehensions, oop_stack',
+    Boolean(SB && SB._presets && SB._presets.empty && SB._presets.benchmark &&
+            SB._presets.binary_search && SB._presets.freq_dict &&
+            SB._presets.comprehensions && SB._presets.oop_stack));
+
+  const currentHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const currentCss = fs.readFileSync(path.join(__dirname, '..', 'app', 'styles.css'), 'utf8');
+  check('Sandbox: index.html содержит контейнер <div id="screen-sandbox">', currentHtml.includes('id="screen-sandbox"'));
+  check('Sandbox: index.html подключает app/sandbox.js', currentHtml.includes('app/sandbox.js'));
+  check('Sandbox: styles.css содержит селекторы #screen-sandbox и .sandbox-header',
+    currentCss.includes('#screen-sandbox') && currentCss.includes('.sandbox-header'));
 }
 
 runStorageValidation().catch(err => {

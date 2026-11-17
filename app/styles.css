@@ -4077,3 +4077,499 @@ body {
     animation: none;
   }
 }
+
+
+/* ==========================================================================
+   ПЕСОЧНИЦА PYTHON (SCREEN-SANDBOX)
+   ========================================================================== */
+
+/* Баннер на стартовом экране */
+.start-sandbox-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  margin: 20px 0 16px;
+  box-sizing: border-box;
+}
+
+.start-sandbox-banner:hover {
+  border-color: var(--border-strong);
+}
+
+.sandbox-banner-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+}
+
+#btn-start-sandbox {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: 1px solid var(--fill);
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+#btn-start-sandbox:hover { background: var(--fill-hover); }
+
+#btn-start-sandbox:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.sandbox-banner-title {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--brand-orange);
+  letter-spacing: -0.01em;
+}
+
+.sandbox-banner-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Экран песочницы: общие свойства */
+#screen-sandbox {
+  flex: 1;
+  min-height: 0;
+  display: none;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+#screen-sandbox.active {
+  display: flex;
+}
+
+/* Шапка песочницы */
+.sandbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sandbox-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sandbox-header-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.sandbox-env-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.sandbox-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Кнопки песочницы */
+.sandbox-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.sandbox-btn-primary {
+  background: var(--brand-orange);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.sandbox-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.sandbox-btn-danger {
+  background: var(--error);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.sandbox-btn-danger:hover {
+  filter: brightness(1.1);
+}
+
+.sandbox-btn:focus-visible,
+.sandbox-tool-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.sandbox-btn-ghost {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.sandbox-btn-ghost:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* Тело песочницы: 2 колонки (редактор слева, терминал справа) */
+.sandbox-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
+}
+
+/* Левая колонка: редактор */
+.sandbox-editor-panel {
+  flex: 1;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.sandbox-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-panel-alt);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sandbox-preset-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sandbox-toolbar-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sandbox-menu {
+  position: relative;
+}
+
+.sandbox-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sandbox-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 240px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sandbox-menu-btn:hover,
+.sandbox-menu-btn[aria-expanded="true"] {
+  border-color: var(--border-strong);
+}
+
+.sandbox-menu-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.sandbox-menu-caret {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sandbox-menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 100%;
+  width: max-content;
+  max-width: 340px;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  outline: none;
+}
+
+.sandbox-menu-list[hidden] { display: none; }
+
+.sandbox-menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px 8px 28px;
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.sandbox-menu-item .sandbox-menu-tag {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.sandbox-menu-item.is-active {
+  background: var(--border);
+  color: var(--text);
+}
+
+.sandbox-menu-item[aria-selected="true"] {
+  color: var(--text);
+}
+
+.sandbox-menu-item[aria-selected="true"]::before {
+  content: "✓";
+  position: absolute;
+  left: 11px;
+}
+
+.sandbox-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sandbox-tool-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sandbox-tool-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.sandbox-editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.sandbox-editor-inner {
+  flex: 1;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: var(--bg) !important;
+}
+
+.sandbox-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: var(--bg-panel-alt);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.sandbox-editor-hint {
+  color: var(--text-muted);
+}
+
+.sandbox-editor-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sandbox-editor-status [hidden] { display: none; }
+
+.sandbox-save-status {
+  color: var(--text-muted);
+}
+
+/* Правая колонка: терминал вывода */
+.sandbox-terminal-panel {
+  flex: 1;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel-alt);
+}
+
+.sandbox-terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  gap: 12px;
+}
+
+.sandbox-term-left,
+.sandbox-term-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sandbox-term-right { gap: 14px; }
+
+.terminal-dot {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.terminal-dot.running {
+  background: var(--brand-orange);
+  animation: term-dot-pulse 1s infinite alternate;
+}
+
+.terminal-dot.ok { background: var(--text); }
+.terminal-dot.error { background: var(--error); }
+
+@keyframes term-dot-pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+.term-status-text { color: var(--text-muted); }
+.sandbox-term-badge { color: var(--text-muted); }
+
+.sandbox-terminal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.terminal-welcome-msg {
+  padding: 12px 0;
+  user-select: none;
+}
+
+.terminal-welcome-msg .welcome-line {
+  color: var(--text-muted);
+}
+
+.term-dim {
+  color: var(--text-dim);
+  margin: 4px 0;
+}
+
+.terminal-output {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.terminal-output.stdout {
+  color: var(--text);
+}
+
+.terminal-output.error {
+  color: var(--error);
+}
+
+.terminal-output.muted {
+  color: var(--text-dim);
+}
+
+/* Адаптив для экранов < 900px */
+@media (max-width: 900px) {
+  .sandbox-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sandbox-editor-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    min-height: 380px;
+  }
+
+  .sandbox-terminal-panel {
+    min-height: 320px;
+  }
+
+  .start-sandbox-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

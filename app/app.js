@@ -51,9 +51,12 @@
     dom.screenLesson = document.getElementById('screen-lesson');
     dom.screenFinish = document.getElementById('screen-finish');
     dom.screenLife = document.getElementById('screen-life');
+    dom.screenSandbox = document.getElementById('screen-sandbox');
 
     dom.topbar = document.getElementById('app-topbar');
     dom.mark = document.getElementById('app-mark');
+    dom.btnTopbarSandbox = document.getElementById('btn-topbar-sandbox');
+    dom.btnStartSandbox = document.getElementById('btn-start-sandbox');
     dom.breadcrumb = document.getElementById('app-breadcrumb');
     dom.progressFill = document.getElementById('progress-fill');
 
@@ -442,12 +445,19 @@
     if (window.VkatLife && wasLife && screen !== 'life') {
       window.VkatLife.leave();
     }
+    // Экран песочницы: перед уходом остановить выполнение и сохранить
+    const wasSandbox = dom.screenSandbox && dom.screenSandbox.classList.contains('active');
+    if (window.VkatSandbox && wasSandbox && screen !== 'sandbox') {
+      window.VkatSandbox.leave();
+    }
+    const wasLesson = dom.screenLesson && dom.screenLesson.classList.contains('active');
 
     if (dom.screenProfiles) dom.screenProfiles.classList.remove('active');
     dom.screenStart.classList.remove('active');
     dom.screenLesson.classList.remove('active');
     dom.screenFinish.classList.remove('active');
     if (dom.screenLife) dom.screenLife.classList.remove('active');
+    if (dom.screenSandbox) dom.screenSandbox.classList.remove('active');
 
     updateProfileBadges();
 
@@ -472,6 +482,10 @@
         dom.screenLife.classList.add('active');
         dom.topbar.style.display = 'none';
         if (window.VkatLife) window.VkatLife.enter();
+      } else if (screen === 'sandbox') {
+        if (dom.screenSandbox) dom.screenSandbox.classList.add('active');
+        dom.topbar.style.display = 'none';
+        if (window.VkatSandbox) window.VkatSandbox.enter(wasLesson ? 'lesson' : 'start');
       } else if (screen === 'finish') {
         dom.screenFinish.classList.add('active');
         dom.topbar.style.display = 'flex';
@@ -755,6 +769,8 @@
 
     if (dom.btnTreeToggle) dom.btnTreeToggle.addEventListener('click', openTreeDrawer);
     if (dom.btnTreeStart) dom.btnTreeStart.addEventListener('click', openTreeDrawer);
+    if (dom.btnTopbarSandbox) dom.btnTopbarSandbox.addEventListener('click', () => showScreen('sandbox'));
+    if (dom.btnStartSandbox) dom.btnStartSandbox.addEventListener('click', () => showScreen('sandbox'));
     if (dom.btnTreeClose) dom.btnTreeClose.addEventListener('click', closeTreeDrawer);
     if (dom.treeBackdrop) dom.treeBackdrop.addEventListener('click', closeTreeDrawer);
 
@@ -891,7 +907,7 @@
     if (activeProfile) {
       await loadStorage();
       const urlScreen = new URLSearchParams(window.location.search).get('screen') || (window.location.hash ? window.location.hash.slice(1) : null);
-      if (urlScreen && ['start', 'lesson', 'life', 'profiles', 'finish'].includes(urlScreen)) {
+      if (urlScreen && ['start', 'lesson', 'life', 'sandbox', 'profiles', 'finish'].includes(urlScreen)) {
         showScreen(urlScreen);
       } else {
         showScreen('start');
@@ -901,6 +917,8 @@
     } else {
       showScreen('profiles');
     }
+
+    if (window.VkatSandbox) window.VkatSandbox.init();
 
     // Фоновая подготовка Pyodide
     if (dom.startStatus) dom.startStatus.textContent = 'Подготовка среды Python...';

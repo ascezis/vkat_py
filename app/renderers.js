@@ -552,6 +552,20 @@
       });
       dom.treeBody.appendChild(lifeHeader);
     }
+    const sandboxHeader = document.createElement('div');
+    sandboxHeader.className = 'tree-stage-header';
+    sandboxHeader.innerHTML = `
+      <div class="tree-stage-title" style="cursor: pointer;">
+        <span>// Песочница Python</span>
+        <span class="tree-stage-progress">свободный код</span>
+      </div>
+    `;
+    sandboxHeader.addEventListener('click', () => {
+      dom.treeDrawer.classList.remove('open');
+      dom.treeBackdrop.classList.remove('open');
+      window.VkatApp.showScreen('sandbox');
+    });
+    dom.treeBody.appendChild(sandboxHeader);
   }
 
   // ─── SVG-схема темы ───────────────────────────────────────────────────────────

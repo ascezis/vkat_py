@@ -941,7 +941,11 @@
 
     S.dom.stepIndicator.textContent = 'ШАГ ' + n + ' ИЗ ' + S.module.steps.length;
     S.dom.taskTitle.textContent = step.title;
-    S.dom.glyphSlot.innerHTML = (window.Glyphs && window.Glyphs.render(step.glyph)) || '';
+    if (window.Glyphs && step.glyph) {
+      S.dom.glyphSlot.innerHTML = window.Glyphs.draw ? window.Glyphs.draw(step.glyph) : (window.Glyphs.render(step.glyph) || '');
+    } else {
+      S.dom.glyphSlot.innerHTML = '';
+    }
     S.dom.taskDesc.innerHTML =
       '<p class="life-narrative">' + escapeHtml(step.narrative) + '</p>' + step.taskHtml;
 

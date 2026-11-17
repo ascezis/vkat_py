@@ -410,6 +410,11 @@
     'lifePatterns':  { draw: lifePatterns,  cap: 'архетипы Alife-System: натюрморты, осцилляторы и космические корабли' }
   };
 
+  function draw(topicId) {
+    const g = REGISTRY[topicId];
+    return g ? g.draw() : '';
+  }
+
   function render(topicId) {
     const g = REGISTRY[topicId];
     if (!g) return '';
@@ -421,5 +426,5 @@
     return REGISTRY[topicId] ? REGISTRY[topicId].cap : '';
   }
 
-  window.Glyphs = { render, caption };
+  window.Glyphs = { render, draw, caption };
 })();

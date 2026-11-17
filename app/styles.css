@@ -3187,9 +3187,21 @@ body {
 }
 
 .life-glyph-slot {
-  margin: 18px 0;
+  margin: 14px 0 20px 0;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.life-glyph-slot svg.glyph {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  display: block;
+}
+
+.life-glyph-slot .visual-cap {
+  display: none !important;
 }
 
 .life-narrative {

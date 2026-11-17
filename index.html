@@ -450,9 +450,9 @@
       </div>
     </header>
 
-    <main class="life-body">
+    <main class="life-body" id="life-body">
       <!-- Левая колонка: интерактивная вселенная -->
-      <section class="life-canvas-panel">
+      <section class="life-canvas-panel" id="life-canvas-panel">
         <div class="life-canvas-container">
           <div class="life-hud">
             <div class="hud-left">
@@ -512,8 +512,11 @@
         </div>
       </section>
 
+      <!-- Разделитель колонок (сплиттер) -->
+      <div class="life-splitter" id="life-splitter" role="separator" aria-orientation="vertical" tabindex="0" title="Потяни, чтобы изменить ширину панелей (двойной клик — сброс)"></div>
+
       <!-- Правая колонка: задание, глиф, редактор Python -->
-      <section class="life-editor-panel">
+      <section class="life-editor-panel" id="life-editor-panel">
         <div class="life-task-card">
           <h2 id="life-task-title">Шаг 1: Сенсор границ мира</h2>
           <div id="life-glyph-slot" class="life-glyph-slot"></div>

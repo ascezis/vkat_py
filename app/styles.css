@@ -2919,28 +2919,75 @@ body {
 }
 
 .life-body {
-  display: grid;
-  grid-template-columns: minmax(560px, 600px) 1fr;
+  display: flex;
+  flex-direction: row;
   flex: 1;
   min-height: 0;
   background: var(--bg);
+  overflow: hidden;
+  position: relative;
 }
 
 /* Левая колонка (Canvas) */
 .life-canvas-panel {
+  width: var(--life-left-width, 560px);
+  min-width: 380px;
+  max-width: calc(100% - 420px);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 24px 28px;
-  border-right: 1px solid var(--border);
+  border-right: none;
   background: var(--bg);
   overflow-y: auto;
+}
+
+/* Разделитель колонок (сплиттер) */
+.life-splitter {
+  width: 8px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  user-select: none;
+  position: relative;
+  transition: background 0.15s ease;
+  z-index: 5;
+}
+
+.life-splitter:hover,
+.life-splitter.is-dragging {
+  background: var(--brand-orange);
+}
+
+.life-splitter:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: -1px;
+}
+
+.life-splitter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 28px;
+  background: var(--border-strong);
+  border-radius: 1px;
+}
+
+.life-splitter:hover::after,
+.life-splitter.is-dragging::after {
+  background: #ffffff;
 }
 
 .life-canvas-container {
   position: relative;
   width: 500px;
-  height: 500px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
   background: #000000;
   border: 1px solid var(--border-strong);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
@@ -2948,8 +2995,8 @@ body {
 }
 
 #life-main-canvas {
-  width: 500px;
-  height: 500px;
+  width: 100%;
+  height: 100%;
   display: block;
   cursor: crosshair;
 }
@@ -3113,20 +3160,22 @@ body {
 
 /* Правая колонка (Задание и Редактор) */
 .life-editor-panel {
+  flex: 1;
+  min-width: 400px;
   display: flex;
   flex-direction: column;
-  padding: 28px 36px;
+  padding: 24px 32px;
   overflow-y: auto;
-  gap: 22px;
-  background: var(--bg-panel);
-  min-width: 0;
+  gap: 20px;
+  background: var(--bg);
 }
 
 .life-task-card {
   border: 1px solid var(--border);
   padding: 24px 28px;
-  background: var(--bg);
-  max-width: 860px;
+  background: var(--bg-panel);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .life-task-card h2 {
@@ -3150,14 +3199,14 @@ body {
   border-left: 3px solid var(--brand-orange);
   padding-left: 14px;
   margin-bottom: 16px;
-  max-width: 68ch;
+  max-width: 82ch;
 }
 
 .life-task-desc {
   font-size: 15px;
   line-height: 1.7;
   color: var(--text);
-  max-width: 68ch;
+  max-width: 82ch;
 }
 
 .life-task-desc p {
@@ -3212,11 +3261,12 @@ body {
 .life-code-wrapper {
   display: flex;
   flex-direction: column;
-  height: clamp(260px, 42vh, 460px);
+  height: clamp(260px, 42vh, 480px);
   min-height: 240px;
   border: 1px solid var(--border-strong);
   background: var(--bg);
-  max-width: 860px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .life-code-wrapper:focus-within {
@@ -3298,7 +3348,8 @@ body {
   justify-content: space-between;
   gap: 20px;
   padding-top: 6px;
-  max-width: 860px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .life-action-buttons {
@@ -3507,15 +3558,27 @@ body {
 }
 
 /* Адаптив: узкие экраны */
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
   .life-body {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     overflow-y: auto;
   }
 
   .life-canvas-panel {
+    width: 100% !important;
+    max-width: none;
     border-right: none;
     border-bottom: 1px solid var(--border);
+  }
+
+  .life-splitter {
+    display: none;
+  }
+
+  .life-editor-panel {
+    width: 100%;
+    min-width: 0;
+    padding: 20px 24px;
   }
 
   .life-canvas-container,

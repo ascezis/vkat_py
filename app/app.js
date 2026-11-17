@@ -890,7 +890,12 @@
 
     if (activeProfile) {
       await loadStorage();
-      showScreen('start');
+      const urlScreen = new URLSearchParams(window.location.search).get('screen') || (window.location.hash ? window.location.hash.slice(1) : null);
+      if (urlScreen && ['start', 'lesson', 'life', 'profiles', 'finish'].includes(urlScreen)) {
+        showScreen(urlScreen);
+      } else {
+        showScreen('start');
+      }
       // Телеметрия CONNECT: сессия ученика (no-op без endpoint'а)
       if (window.VkatConnect) window.VkatConnect.sessionStart(activeProfile.id, activeProfile.name);
     } else {

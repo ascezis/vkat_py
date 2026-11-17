@@ -771,8 +771,11 @@
 
   function canvasCellFromEvent(e) {
     const rect = S.dom.canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / CELL);
-    const y = Math.floor((e.clientY - rect.top) / CELL);
+    if (!rect.width || !rect.height) return null;
+    const cellW = rect.width / COLS;
+    const cellH = rect.height / ROWS;
+    const x = Math.floor((e.clientX - rect.left) / cellW);
+    const y = Math.floor((e.clientY - rect.top) / cellH);
     return inBounds(x, y) ? { x, y } : null;
   }
 
@@ -1370,6 +1373,10 @@
     const d = id => document.getElementById(id);
     S.dom = {
       screen: d('screen-life'),
+      body: d('life-body'),
+      splitter: d('life-splitter'),
+      canvasPanel: d('life-canvas-panel'),
+      editorPanel: d('life-editor-panel'),
       canvas: d('life-main-canvas'),
       sparkline: d('life-sparkline'),
       birthOverlay: d('life-birth-overlay'),
@@ -1459,6 +1466,85 @@
       });
     }
     setupMouse();
+    setupSplitter();
+  }
+
+  function setupSplitter() {
+    const splitter = S.dom.splitter;
+    const body = S.dom.body;
+    if (!splitter || !body) return;
+
+    // Восстанавливаем сохранённую ширину через VkatStorage (без прямых вызовов storage)
+    const saved = window.VkatStorage ? window.VkatStorage.getSetting('life_split_width', null) : null;
+    if (saved && typeof saved === 'number' && saved >= 380) {
+      body.style.setProperty('--life-left-width', saved + 'px');
+    }
+
+    let isDragging = false;
+
+    function onPointerDown(e) {
+      if (e.button !== 0) return;
+      isDragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      e.preventDefault();
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      const rect = body.getBoundingClientRect();
+      const newWidth = Math.round(e.clientX - rect.left);
+      const minLeft = 380;
+      const maxLeft = Math.max(minLeft, rect.width - 420);
+      const clamped = Math.max(minLeft, Math.min(maxLeft, newWidth));
+      body.style.setProperty('--life-left-width', clamped + 'px');
+    }
+
+    function onPointerUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+
+      const curVal = body.style.getPropertyValue('--life-left-width');
+      if (curVal && window.VkatStorage) {
+        window.VkatStorage.setSetting('life_split_width', parseInt(curVal, 10));
+      }
+    }
+
+    splitter.addEventListener('pointerdown', onPointerDown);
+
+    // Двойной клик сбрасывает к стандартным пропорциям
+    splitter.addEventListener('dblclick', () => {
+      body.style.removeProperty('--life-left-width');
+      if (window.VkatStorage) {
+        window.VkatStorage.setSetting('life_split_width', null);
+      }
+    });
+
+    // Клавиатурная доступность (стрелки влево / вправо)
+    splitter.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const delta = e.key === 'ArrowLeft' ? -20 : 20;
+        const rect = body.getBoundingClientRect();
+        const leftEl = S.dom.canvasPanel;
+        const curWidth = leftEl ? leftEl.offsetWidth : 560;
+        const minLeft = 380;
+        const maxLeft = Math.max(minLeft, rect.width - 420);
+        const clamped = Math.max(minLeft, Math.min(maxLeft, curWidth + delta));
+        body.style.setProperty('--life-left-width', clamped + 'px');
+        if (window.VkatStorage) {
+          window.VkatStorage.setSetting('life_split_width', clamped);
+        }
+      }
+    });
   }
 
   function updateLineNumbers() {

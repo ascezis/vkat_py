@@ -3006,6 +3006,21 @@ body {
 
 /* ─── ВВОДНЫЙ БРИФИНГ И ТЕОРИЯ ────────────────────────────────────────────── */
 
+.intro-visual {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto 18px auto;
+}
+.intro-visual svg.glyph { width: 100%; height: auto; display: block; }
+.intro-demo-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  margin-bottom: 12px;
+}
+
 .life-intro-view {
   flex: 1;
   overflow-y: auto;

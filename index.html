@@ -565,6 +565,7 @@
           <article class="intro-slide active" data-slide="1">
             <div class="intro-kicker">// КОНЦЕПТ СИМУЛЯЦИИ</div>
             <h2 class="intro-title">Джон Конвей и феномен эмерджентности</h2>
+            <div id="intro-conway-visual" class="intro-visual"></div>
             <div class="intro-content">
               <p>В 1970 году британский математик Джон Конвей разработал модель «Жизнь» (Game of Life). Это математический клеточный автомат класса <strong>Zero-player game</strong> — игра с нулевым числом игроков.</p>
               <p>Здесь нет персонажей, джойстиков или команд перемещения в коде. Твоя роль — <strong>архитектор законов физики</strong>. Ты задаёшь локальные правила поведения для отдельной клетки, а макромир эволюционирует сам.</p>
@@ -646,8 +647,10 @@
                     <button type="button" class="life-btn life-btn-sm" id="btn-demo-single">1. Одиночество</button>
                     <button type="button" class="life-btn life-btn-sm" id="btn-demo-blinker">2. Мигалка</button>
                     <button type="button" class="life-btn life-btn-sm life-btn-primary" id="btn-demo-glider">3. Глайдер</button>
+                    <button type="button" class="life-btn life-btn-sm" id="btn-demo-toggle">⏸ Пауза</button>
                   </div>
                 </div>
+                <div class="intro-demo-hint">Полигон живой: тыкай в клетки — клик ставит или убирает, зажми и веди — рисуй. Эволюция идёт сама, ⏸ — пауза.</div>
                 <div class="intro-demo-canvas-row">
                   <canvas id="life-demo-canvas" width="280" height="280"></canvas>
                   <div class="intro-demo-info" id="intro-demo-info">

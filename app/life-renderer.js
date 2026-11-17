@@ -160,6 +160,7 @@
     introActive: false,
     introSlide: 1,
     demoTimer: null,
+    demoPaused: false,
     demoGrid: null,
     demoPattern: 'glider'
   };
@@ -1487,6 +1488,8 @@
       introView: d('life-intro-view'),
       introTabs: d('life-intro-tabs'),
       introSlides: d('life-intro-slides'),
+      introConway: d('intro-conway-visual'),
+      demoToggle: d('btn-demo-toggle'),
       btnOpenIntro: d('btn-life-open-intro'),
       btnSkipIntro: d('btn-life-skip-intro'),
       btnEnterLab: d('btn-intro-enter-lab'),
@@ -1532,6 +1535,13 @@
         }
       });
     }
+
+    if (S.dom.demoToggle) {
+      S.dom.demoToggle.addEventListener('click', () => {
+        setDemoPaused(!S.demoPaused);
+      });
+    }
+    initDemoCanvasDrawing();
 
     if (S.dom.mooreGrid) {
       S.dom.mooreGrid.addEventListener('click', e => {
@@ -1878,6 +1888,7 @@
 
   function startDemoSimulation() {
     setDemoPattern(S.demoPattern || 'glider');
+    setDemoPaused(false);
   }
 
   function stopDemoSimulation() {
@@ -1886,6 +1897,69 @@
       clearTimeout(S.demoTimer);
       S.demoTimer = null;
     }
+  }
+
+  // Полигон: пауза эволюции без сброса мира
+  function setDemoPaused(paused) {
+    S.demoPaused = paused;
+    if (paused) {
+      stopDemoSimulation();
+    } else {
+      stopDemoSimulation();
+      S.demoTimer = setInterval(() => {
+        tickDemoGrid();
+        drawDemoCanvas();
+      }, 130);
+    }
+    if (S.dom.demoToggle) {
+      S.dom.demoToggle.textContent = paused ? '▶ Запустить' : '⏸ Пауза';
+    }
+  }
+
+  // Полигон: тыкать клеточки — клик ставит/убирает, зажать и вести — рисуешь
+  function demoCellFromEvent(e) {
+    const rect = S.dom.demoCanvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / (rect.width / DEMO_SIZE));
+    const y = Math.floor((e.clientY - rect.top) / (rect.height / DEMO_SIZE));
+    if (x < 0 || y < 0 || x >= DEMO_SIZE || y >= DEMO_SIZE) return null;
+    return [x, y];
+  }
+
+  function demoToggleCell(e) {
+    if (!S.demoGrid) return;
+    const cell = demoCellFromEvent(e);
+    if (!cell) return;
+    const idx = cell[1] * DEMO_SIZE + cell[0];
+    S.demoGrid[idx] = S.demoGrid[idx] === 1 ? 0 : 1;
+    drawDemoCanvas();
+  }
+
+  function demoPaintCell(e) {
+    if (!S.demoGrid) return;
+    const cell = demoCellFromEvent(e);
+    if (!cell) return;
+    S.demoGrid[cell[1] * DEMO_SIZE + cell[0]] = 1;
+    drawDemoCanvas();
+  }
+
+  function initDemoCanvasDrawing() {
+    if (!S.dom.demoCanvas) return;
+    let painting = false;
+    const canvas = S.dom.demoCanvas;
+
+    canvas.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      painting = true;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      demoToggleCell(e);
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!painting) return;
+      demoPaintCell(e);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => {
+      canvas.addEventListener(ev, () => { painting = false; });
+    });
   }
 
   // ─── Переключение экранов (Вводный брифинг vs Лаборатория) ──────────────────
@@ -1914,10 +1988,15 @@
       });
     }
 
+    if (S.introSlide === 1 && S.dom.introConway && window.Glyphs) {
+      // Перегенерируем при каждом открытии — чтобы сработала анимация появления
+      S.dom.introConway.innerHTML = window.Glyphs.render('lifeConway');
+    }
     if (S.introSlide === 2) {
       updateMoorePredictions();
     } else if (S.introSlide === 3) {
       startDemoSimulation();
+      setDemoPaused(false);
     } else {
       stopDemoSimulation();
     }

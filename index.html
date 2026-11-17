@@ -22,6 +22,7 @@
         <span>connect</span>
       </div>
       <button id="btn-tree-toggle" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
+      <button type="button" id="btn-topbar-sandbox" class="btn-tree-toggle" style="margin-left: 8px;" title="Свободная песочница Python">песочница</button>
     </div>
     <div class="topbar-right">
       <div id="app-user-badge" class="topbar-user" title="Активный профиль">
@@ -230,6 +231,15 @@
       <!-- Карточки этапов курса (генерируются динамически из COURSE_STAGES) -->
       <div id="stage-cards" class="stage-cards"></div>
 
+      <!-- Баннер песочницы Python -->
+      <div class="start-sandbox-banner" id="start-sandbox-banner">
+        <div class="sandbox-banner-text">
+          <span class="sandbox-banner-title">СВОБОДНАЯ ПЕСОЧНИЦА PYTHON</span>
+          <span class="sandbox-banner-desc">Пиши любой код, тестируй идеи, измеряй скорость и решай собственные задачи без ограничений проверки</span>
+        </div>
+        <button type="button" id="btn-start-sandbox" class="btn-primary" style="white-space: nowrap;">Войти в песочницу →</button>
+      </div>
+
       <div class="start-note">прогресс сохраняется на этом устройстве</div>
       <div id="start-status" class="status-badge">Загрузка Python...</div>
     </div>
@@ -409,6 +419,82 @@
       <div id="step-dots" class="step-dots"></div>
       <span id="step-label">шаг 1 / 5</span>
     </div>
+  </div>
+
+  <!-- ЭКРАН 5: ПЕСОЧНИЦА PYTHON (PLAYGROUND) -->
+  <div id="screen-sandbox" class="screen">
+    <header class="sandbox-header">
+      <div class="sandbox-header-left">
+        <button type="button" id="btn-sandbox-back" class="btn-ghost-sm" title="Вернуться назад">← Назад</button>
+        <span class="sandbox-header-title">ПЕСОЧНИЦА PYTHON</span>
+        <span class="sandbox-env-badge">PYTHON 3.12 • PYODIDE WORKER</span>
+      </div>
+      <div class="sandbox-header-right">
+        <button type="button" id="btn-sandbox-run" class="sandbox-btn sandbox-btn-primary" title="Выполнить код (Ctrl+Enter)">▶ Запустить</button>
+        <button type="button" id="btn-sandbox-stop" class="sandbox-btn sandbox-btn-danger" style="display: none;" title="Прервать выполнение">⏹ Стоп</button>
+        <button type="button" id="btn-sandbox-clear-out" class="sandbox-btn sandbox-btn-ghost" title="Очистить терминал">Очистить вывод</button>
+        <button type="button" id="btn-sandbox-reset" class="sandbox-btn sandbox-btn-ghost" title="Сбросить код к шаблону">Сбросить код</button>
+      </div>
+    </header>
+
+    <main class="sandbox-body" id="sandbox-body">
+      <!-- Левая колонка: редактор кода -->
+      <section class="sandbox-editor-panel">
+        <div class="sandbox-editor-toolbar">
+          <div class="sandbox-preset-group">
+            <span class="sandbox-toolbar-label">// ШАБЛОН:</span>
+            <select id="sandbox-preset-select" class="sandbox-select">
+              <option value="empty">Чистый скрипт</option>
+              <option value="benchmark">Замер скорости (Benchmark)</option>
+              <option value="binary_search">Алгоритм: Бинарный поиск O(log N)</option>
+              <option value="freq_dict">Алгоритм: Частотный словарь</option>
+              <option value="comprehensions">Продвинутые списки и срезы</option>
+              <option value="oop_stack">Структура данных: Стек (Stack)</option>
+            </select>
+          </div>
+          <div class="sandbox-editor-actions">
+            <button type="button" id="btn-sandbox-copy" class="sandbox-tool-btn" title="Скопировать код в буфер">Скопировать</button>
+            <button type="button" id="btn-sandbox-download" class="sandbox-tool-btn" title="Сохранить файл .py">Скачать .py</button>
+          </div>
+        </div>
+
+        <div class="sandbox-editor-wrapper">
+          <div class="editor-wrapper sandbox-editor-inner">
+            <div id="sandbox-line-numbers" class="line-numbers" aria-hidden="true"></div>
+            <pre id="sandbox-editor-highlight" class="editor-highlight" aria-hidden="true"></pre>
+            <textarea id="sandbox-code-editor" class="editor" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="# Пиши любой код на Python 3..."></textarea>
+            <div id="sandbox-autocomplete-popup" class="autocomplete-popup" style="display: none;"></div>
+          </div>
+        </div>
+
+        <div class="sandbox-editor-footer">
+          <span class="sandbox-editor-hint">Ctrl + Enter — быстрый запуск • Tab — 4 пробела</span>
+          <span class="sandbox-save-status" id="sandbox-save-status">сохранено локально</span>
+        </div>
+      </section>
+
+      <!-- Правая колонка: терминал вывода -->
+      <section class="sandbox-terminal-panel">
+        <div class="sandbox-terminal-header">
+          <div class="sandbox-term-left">
+            <span id="sandbox-term-dot" class="term-status-dot ready"></span>
+            <span id="sandbox-term-status" class="term-status-text">Готов к запуску</span>
+          </div>
+          <div class="sandbox-term-right">
+            <span id="sandbox-term-time" class="sandbox-term-badge">Время: —</span>
+            <span id="sandbox-term-lines" class="sandbox-term-badge">Строк: 0</span>
+          </div>
+        </div>
+
+        <div class="sandbox-terminal-body" id="sandbox-terminal-body">
+          <div id="sandbox-terminal-welcome" class="terminal-welcome-msg">
+            <div class="welcome-line">// Терминал Python 3.12 (Pyodide Worker)</div>
+            <div class="welcome-line">// Нажми «Запустить» или нажми Ctrl+Enter, чтобы увидеть вывод.</div>
+          </div>
+          <pre id="sandbox-terminal-output" class="sandbox-terminal-output" style="display: none;"></pre>
+        </div>
+      </section>
+    </main>
   </div>
 
   <!-- ЭКРАН 3: ФИНАЛЬНЫЙ -->
@@ -783,7 +869,7 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000):
 
     _checker_mod._runtime_err = None
     # Изолированный namespace — только безопасные builtins, без sys/js
-    target_ns = {'__builtins__': dict(_SAFE_BUILTINS), '__name__': '__student__'}
+    target_ns = {'__builtins__': dict(_SAFE_BUILTINS), '__name__': '__main__'}
     try:
         _lc_.cache['<student>'] = (
             len(code_str),
@@ -980,6 +1066,9 @@ def _match_output_proxy(actual_str, expected_str):
 
   <!-- Интерактивная выпуклая сетка Antigravity (Grid Warp) -->
   <script src="app/grid-warp.js"></script>
+
+  <!-- Свободная песочница Python (Playground) -->
+  <script src="app/sandbox.js"></script>
 
   <!-- Оркестратор приложения (инициализация, навигация, состояние) -->
   <script src="app/app.js"></script>

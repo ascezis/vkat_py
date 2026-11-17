@@ -20,6 +20,7 @@
 (function (window) {
   'use strict';
 
+  /** @type {LifeModule} */
   const LIFE_MODULE = {
     id: 'life',
     title: 'Пет-проект: Alife-System',

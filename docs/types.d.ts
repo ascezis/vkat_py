@@ -260,6 +260,8 @@ interface CheckResult {
 
 /** Минимальный контракт PyodideWorkerBridge для тестов и отладки. */
 interface PyodideWorkerBridgeLike {
+  /** Ручная остановка: терминировать воркер и пересоздать песочницу. */
+  terminateAndRespawn(): void;
   DEFAULT_TIMEOUT_MS: number;
   INIT_TIMEOUT_MS: number;
   MAX_CONSECUTIVE_CRASHES: number;
@@ -287,8 +289,23 @@ interface CodeCheckerApi {
 // каждого модуля отдельная задача (TECH-DEBT Sprint 3+). Контракты есть у
 // модулей, у которых они реально помогают: storage, checker, контент.
 
+/** Минимальный контракт VkatSandbox (app/sandbox.js). */
+interface VkatSandboxApi {
+  init(): void;
+  enter(prevScreen?: string): void;
+  leave(): void;
+  runCode(): Promise<void>;
+  stopExecution(): void;
+  clearOutput(): void;
+  selectPreset(presetKey: string, opts?: { silent?: boolean }): void;
+  /** Отладочные хуки (используются тестами и консолью разработчика). */
+  _presets: Record<string, { title: string; code: string }>;
+  _state: Record<string, any>;
+}
+
 interface Window {
   VKAT_VERSION?: string;
+  VkatSandbox?: VkatSandboxApi;
   COURSE_STAGES?: CourseStage[];
   COURSE_TOPICS?: CourseTopic[];
   COURSE_SELFTEST?: Record<string, SelftestEntry>;

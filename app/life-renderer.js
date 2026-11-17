@@ -1089,7 +1089,8 @@
   // ─── Проверка решения ────────────────────────────────────────────────────────
 
   function buildCheckTask(step) {
-    return {
+    /** @type {TaskItem} */
+    const task = {
       id: step.id,
       type: 'code',
       title: step.title,
@@ -1098,6 +1099,7 @@
       improveTip: step.improveTip,
       successMessage: step.successMessage
     };
+    return task;
   }
 
   async function submitStep() {
@@ -1465,7 +1467,6 @@
       speedVal: d('life-speed-val'),
       presetSelect: d('life-preset-select'),
       universeSelect: d('life-universe-select'),
-      body: d('life-body'),
       introView: d('life-intro-view'),
       introTabs: d('life-intro-tabs'),
       introSlides: d('life-intro-slides'),

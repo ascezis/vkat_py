@@ -30,3 +30,9 @@ jobs:
 
       - name: Run Python Evaluation Tests
         run: python dev/run_tests.py
+
+      - name: Run Alife-System Tests
+        run: python dev/test_alife_system.py
+
+      - name: Type Check (checkJs, zero errors required)
+        run: npx -y -p typescript@5.5.4 tsc -p jsconfig.json --noEmit --pretty false

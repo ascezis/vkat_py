@@ -3007,17 +3007,16 @@ body {
 /* ─── ВВОДНЫЙ БРИФИНГ И ТЕОРИЯ ────────────────────────────────────────────── */
 
 .intro-photo-row {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  /* центр относительно текстовой колонки слайда (как моноглиф раньше) */
+  max-width: 280px;
+  margin: 0 auto 18px auto;
 }
 .intro-photo {
-  width: 220px;
-  flex-shrink: 0;
+  width: 260px;
+  margin: 0 auto;  /* точное центрирование относительно текстовой колонки */
   border: 1px solid var(--border-strong);
   background: var(--bg-panel);
   padding: 10px 10px 6px;
-  margin: 0;
 }
 .intro-photo img {
   display: block;

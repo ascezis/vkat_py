@@ -2982,6 +2982,177 @@ body {
   background: #ffffff;
 }
 
+/* Кнопка запуска тура в шапке */
+.life-btn-tour-toggle {
+  color: var(--brand-orange);
+  border-color: rgba(255, 106, 0, 0.4);
+  background: rgba(255, 106, 0, 0.08);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 5px 12px;
+  transition: all 0.2s ease;
+}
+
+.life-btn-tour-toggle:hover {
+  background: rgba(255, 106, 0, 0.2);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+/* Интерактивный тур: Этап 0 */
+.life-tour-card {
+  background: #111113;
+  border: 1px solid var(--brand-orange);
+  box-shadow: 0 6px 24px rgba(255, 106, 0, 0.16);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  width: 500px;
+  max-width: 100%;
+  box-sizing: border-box;
+  animation: lifeTourFadeIn 0.25s ease-out;
+  flex-shrink: 0;
+}
+
+@keyframes lifeTourFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.life-tour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.life-tour-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.life-tour-step-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--brand-orange);
+  background: rgba(255, 106, 0, 0.12);
+  border: 1px solid rgba(255, 106, 0, 0.35);
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.life-tour-dots {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tour-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(236, 236, 236, 0.25);
+  transition: all 0.2s ease;
+}
+
+.tour-dot.active {
+  background: var(--brand-orange);
+  box-shadow: 0 0 6px rgba(255, 106, 0, 0.8);
+  transform: scale(1.25);
+}
+
+.tour-dot.done {
+  background: rgba(255, 106, 0, 0.5);
+}
+
+.life-tour-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(236, 236, 236, 0.45);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.life-tour-close-btn:hover {
+  color: #ffffff;
+}
+
+.life-tour-title {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.life-tour-desc {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(236, 236, 236, 0.82);
+}
+
+.life-tour-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.life-btn-tour-action {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  background: #1b1b1e;
+  color: #ffffff;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.life-btn-tour-action:hover {
+  border-color: var(--brand-orange);
+  color: var(--brand-orange);
+}
+
+.life-btn-tour-primary {
+  background: var(--brand-orange);
+  color: #0b0b0c;
+  font-weight: 600;
+  border-color: var(--brand-orange);
+}
+
+.life-btn-tour-primary:hover {
+  background: #ff7f24;
+  color: #0b0b0c;
+  border-color: #ff7f24;
+}
+
+.life-tour-result {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 106, 0, 0.08);
+  border-left: 3px solid var(--brand-orange);
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(236, 236, 236, 0.95);
+  animation: lifeTourFadeIn 0.2s ease-out;
+}
+
+.life-tour-result strong {
+  color: var(--brand-orange);
+}
+
 .life-canvas-container {
   position: relative;
   width: 500px;

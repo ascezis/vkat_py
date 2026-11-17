@@ -154,7 +154,11 @@
     toastCooldown: {},     // тип -> timestamp последнего показа
 
     // Live-режим Pyodide
-    liveRunning: false
+    liveRunning: false,
+
+    // Интерактивный тур (Этап 0)
+    tourActive: false,
+    tourStep: 1
   };
 
   // ─── Утилиты ─────────────────────────────────────────────────────────────────
@@ -293,6 +297,11 @@
   }
 
   function doSimTick() {
+    if (S.tourActive) {
+      const u = UNIVERSES.conway;
+      applyGeneration(conwayTick(S.grid, GRID_W, GRID_H, u.birth, u.survival));
+      return;
+    }
     if (S.worldMode === 'frozen') return; // мир застыл: законов нет
     if (S.worldMode === 'chaos') {
       // Сломанная вселенная: клетки мерцают случайно
@@ -930,7 +939,7 @@
   }
 
   function updateControlsForMode() {
-    const frozen = S.worldMode === 'frozen';
+    const frozen = S.worldMode === 'frozen' && !S.tourActive;
     S.dom.btnPlay.disabled = frozen;
     S.dom.btnStep.disabled = frozen;
     S.dom.btnPlay.title = frozen ? 'Мир застыл: законы ещё не действуют' : 'Запустить симуляцию';
@@ -1330,18 +1339,21 @@
   // ─── Управление симуляцией ───────────────────────────────────────────────────
 
   function togglePlay() {
-    if (S.worldMode === 'frozen') return;
+    if (S.worldMode === 'frozen' && !S.tourActive) return;
     if (S.liveRunning) stopLiveMode();
     S.running = !S.running;
     updatePlayButton();
   }
 
   function stepOnce() {
-    if (S.worldMode === 'frozen') return;
+    if (S.worldMode === 'frozen' && !S.tourActive) return;
     if (S.liveRunning) stopLiveMode();
     S.running = false;
     updatePlayButton();
     doSimTick();
+    if (S.tourActive && S.tourStep === 1) {
+      onTourStep1Ticked();
+    }
   }
 
   function clearWorld() {
@@ -1457,13 +1469,24 @@
       speedSlider: d('life-speed-slider'),
       speedVal: d('life-speed-val'),
       presetSelect: d('life-preset-select'),
-      universeSelect: d('life-universe-select')
+      universeSelect: d('life-universe-select'),
+      tourCard: d('life-tour-card'),
+      tourTitle: d('life-tour-title'),
+      tourDesc: d('life-tour-desc'),
+      tourPill: d('life-tour-pill'),
+      tourDots: d('life-tour-dots'),
+      tourActions: d('life-tour-actions'),
+      tourResult: d('life-tour-result'),
+      btnTourToggle: d('btn-life-tour-toggle'),
+      btnTourClose: d('btn-life-tour-close')
     };
     S.dom.ctx = S.dom.canvas.getContext('2d');
   }
 
   function setupEvents() {
     S.dom.btnBack.addEventListener('click', () => window.VkatApp.showScreen('start'));
+    if (S.dom.btnTourToggle) S.dom.btnTourToggle.addEventListener('click', toggleTour);
+    if (S.dom.btnTourClose) S.dom.btnTourClose.addEventListener('click', () => closeTour(true));
     S.dom.btnPlay.addEventListener('click', togglePlay);
     S.dom.btnStep.addEventListener('click', stepOnce);
     S.dom.btnClear.addEventListener('click', clearWorld);
@@ -1640,6 +1663,191 @@
     if (window.VkatStorage) window.VkatStorage.saveDraftDebounced(step.id, S.dom.editor.value);
   }
 
+  // ─── Интерактивный тур: Этап 0 («В чём прикол Конвея?») ───────────────────────
+
+  function startTour(step) {
+    S.tourActive = true;
+    S.tourStep = Math.max(1, Math.min(3, typeof step === 'number' ? step : 1));
+    if (S.dom.tourCard) {
+      S.dom.tourCard.style.display = 'block';
+    }
+    updateControlsForMode();
+    renderTourStep();
+  }
+
+  function closeTour(restoreMode) {
+    S.tourActive = false;
+    if (S.dom.tourCard) {
+      S.dom.tourCard.style.display = 'none';
+    }
+    S.running = false;
+    updatePlayButton();
+    if (restoreMode !== false) {
+      applyWorldForProgress(false);
+    }
+    updateControlsForMode();
+  }
+
+  function toggleTour() {
+    if (S.tourActive) {
+      closeTour(true);
+    } else {
+      startTour(1);
+    }
+  }
+
+  function onTourStep1Ticked() {
+    if (!S.dom.tourResult) return;
+    S.dom.tourResult.style.display = 'block';
+    S.dom.tourResult.innerHTML =
+      '⚠️ <strong>Клетка исчезла!</strong> В одиночестве (0 или 1 сосед) клетки погибают от тоски. Это правило №1 Конвея.<br>' +
+      '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-next-2" style="margin-top: 8px;">Дальше: Создаём жизнь →</button>';
+    const nextBtn = document.getElementById('btn-tour-next-2');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        S.tourStep = 2;
+        renderTourStep();
+      });
+    }
+  }
+
+  function renderTourStep() {
+    if (!S.dom.tourCard) return;
+
+    if (S.dom.tourDots) {
+      const dots = S.dom.tourDots.querySelectorAll('.tour-dot');
+      dots.forEach((d, i) => {
+        d.className = 'tour-dot' + (i + 1 === S.tourStep ? ' active' : (i + 1 < S.tourStep ? ' done' : ''));
+      });
+    }
+
+    if (S.dom.tourResult) {
+      S.dom.tourResult.style.display = 'none';
+      S.dom.tourResult.innerHTML = '';
+    }
+
+    if (S.tourStep === 1) {
+      // 1. Закон одиночества
+      S.dom.tourPill.textContent = 'ТУР: 1 ИЗ 3 • ПРАВИЛО 0-1 СОСЕДА';
+      S.dom.tourTitle.textContent = '1. Закон одиночества: 0–1 соседа';
+      S.dom.tourDesc.textContent = 'Поставь 1 точку мышкой в центр поля (или нажми кнопку) и нажми «Шаг». Посмотрим, что с ней сделает природа.';
+      S.dom.tourActions.innerHTML =
+        '<button type="button" class="life-btn-tour-action" id="btn-tour-act-spawn-1">Поставить 1 клетку</button>' +
+        '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-act-step-1">⏭ Сделать шаг</button>';
+
+      const btnSpawn = document.getElementById('btn-tour-act-spawn-1');
+      if (btnSpawn) {
+        btnSpawn.addEventListener('click', () => {
+          clearWorld();
+          seedCell(Math.floor(GRID_W / 2), Math.floor(GRID_H / 2));
+          render();
+          if (S.dom.tourResult) {
+            S.dom.tourResult.style.display = 'block';
+            S.dom.tourResult.innerHTML = 'Клетка на поле (у неё 0 соседей). Теперь жми <strong>«Сделать шаг»</strong>!';
+          }
+        });
+      }
+
+      const btnStep = document.getElementById('btn-tour-act-step-1');
+      if (btnStep) {
+        btnStep.addEventListener('click', () => {
+          let pop = 0;
+          for (let i = 0; i < S.grid.length; i++) if (S.grid[i] === 1) pop++;
+          if (pop === 0) {
+            seedCell(Math.floor(GRID_W / 2), Math.floor(GRID_H / 2));
+          }
+          doSimTick();
+          onTourStep1Ticked();
+        });
+      }
+
+    } else if (S.tourStep === 2) {
+      // 2. Пульс жизни (Мигалка)
+      S.dom.tourPill.textContent = 'ТУР: 2 ИЗ 3 • ПРАВИЛО 2-3 СОСЕДЕЙ';
+      S.dom.tourTitle.textContent = '2. Пульс жизни: 2–3 соседа (Мигалка)';
+      S.dom.tourDesc.textContent = 'Три клетки рядом — это уже колония! У центральной клетки 2 соседа, а сверху и снизу рождаются новые.';
+      S.dom.tourActions.innerHTML =
+        '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-act-spawn-2">Поставить полоску (3 клетки)</button>' +
+        '<button type="button" class="life-btn-tour-action" id="btn-tour-act-play-2">▶ Запустить</button>';
+
+      function spawnBlinker() {
+        clearWorld();
+        const cx = Math.floor(GRID_W / 2);
+        const cy = Math.floor(GRID_H / 2);
+        seedCell(cx - 1, cy);
+        seedCell(cx, cy);
+        seedCell(cx + 1, cy);
+        S.speed = 5;
+        if (S.dom.speedSlider) S.dom.speedSlider.value = 5;
+        if (S.dom.speedVal) S.dom.speedVal.textContent = '5/с';
+        S.running = true;
+        updatePlayButton();
+        if (S.dom.tourResult) {
+          S.dom.tourResult.style.display = 'block';
+          S.dom.tourResult.innerHTML =
+            '✨ <strong>Она пульсирует вечно!</strong> Никакой сложной физики: 2 соседа сохраняют жизнь средней клетке, а 3 соседа рождают новые по бокам.<br>' +
+            '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-next-3" style="margin-top: 8px;">Дальше: Магия движения →</button>';
+          const nextBtn = document.getElementById('btn-tour-next-3');
+          if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+              S.tourStep = 3;
+              renderTourStep();
+            });
+          }
+        }
+      }
+
+      const btnSpawn2 = document.getElementById('btn-tour-act-spawn-2');
+      if (btnSpawn2) btnSpawn2.addEventListener('click', spawnBlinker);
+      const btnPlay2 = document.getElementById('btn-tour-act-play-2');
+      if (btnPlay2) {
+        btnPlay2.addEventListener('click', () => {
+          if (!S.running) spawnBlinker();
+        });
+      }
+
+    } else if (S.tourStep === 3) {
+      // 3. Магия движения (Глайдер)
+      S.dom.tourPill.textContent = 'ТУР: 3 ИЗ 3 • ЭМЕРДЖЕНТНОСТЬ';
+      S.dom.tourTitle.textContent = '3. Магия движения: Глайдер (5 клеток)';
+      S.dom.tourDesc.textContent = 'В коде игры НЕТ команды «идти по диагонали». Но эти 5 клеток умеют шагать сквозь пространство!';
+      S.dom.tourActions.innerHTML =
+        '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-act-spawn-3">🚀 Запустить Глайдер</button>';
+
+      function launchGlider() {
+        clearWorld();
+        const glider = PRESETS.glider.cells;
+        glider.forEach(([gx, gy]) => seedCell(8 + gx, 8 + gy));
+        S.speed = 10;
+        if (S.dom.speedSlider) S.dom.speedSlider.value = 10;
+        if (S.dom.speedVal) S.dom.speedVal.textContent = '10/с';
+        S.running = true;
+        updatePlayButton();
+        if (S.dom.tourResult) {
+          S.dom.tourResult.style.display = 'block';
+          S.dom.tourResult.innerHTML =
+            '🚀 <strong>Он летит сам!</strong> Простейшие правила рождают бесконечную сложность.<br>Теперь ты знаешь главный фокус игры «Жизнь». Пора собрать этот движок своими руками на Python!<br>' +
+            '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-finish" style="margin-top: 10px;">🚀 Погнали к коду!</button>';
+          const btnFinish = document.getElementById('btn-tour-finish');
+          if (btnFinish) {
+            btnFinish.addEventListener('click', () => {
+              if (window.VkatStorage) {
+                window.VkatStorage.setSetting('life_tour_completed', true);
+              }
+              closeTour(true);
+              if (S.dom.editor) {
+                S.dom.editor.focus();
+              }
+            });
+          }
+        }
+      }
+
+      const btnSpawn3 = document.getElementById('btn-tour-act-spawn-3');
+      if (btnSpawn3) btnSpawn3.addEventListener('click', launchGlider);
+    }
+  }
+
   // ─── Вход/выход с экрана ─────────────────────────────────────────────────────
 
   function enter() {
@@ -1653,6 +1861,12 @@
     updatePlayButton();
     updateLiveButton();
     render();
+
+    // Авто-запуск тура при первом входе, если не пройден и 0 сданных шагов
+    const tourDone = window.VkatStorage ? window.VkatStorage.getSetting('life_tour_completed', false) : false;
+    if (!tourDone && completedStepsCount() === 0) {
+      startTour(1);
+    }
   }
 
   function leave() {
@@ -1660,6 +1874,9 @@
     S.liveRunning = false;
     S.cursor = null;
     S.drawing = false;
+    if (S.tourActive) {
+      closeTour(false);
+    }
     if (window.VkatStorage) window.VkatStorage.flushSync();
   }
 
@@ -1686,5 +1903,5 @@
   }
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
-  window.VkatLife = { init, enter, leave, renderStartCard, _state: S };
+  window.VkatLife = { init, enter, leave, startTour, closeTour, renderStartCard, _state: S };
 })(window, document);

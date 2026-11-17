@@ -443,6 +443,7 @@
         <span class="life-step-dots" id="life-step-dots"></span>
       </div>
       <div class="life-header-right">
+        <button type="button" id="btn-life-tour-toggle" class="btn-ghost-sm life-btn-tour-toggle" title="Интерактивный тур: в чём прикол игры Конвея?">✨ Как играть? (30 сек)</button>
         <div class="life-pattern-toast" id="life-pattern-toast" style="display: none;">
           <span class="toast-icon" id="life-toast-icon">▪</span>
           <span class="toast-text" id="life-toast-text">Обнаружен паттерн</span>
@@ -453,6 +454,27 @@
     <main class="life-body" id="life-body">
       <!-- Левая колонка: интерактивная вселенная -->
       <section class="life-canvas-panel" id="life-canvas-panel">
+        <!-- Интерактивный тур (Этап 0) -->
+        <div id="life-tour-card" class="life-tour-card" style="display: none;">
+          <div class="life-tour-header">
+            <div class="life-tour-badge-row">
+              <span class="life-tour-step-pill" id="life-tour-pill">ТУР: 1 ИЗ 3</span>
+              <span class="life-tour-dots" id="life-tour-dots">
+                <span class="tour-dot active"></span>
+                <span class="tour-dot"></span>
+                <span class="tour-dot"></span>
+              </span>
+            </div>
+            <button type="button" id="btn-life-tour-close" class="life-tour-close-btn" title="Закрыть тур">✕</button>
+          </div>
+          <div class="life-tour-body">
+            <h4 class="life-tour-title" id="life-tour-title">1. Закон одиночества: 0–1 соседа</h4>
+            <p class="life-tour-desc" id="life-tour-desc">Поставь 1 точку на поле и нажми «Шаг». Посмотрим, что с ней сделает природа.</p>
+            <div class="life-tour-actions" id="life-tour-actions"></div>
+            <div class="life-tour-result" id="life-tour-result" style="display: none;"></div>
+          </div>
+        </div>
+
         <div class="life-canvas-container">
           <div class="life-hud">
             <div class="hud-left">

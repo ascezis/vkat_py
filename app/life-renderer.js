@@ -1336,34 +1336,32 @@
     const n = completedStepsCount();
     const total = S.module.steps.length;
     const done = n >= total;
-    const btnText = n === 0 ? 'Начать' : (done ? 'Песочница' : 'Продолжить: шаг ' + (n + 1));
+    const btnText = n === 0 ? 'Начать' : (done ? 'Повторить' : 'Продолжить');
     const percent = total > 0 ? Math.round((n / total) * 100) : 0;
 
-    host.className = 'stage-card stage-card-life';
+    host.className = 'stage-card';
     host.innerHTML =
       '<div class="stage-card-header">' +
-        '<div class="stage-card-title">' + escapeHtml(S.module.title) + '</div>' +
+        '<div class="stage-card-title">Alife-System</div>' +
         '<div class="stage-card-progress-label">' + (done ? '✓ пройдено' : n + ' из ' + total) + '</div>' +
       '</div>' +
       '<p class="stage-card-desc">' + escapeHtml(S.module.description) + '</p>' +
       '<div class="stage-card-meta">' +
-        '<span>' + total + ' шага</span>' +
-        '<span>B3/S23 песочница</span>' +
+        '<span>1 тема</span>' +
+        '<span>' + total + ' задания</span>' +
       '</div>' +
-      '<div class="stage-card-note">Пет-проект: интерактивный симулятор клеточных автоматов с холстом.</div>' +
+      '<div class="stage-card-note">Клеточные автоматы B3/S23 и интерактивная песочница.</div>' +
       '<div class="stage-card-actions">' +
-        '<button type="button" class="stage-card-btn life-card-btn" id="btn-life-open">' + btnText + '</button>' +
-        '<span style="font-family: var(--font-mono); font-size: 12px; color: var(--brand-orange);">' + percent + '%</span>' +
+        '<button type="button" class="stage-card-btn" id="btn-life-open">' + btnText + '</button>' +
+        '<span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">' + percent + '%</span>' +
       '</div>';
 
     const btn = document.getElementById('btn-life-open');
     if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      btn.addEventListener('click', () => {
         window.VkatApp.showScreen('life');
       });
     }
-    host.onclick = () => window.VkatApp.showScreen('life');
   }
 
   // ─── DOM ─────────────────────────────────────────────────────────────────────

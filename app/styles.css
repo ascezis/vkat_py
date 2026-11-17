@@ -1155,26 +1155,6 @@ body {
   border-color: var(--border-strong);
 }
 
-.stage-card-life {
-  border-left: 3px solid var(--brand-orange);
-  cursor: pointer;
-}
-
-.stage-card-life:hover {
-  border-color: var(--brand-orange);
-  box-shadow: 0 0 16px rgba(255, 106, 0, 0.10);
-}
-
-.stage-card-life .life-card-btn {
-  border-color: var(--brand-orange);
-  color: var(--brand-orange);
-}
-
-.stage-card-life:hover .life-card-btn {
-  background: var(--brand-orange);
-  color: #000;
-}
-
 .stage-card-header {
   display: flex;
   justify-content: space-between;

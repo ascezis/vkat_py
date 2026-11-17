@@ -955,10 +955,12 @@
     S.dom.editorStatus.className = 'editor-status' + (window.VkatApp.state.completedTasks.has(step.id) ? ' ok' : '');
 
     updateLineNumbers();
+    if (S.highlighter) S.highlighter.update();
 
     S.dom.feedback.className = 'life-feedback-msg';
     S.dom.feedback.innerHTML = '';
     S.dom.hintContent.innerHTML = '';
+    S.dom.hintContent.style.display = 'none';
     S.revealedHints[step.id] = 0;
     updateHintButton();
 
@@ -1003,36 +1005,66 @@
 
   function updateHintButton() {
     const step = S.module.steps[S.currentStepIndex];
-    const hints = step.hints || [];
+    if (!step) return;
+    const rawHints = step.hints || (step.hint ? [{ code: step.hint }] : []);
+    const hints = rawHints.map(h => typeof h === 'string' ? { text: h } : h);
     const revealed = S.revealedHints[step.id] || 0;
-    if (hints.length === 0 || revealed >= hints.length) {
+
+    if (hints.length === 0) {
       S.dom.btnHint.style.display = 'none';
+      return;
+    }
+
+    S.dom.btnHint.style.display = 'inline-block';
+    if (revealed === 0) {
+      S.dom.btnHint.textContent = `Показать подсказку (1 из ${hints.length})`;
+    } else if (revealed < hints.length) {
+      const isSolution = (revealed + 1 === hints.length);
+      S.dom.btnHint.textContent = isSolution
+        ? `Показать решение (${revealed + 1} из ${hints.length})`
+        : `Следующая подсказка (${revealed + 1} из ${hints.length})`;
     } else {
-      S.dom.btnHint.style.display = 'inline-block';
-      S.dom.btnHint.textContent = 'Подсказка (' + (revealed + 1) + '/' + hints.length + ')';
+      const isVis = S.dom.hintContent.style.display !== 'none';
+      S.dom.btnHint.textContent = isVis ? 'Скрыть подсказки' : 'Показать подсказки';
     }
   }
 
   function revealHint() {
     const step = S.module.steps[S.currentStepIndex];
-    const hints = step.hints || [];
+    if (!step) return;
+    const rawHints = step.hints || (step.hint ? [{ code: step.hint }] : []);
+    const hints = rawHints.map(h => typeof h === 'string' ? { text: h } : h);
     const revealed = S.revealedHints[step.id] || 0;
-    if (revealed >= hints.length) return;
-    const hint = hints[revealed];
-    S.revealedHints[step.id] = revealed + 1;
 
-    if (typeof hint === 'string') {
-      const p = document.createElement('p');
-      p.className = 'life-hint-text';
-      p.textContent = hint;
-      S.dom.hintContent.appendChild(p);
-    } else if (hint && typeof hint.code === 'string') {
-      const pre = document.createElement('pre');
-      pre.className = 'life-hint-code';
-      pre.textContent = hint.code;
-      S.dom.hintContent.appendChild(pre);
+    if (revealed < hints.length) {
+      S.revealedHints[step.id] = revealed + 1;
+      renderHintsList(hints, S.revealedHints[step.id]);
+      S.dom.hintContent.style.display = 'flex';
+    } else {
+      const isVis = S.dom.hintContent.style.display !== 'none';
+      S.dom.hintContent.style.display = isVis ? 'none' : 'flex';
     }
     updateHintButton();
+  }
+
+  function renderHintsList(hints, count) {
+    let html = '';
+    for (let i = 0; i < count; i++) {
+      const h = hints[i];
+      const isLast = (i + 1 === hints.length);
+      const label = isLast ? `подсказка ${i + 1} из ${hints.length} (решение)` : `подсказка ${i + 1} из ${hints.length}`;
+      html += '<div class="life-hint-item">';
+      html += `<div class="life-hint-meta">${label}</div>`;
+      if (h.text) {
+        html += `<p class="life-hint-text">${escapeHtml(h.text)}</p>`;
+      }
+      if (h.code) {
+        const highlighted = window.PythonHighlighter ? window.PythonHighlighter.highlightCode(h.code) : escapeHtml(h.code);
+        html += `<pre class="life-hint-code"><code>${highlighted}</code></pre>`;
+      }
+      html += '</div>';
+    }
+    S.dom.hintContent.innerHTML = html;
   }
 
   // ─── Проверка решения ────────────────────────────────────────────────────────
@@ -1396,7 +1428,9 @@
       glyphSlot: d('life-glyph-slot'),
       taskDesc: d('life-task-desc'),
       editor: d('life-code-editor'),
+      editorHighlight: d('life-editor-highlight'),
       lineNumbers: d('life-line-numbers'),
+      autocompletePopup: d('life-autocomplete-popup'),
       editorStatus: d('life-editor-status'),
       feedback: d('life-feedback'),
       hintContent: d('life-hint-content'),
@@ -1445,6 +1479,14 @@
       }
     });
 
+    // Подсветка синтаксиса и автодополнение в редакторе решения (как в основном курсе)
+    if (window.PythonHighlighter && S.dom.editor && S.dom.editorHighlight) {
+      S.highlighter = new window.PythonHighlighter(S.dom.editor, S.dom.editorHighlight);
+    }
+    if (window.CodeIntelliSense && S.dom.editor && S.dom.autocompletePopup) {
+      new window.CodeIntelliSense(S.dom.editor, S.dom.autocompletePopup);
+    }
+
     // Редактор: Tab и Ctrl+Enter (как в основном курсе)
     S.dom.editor.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -1452,21 +1494,36 @@
         submitStep();
         return;
       }
+      if (S.dom.autocompletePopup && S.dom.autocompletePopup.style.display === 'block') {
+        if (e.key === 'Tab' || e.key === 'Enter' || e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Escape') {
+          return;
+        }
+      }
       if (e.key === 'Tab') {
         e.preventDefault();
         const ed = S.dom.editor;
         const start = ed.selectionStart;
         const end = ed.selectionEnd;
-        ed.value = ed.value.substring(0, start) + '    ' + ed.value.substring(end);
-        ed.selectionStart = ed.selectionEnd = start + 4;
+        let inserted = false;
+        try {
+          inserted = Boolean(document.execCommand && document.execCommand('insertText', false, '    '));
+        } catch (_) {}
+        if (!inserted) {
+          ed.value = ed.value.substring(0, start) + '    ' + ed.value.substring(end);
+          ed.selectionStart = ed.selectionEnd = start + 4;
+        }
         onEditorChange();
       }
     });
 
     S.dom.editor.addEventListener('input', onEditorChange);
-    if (S.dom.editor && S.dom.lineNumbers) {
+    if (S.dom.editor) {
       S.dom.editor.addEventListener('scroll', () => {
-        S.dom.lineNumbers.scrollTop = S.dom.editor.scrollTop;
+        if (S.dom.lineNumbers) S.dom.lineNumbers.scrollTop = S.dom.editor.scrollTop;
+        if (S.dom.editorHighlight) {
+          S.dom.editorHighlight.scrollTop = S.dom.editor.scrollTop;
+          S.dom.editorHighlight.scrollLeft = S.dom.editor.scrollLeft;
+        }
       });
     }
     setupMouse();
@@ -1564,9 +1621,10 @@
   function onEditorChange() {
     const step = S.module.steps[S.currentStepIndex];
     if (!step) return;
-    const appState = window.VkatApp.state;
+    const appState = (window.VkatApp && window.VkatApp.state) || { codeDrafts: {} };
     appState.codeDrafts[step.id] = S.dom.editor.value;
     updateLineNumbers();
+    if (S.highlighter) S.highlighter.update();
     if (window.VkatStorage) window.VkatStorage.saveDraftDebounced(step.id, S.dom.editor.value);
   }
 

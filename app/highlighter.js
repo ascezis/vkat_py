@@ -131,7 +131,7 @@
       this.highlightEl.scrollTop = this.textarea.scrollTop;
       this.highlightEl.scrollLeft = this.textarea.scrollLeft;
       // Синхронизация номеров строк
-      const lineNumEl = document.getElementById('line-numbers');
+      const lineNumEl = (this.textarea.parentElement ? this.textarea.parentElement.querySelector('.line-numbers, .life-line-numbers') : null) || document.getElementById('line-numbers');
       if (lineNumEl) {
         lineNumEl.scrollTop = this.textarea.scrollTop;
       }

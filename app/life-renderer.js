@@ -979,6 +979,8 @@
     S.dom.feedback.className = 'life-feedback-msg';
     S.dom.feedback.innerHTML = '';
     S.dom.hintContent.innerHTML = '';
+    // B1: при смене шага панель задания прокручивается к началу
+    if (S.dom.editorPanel) S.dom.editorPanel.scrollTop = 0;
     S.dom.hintContent.style.display = 'none';
     S.revealedHints[step.id] = 0;
     updateHintButton();
@@ -1151,6 +1153,20 @@
       html += '<pre class="life-fb-console">' + escapeHtml(result.stdout) + '</pre>';
     }
     fb.innerHTML = html;
+    showFeedback();
+  }
+
+  function showFeedback() {
+    // B2: результат проверки и кнопка «Следующий шаг» должны быть видны
+    // целиком сразу после сдачи, без ручной прокрутки панели задания.
+    // Двойной скролл: немедленно + осадка после перелистовки контента
+    // (шрифты/подсветка дорастают и сдвигают максимум).
+    if (S.dom.editorPanel) {
+      S.dom.editorPanel.scrollTop = S.dom.editorPanel.scrollHeight;
+      setTimeout(() => {
+        if (S.dom.editorPanel) S.dom.editorPanel.scrollTop = S.dom.editorPanel.scrollHeight;
+      }, 400);
+    }
   }
 
   function onStepPassed(step, code, result) {
@@ -1184,6 +1200,7 @@
       html += '<div class="life-fb-explain">Пет-проект пройден полностью! Песочница открыта: экспериментируй с вселенными правил.</div>';
     }
     fb.innerHTML = html;
+    showFeedback();
     const nextBtn = document.getElementById('btn-life-next-step');
     if (nextBtn) nextBtn.addEventListener('click', () => setStep(S.currentStepIndex + 1));
 
@@ -1917,8 +1934,10 @@
       window.VkatStorage.setSetting('life_intro_completed', true);
     }
     render();
+    // B1: панель задания всегда начинается сверху, автофокус не уезжает вниз
+    if (S.dom.editorPanel) S.dom.editorPanel.scrollTop = 0;
     if (S.dom.editor) {
-      S.dom.editor.focus();
+      S.dom.editor.focus({ preventScroll: true });
     }
   }
 

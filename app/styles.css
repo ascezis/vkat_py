@@ -158,6 +158,8 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
+  /* B3: нижний ряд карточек не должен уходить под sticky-футер при прокрутке */
+  padding-bottom: 72px;
   padding: 12px 20px 10px;
 }
 

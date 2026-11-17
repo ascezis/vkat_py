@@ -156,9 +156,12 @@
     // Live-режим Pyodide
     liveRunning: false,
 
-    // Интерактивный тур (Этап 0)
-    tourActive: false,
-    tourStep: 1
+    // Интерактивное обучение (экраны теории перед лабораторией)
+    introActive: false,
+    introSlide: 1,
+    demoTimer: null,
+    demoGrid: null,
+    demoPattern: 'glider'
   };
 
   // ─── Утилиты ─────────────────────────────────────────────────────────────────
@@ -297,11 +300,6 @@
   }
 
   function doSimTick() {
-    if (S.tourActive) {
-      const u = UNIVERSES.conway;
-      applyGeneration(conwayTick(S.grid, GRID_W, GRID_H, u.birth, u.survival));
-      return;
-    }
     if (S.worldMode === 'frozen') return; // мир застыл: законов нет
     if (S.worldMode === 'chaos') {
       // Сломанная вселенная: клетки мерцают случайно
@@ -939,7 +937,7 @@
   }
 
   function updateControlsForMode() {
-    const frozen = S.worldMode === 'frozen' && !S.tourActive;
+    const frozen = S.worldMode === 'frozen';
     S.dom.btnPlay.disabled = frozen;
     S.dom.btnStep.disabled = frozen;
     S.dom.btnPlay.title = frozen ? 'Мир застыл: законы ещё не действуют' : 'Запустить симуляцию';
@@ -1339,21 +1337,18 @@
   // ─── Управление симуляцией ───────────────────────────────────────────────────
 
   function togglePlay() {
-    if (S.worldMode === 'frozen' && !S.tourActive) return;
+    if (S.worldMode === 'frozen') return;
     if (S.liveRunning) stopLiveMode();
     S.running = !S.running;
     updatePlayButton();
   }
 
   function stepOnce() {
-    if (S.worldMode === 'frozen' && !S.tourActive) return;
+    if (S.worldMode === 'frozen') return;
     if (S.liveRunning) stopLiveMode();
     S.running = false;
     updatePlayButton();
     doSimTick();
-    if (S.tourActive && S.tourStep === 1) {
-      onTourStep1Ticked();
-    }
   }
 
   function clearWorld() {
@@ -1470,23 +1465,69 @@
       speedVal: d('life-speed-val'),
       presetSelect: d('life-preset-select'),
       universeSelect: d('life-universe-select'),
-      tourCard: d('life-tour-card'),
-      tourTitle: d('life-tour-title'),
-      tourDesc: d('life-tour-desc'),
-      tourPill: d('life-tour-pill'),
-      tourDots: d('life-tour-dots'),
-      tourActions: d('life-tour-actions'),
-      tourResult: d('life-tour-result'),
-      btnTourToggle: d('btn-life-tour-toggle'),
-      btnTourClose: d('btn-life-tour-close')
+      body: d('life-body'),
+      introView: d('life-intro-view'),
+      introTabs: d('life-intro-tabs'),
+      introSlides: d('life-intro-slides'),
+      btnOpenIntro: d('btn-life-open-intro'),
+      btnSkipIntro: d('btn-life-skip-intro'),
+      btnEnterLab: d('btn-intro-enter-lab'),
+      mooreGrid: d('moore-grid'),
+      mooreCountBadge: d('moore-count-badge'),
+      moorePredAlive: d('moore-pred-alive'),
+      moorePredDead: d('moore-pred-dead'),
+      demoCanvas: d('life-demo-canvas'),
+      btnDemoSingle: d('btn-demo-single'),
+      btnDemoBlinker: d('btn-demo-blinker'),
+      btnDemoGlider: d('btn-demo-glider'),
+      demoInfoTitle: d('demo-info-title'),
+      demoInfoDesc: d('demo-info-desc')
     };
     S.dom.ctx = S.dom.canvas.getContext('2d');
   }
 
   function setupEvents() {
     S.dom.btnBack.addEventListener('click', () => window.VkatApp.showScreen('start'));
-    if (S.dom.btnTourToggle) S.dom.btnTourToggle.addEventListener('click', toggleTour);
-    if (S.dom.btnTourClose) S.dom.btnTourClose.addEventListener('click', () => closeTour(true));
+    if (S.dom.btnOpenIntro) S.dom.btnOpenIntro.addEventListener('click', () => showIntroView(1));
+    if (S.dom.btnSkipIntro) S.dom.btnSkipIntro.addEventListener('click', showWorkbenchView);
+    if (S.dom.btnEnterLab) S.dom.btnEnterLab.addEventListener('click', showWorkbenchView);
+
+    if (S.dom.introTabs) {
+      S.dom.introTabs.addEventListener('click', e => {
+        const btn = e.target.closest('.intro-tab-btn');
+        if (!btn || !btn.dataset.slide) return;
+        showIntroView(parseInt(btn.dataset.slide, 10));
+      });
+    }
+
+    if (S.dom.introView) {
+      S.dom.introView.addEventListener('click', e => {
+        const nextBtn = e.target.closest('.life-btn-intro-next');
+        if (nextBtn && nextBtn.dataset.next) {
+          showIntroView(parseInt(nextBtn.dataset.next, 10));
+          return;
+        }
+        const prevBtn = e.target.closest('.life-btn-intro-prev');
+        if (prevBtn && prevBtn.dataset.prev) {
+          showIntroView(parseInt(prevBtn.dataset.prev, 10));
+          return;
+        }
+      });
+    }
+
+    if (S.dom.mooreGrid) {
+      S.dom.mooreGrid.addEventListener('click', e => {
+        const cell = e.target.closest('.moore-cell');
+        if (!cell) return;
+        cell.classList.toggle('active');
+        updateMoorePredictions();
+      });
+    }
+
+    if (S.dom.btnDemoSingle) S.dom.btnDemoSingle.addEventListener('click', () => setDemoPattern('single'));
+    if (S.dom.btnDemoBlinker) S.dom.btnDemoBlinker.addEventListener('click', () => setDemoPattern('blinker'));
+    if (S.dom.btnDemoGlider) S.dom.btnDemoGlider.addEventListener('click', () => setDemoPattern('glider'));
+
     S.dom.btnPlay.addEventListener('click', togglePlay);
     S.dom.btnStep.addEventListener('click', stepOnce);
     S.dom.btnClear.addEventListener('click', clearWorld);
@@ -1663,192 +1704,224 @@
     if (window.VkatStorage) window.VkatStorage.saveDraftDebounced(step.id, S.dom.editor.value);
   }
 
-  // ─── Интерактивный тур: Этап 0 («В чём прикол Конвея?») ───────────────────────
+  // ─── Интерактивное обучение (Экраны вводной теории) ─────────────────────────
 
-  function startTour(step) {
-    S.tourActive = true;
-    S.tourStep = Math.max(1, Math.min(3, typeof step === 'number' ? step : 1));
-    if (S.dom.tourCard) {
-      S.dom.tourCard.style.display = 'block';
+  function updateMoorePredictions() {
+    if (!S.dom.mooreGrid || !S.dom.mooreCountBadge) return;
+    const activeCells = S.dom.mooreGrid.querySelectorAll('.moore-cell.active');
+    const count = activeCells.length;
+    S.dom.mooreCountBadge.textContent = 'Соседей: ' + count + ' из 8';
+
+    if (S.dom.moorePredAlive) {
+      if (count === 2 || count === 3) {
+        S.dom.moorePredAlive.textContent = 'ВЫЖИВЕТ (' + count + ' соседа)';
+        S.dom.moorePredAlive.className = 'pred-val ok';
+      } else if (count < 2) {
+        S.dom.moorePredAlive.textContent = 'ПОГИБНЕТ (одиночество: ' + count + ' < 2)';
+        S.dom.moorePredAlive.className = 'pred-val danger';
+      } else {
+        S.dom.moorePredAlive.textContent = 'ПОГИБНЕТ (перенаселение: ' + count + ' > 3)';
+        S.dom.moorePredAlive.className = 'pred-val danger';
+      }
     }
-    updateControlsForMode();
-    renderTourStep();
+
+    if (S.dom.moorePredDead) {
+      if (count === 3) {
+        S.dom.moorePredDead.textContent = 'РОДИТСЯ НОВАЯ (ровно 3)';
+        S.dom.moorePredDead.className = 'pred-val born';
+      } else {
+        S.dom.moorePredDead.textContent = 'ОСТАНЕТСЯ ПУСТОЙ (' + count + ' != 3)';
+        S.dom.moorePredDead.className = 'pred-val muted';
+      }
+    }
   }
 
-  function closeTour(restoreMode) {
-    S.tourActive = false;
-    if (S.dom.tourCard) {
-      S.dom.tourCard.style.display = 'none';
-    }
-    S.running = false;
-    updatePlayButton();
-    if (restoreMode !== false) {
-      applyWorldForProgress(false);
-    }
-    updateControlsForMode();
+  // ─── Интерактивный демо-холст (Слайд 3) ──────────────────────────────────────
+
+  const DEMO_SIZE = 28; // 28x28 сетка на холсте 280x280 (ячейка 10px)
+  const DEMO_CELL = 10;
+
+  function initDemoGrid() {
+    S.demoGrid = new Uint8Array(DEMO_SIZE * DEMO_SIZE);
   }
 
-  function toggleTour() {
-    if (S.tourActive) {
-      closeTour(true);
+  function setDemoPattern(pattern) {
+    S.demoPattern = pattern;
+    if (S.dom.btnDemoSingle) S.dom.btnDemoSingle.classList.toggle('life-btn-primary', pattern === 'single');
+    if (S.dom.btnDemoBlinker) S.dom.btnDemoBlinker.classList.toggle('life-btn-primary', pattern === 'blinker');
+    if (S.dom.btnDemoGlider) S.dom.btnDemoGlider.classList.toggle('life-btn-primary', pattern === 'glider');
+
+    initDemoGrid();
+    stopDemoSimulation();
+
+    if (pattern === 'single') {
+      const cx = Math.floor(DEMO_SIZE / 2);
+      const cy = Math.floor(DEMO_SIZE / 2);
+      S.demoGrid[cy * DEMO_SIZE + cx] = 1;
+      if (S.dom.demoInfoTitle) S.dom.demoInfoTitle.textContent = '1. Одинокая клетка (1 клетка)';
+      if (S.dom.demoInfoDesc) S.dom.demoInfoDesc.textContent = 'Клетка погибает на первом же шаге (0 соседей). Правило: меньше 2 соседей — гибель от одиночества.';
+      drawDemoCanvas();
+      S.demoTimer = setTimeout(() => {
+        tickDemoGrid();
+        drawDemoCanvas();
+      }, 700);
+
+    } else if (pattern === 'blinker') {
+      const cx = Math.floor(DEMO_SIZE / 2);
+      const cy = Math.floor(DEMO_SIZE / 2);
+      S.demoGrid[cy * DEMO_SIZE + (cx - 1)] = 1;
+      S.demoGrid[cy * DEMO_SIZE + cx] = 1;
+      S.demoGrid[cy * DEMO_SIZE + (cx + 1)] = 1;
+      if (S.dom.demoInfoTitle) S.dom.demoInfoTitle.textContent = '2. Осциллятор «Мигалка» (3 клетки, период 2)';
+      if (S.dom.demoInfoDesc) S.dom.demoInfoDesc.textContent = 'Клетки бесконечно пульсируют. У центральной 2 соседа (выживание), по краям рождаются и умирают клетки (3 соседа — рождение).';
+      drawDemoCanvas();
+      S.demoTimer = setInterval(() => {
+        tickDemoGrid();
+        drawDemoCanvas();
+      }, 350);
+
+    } else if (pattern === 'glider') {
+      const gx = 3, gy = 3;
+      const coords = [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]];
+      coords.forEach(([dx, dy]) => {
+        S.demoGrid[(gy + dy) * DEMO_SIZE + (gx + dx)] = 1;
+      });
+      if (S.dom.demoInfoTitle) S.dom.demoInfoTitle.textContent = '3. Космический корабль «Глайдер» (5 клеток)';
+      if (S.dom.demoInfoDesc) S.dom.demoInfoDesc.textContent = 'Клетки шагают сквозь пространство. Команды перемещения в коде нет — движение рождается из последовательных рождений и смертей соседей.';
+      drawDemoCanvas();
+      S.demoTimer = setInterval(() => {
+        tickDemoGrid();
+        drawDemoCanvas();
+      }, 130);
+    }
+  }
+
+  function tickDemoGrid() {
+    if (!S.demoGrid) return;
+    const next = new Uint8Array(DEMO_SIZE * DEMO_SIZE);
+    for (let y = 0; y < DEMO_SIZE; y++) {
+      for (let x = 0; x < DEMO_SIZE; x++) {
+        let count = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = (x + dx + DEMO_SIZE) % DEMO_SIZE;
+            const ny = (y + dy + DEMO_SIZE) % DEMO_SIZE;
+            if (S.demoGrid[ny * DEMO_SIZE + nx] === 1) count++;
+          }
+        }
+        const alive = S.demoGrid[y * DEMO_SIZE + x] === 1;
+        if (alive && (count === 2 || count === 3)) {
+          next[y * DEMO_SIZE + x] = 1;
+        } else if (!alive && count === 3) {
+          next[y * DEMO_SIZE + x] = 1;
+        }
+      }
+    }
+    S.demoGrid = next;
+  }
+
+  function drawDemoCanvas() {
+    if (!S.dom.demoCanvas) return;
+    const ctx = S.dom.demoCanvas.getContext('2d');
+    if (!ctx) return;
+    const w = S.dom.demoCanvas.width;
+    const h = S.dom.demoCanvas.height;
+
+    // Фон
+    ctx.fillStyle = '#0a0d13';
+    ctx.fillRect(0, 0, w, h);
+
+    // Сетка
+    ctx.strokeStyle = '#181d27';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += DEMO_CELL) {
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, h);
+    }
+    for (let y = 0; y <= h; y += DEMO_CELL) {
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(w, y + 0.5);
+    }
+    ctx.stroke();
+
+    // Клетки
+    if (!S.demoGrid) return;
+    ctx.fillStyle = '#00ff66';
+    for (let y = 0; y < DEMO_SIZE; y++) {
+      for (let x = 0; x < DEMO_SIZE; x++) {
+        if (S.demoGrid[y * DEMO_SIZE + x] === 1) {
+          ctx.fillRect(x * DEMO_CELL + 1, y * DEMO_CELL + 1, DEMO_CELL - 1, DEMO_CELL - 1);
+        }
+      }
+    }
+  }
+
+  function startDemoSimulation() {
+    setDemoPattern(S.demoPattern || 'glider');
+  }
+
+  function stopDemoSimulation() {
+    if (S.demoTimer) {
+      clearInterval(S.demoTimer);
+      clearTimeout(S.demoTimer);
+      S.demoTimer = null;
+    }
+  }
+
+  // ─── Переключение экранов (Вводный брифинг vs Лаборатория) ──────────────────
+
+  function showIntroView(slideNum) {
+    S.introActive = true;
+    S.introSlide = Math.max(1, Math.min(4, typeof slideNum === 'number' ? slideNum : 1));
+    if (S.dom.introView) S.dom.introView.style.display = 'block';
+    if (S.dom.body) S.dom.body.style.display = 'none';
+    if (S.dom.btnOpenIntro) S.dom.btnOpenIntro.style.display = 'none';
+    if (S.dom.btnSkipIntro) S.dom.btnSkipIntro.style.display = 'inline-flex';
+
+    if (S.dom.introTabs) {
+      const tabs = S.dom.introTabs.querySelectorAll('.intro-tab-btn');
+      tabs.forEach(tab => {
+        const s = parseInt(tab.dataset.slide, 10);
+        tab.classList.toggle('active', s === S.introSlide);
+      });
+    }
+
+    if (S.dom.introSlides) {
+      const slides = S.dom.introSlides.querySelectorAll('.intro-slide');
+      slides.forEach(slide => {
+        const s = parseInt(slide.dataset.slide, 10);
+        slide.style.display = (s === S.introSlide) ? 'block' : 'none';
+      });
+    }
+
+    if (S.introSlide === 2) {
+      updateMoorePredictions();
+    } else if (S.introSlide === 3) {
+      startDemoSimulation();
     } else {
-      startTour(1);
+      stopDemoSimulation();
     }
   }
 
-  function onTourStep1Ticked() {
-    if (!S.dom.tourResult) return;
-    S.dom.tourResult.style.display = 'block';
-    S.dom.tourResult.innerHTML =
-      '⚠️ <strong>Клетка исчезла!</strong> В одиночестве (0 или 1 сосед) клетки погибают от тоски. Это правило №1 Конвея.<br>' +
-      '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-next-2" style="margin-top: 8px;">Дальше: Создаём жизнь →</button>';
-    const nextBtn = document.getElementById('btn-tour-next-2');
-    if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
-        S.tourStep = 2;
-        renderTourStep();
-      });
+  function showWorkbenchView() {
+    S.introActive = false;
+    stopDemoSimulation();
+    if (S.dom.introView) S.dom.introView.style.display = 'none';
+    if (S.dom.body) S.dom.body.style.display = '';
+    if (S.dom.btnOpenIntro) S.dom.btnOpenIntro.style.display = 'inline-flex';
+    if (S.dom.btnSkipIntro) S.dom.btnSkipIntro.style.display = 'none';
+    if (window.VkatStorage) {
+      window.VkatStorage.setSetting('life_intro_completed', true);
+    }
+    render();
+    if (S.dom.editor) {
+      S.dom.editor.focus();
     }
   }
 
-  function renderTourStep() {
-    if (!S.dom.tourCard) return;
-
-    if (S.dom.tourDots) {
-      const dots = S.dom.tourDots.querySelectorAll('.tour-dot');
-      dots.forEach((d, i) => {
-        d.className = 'tour-dot' + (i + 1 === S.tourStep ? ' active' : (i + 1 < S.tourStep ? ' done' : ''));
-      });
-    }
-
-    if (S.dom.tourResult) {
-      S.dom.tourResult.style.display = 'none';
-      S.dom.tourResult.innerHTML = '';
-    }
-
-    if (S.tourStep === 1) {
-      // 1. Закон одиночества
-      S.dom.tourPill.textContent = 'ТУР: 1 ИЗ 3 • ПРАВИЛО 0-1 СОСЕДА';
-      S.dom.tourTitle.textContent = '1. Закон одиночества: 0–1 соседа';
-      S.dom.tourDesc.textContent = 'Поставь 1 точку мышкой в центр поля (или нажми кнопку) и нажми «Шаг». Посмотрим, что с ней сделает природа.';
-      S.dom.tourActions.innerHTML =
-        '<button type="button" class="life-btn-tour-action" id="btn-tour-act-spawn-1">Поставить 1 клетку</button>' +
-        '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-act-step-1">⏭ Сделать шаг</button>';
-
-      const btnSpawn = document.getElementById('btn-tour-act-spawn-1');
-      if (btnSpawn) {
-        btnSpawn.addEventListener('click', () => {
-          clearWorld();
-          seedCell(Math.floor(GRID_W / 2), Math.floor(GRID_H / 2));
-          render();
-          if (S.dom.tourResult) {
-            S.dom.tourResult.style.display = 'block';
-            S.dom.tourResult.innerHTML = 'Клетка на поле (у неё 0 соседей). Теперь жми <strong>«Сделать шаг»</strong>!';
-          }
-        });
-      }
-
-      const btnStep = document.getElementById('btn-tour-act-step-1');
-      if (btnStep) {
-        btnStep.addEventListener('click', () => {
-          let pop = 0;
-          for (let i = 0; i < S.grid.length; i++) if (S.grid[i] === 1) pop++;
-          if (pop === 0) {
-            seedCell(Math.floor(GRID_W / 2), Math.floor(GRID_H / 2));
-          }
-          doSimTick();
-          onTourStep1Ticked();
-        });
-      }
-
-    } else if (S.tourStep === 2) {
-      // 2. Пульс жизни (Мигалка)
-      S.dom.tourPill.textContent = 'ТУР: 2 ИЗ 3 • ПРАВИЛО 2-3 СОСЕДЕЙ';
-      S.dom.tourTitle.textContent = '2. Пульс жизни: 2–3 соседа (Мигалка)';
-      S.dom.tourDesc.textContent = 'Три клетки рядом — это уже колония! У центральной клетки 2 соседа, а сверху и снизу рождаются новые.';
-      S.dom.tourActions.innerHTML =
-        '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-act-spawn-2">Поставить полоску (3 клетки)</button>' +
-        '<button type="button" class="life-btn-tour-action" id="btn-tour-act-play-2">▶ Запустить</button>';
-
-      function spawnBlinker() {
-        clearWorld();
-        const cx = Math.floor(GRID_W / 2);
-        const cy = Math.floor(GRID_H / 2);
-        seedCell(cx - 1, cy);
-        seedCell(cx, cy);
-        seedCell(cx + 1, cy);
-        S.speed = 5;
-        if (S.dom.speedSlider) S.dom.speedSlider.value = 5;
-        if (S.dom.speedVal) S.dom.speedVal.textContent = '5/с';
-        S.running = true;
-        updatePlayButton();
-        if (S.dom.tourResult) {
-          S.dom.tourResult.style.display = 'block';
-          S.dom.tourResult.innerHTML =
-            '✨ <strong>Она пульсирует вечно!</strong> Никакой сложной физики: 2 соседа сохраняют жизнь средней клетке, а 3 соседа рождают новые по бокам.<br>' +
-            '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-next-3" style="margin-top: 8px;">Дальше: Магия движения →</button>';
-          const nextBtn = document.getElementById('btn-tour-next-3');
-          if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-              S.tourStep = 3;
-              renderTourStep();
-            });
-          }
-        }
-      }
-
-      const btnSpawn2 = document.getElementById('btn-tour-act-spawn-2');
-      if (btnSpawn2) btnSpawn2.addEventListener('click', spawnBlinker);
-      const btnPlay2 = document.getElementById('btn-tour-act-play-2');
-      if (btnPlay2) {
-        btnPlay2.addEventListener('click', () => {
-          if (!S.running) spawnBlinker();
-        });
-      }
-
-    } else if (S.tourStep === 3) {
-      // 3. Магия движения (Глайдер)
-      S.dom.tourPill.textContent = 'ТУР: 3 ИЗ 3 • ЭМЕРДЖЕНТНОСТЬ';
-      S.dom.tourTitle.textContent = '3. Магия движения: Глайдер (5 клеток)';
-      S.dom.tourDesc.textContent = 'В коде игры НЕТ команды «идти по диагонали». Но эти 5 клеток умеют шагать сквозь пространство!';
-      S.dom.tourActions.innerHTML =
-        '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-act-spawn-3">🚀 Запустить Глайдер</button>';
-
-      function launchGlider() {
-        clearWorld();
-        const glider = PRESETS.glider.cells;
-        glider.forEach(([gx, gy]) => seedCell(8 + gx, 8 + gy));
-        S.speed = 10;
-        if (S.dom.speedSlider) S.dom.speedSlider.value = 10;
-        if (S.dom.speedVal) S.dom.speedVal.textContent = '10/с';
-        S.running = true;
-        updatePlayButton();
-        if (S.dom.tourResult) {
-          S.dom.tourResult.style.display = 'block';
-          S.dom.tourResult.innerHTML =
-            '🚀 <strong>Он летит сам!</strong> Простейшие правила рождают бесконечную сложность.<br>Теперь ты знаешь главный фокус игры «Жизнь». Пора собрать этот движок своими руками на Python!<br>' +
-            '<button type="button" class="life-btn-tour-action life-btn-tour-primary" id="btn-tour-finish" style="margin-top: 10px;">🚀 Погнали к коду!</button>';
-          const btnFinish = document.getElementById('btn-tour-finish');
-          if (btnFinish) {
-            btnFinish.addEventListener('click', () => {
-              if (window.VkatStorage) {
-                window.VkatStorage.setSetting('life_tour_completed', true);
-              }
-              closeTour(true);
-              if (S.dom.editor) {
-                S.dom.editor.focus();
-              }
-            });
-          }
-        }
-      }
-
-      const btnSpawn3 = document.getElementById('btn-tour-act-spawn-3');
-      if (btnSpawn3) btnSpawn3.addEventListener('click', launchGlider);
-    }
-  }
-
-  // ─── Вход/выход с экрана ─────────────────────────────────────────────────────
+  // ─── Вход/выход с экрана ───────────────────────────────────────────────────
 
   function enter() {
     if (!S.module) return;
@@ -1862,10 +1935,12 @@
     updateLiveButton();
     render();
 
-    // Авто-запуск тура при первом входе, если не пройден и 0 сданных шагов
-    const tourDone = window.VkatStorage ? window.VkatStorage.getSetting('life_tour_completed', false) : false;
-    if (!tourDone && completedStepsCount() === 0) {
-      startTour(1);
+    // Авто-показ обучающего брифинга при первом входе, если не завершён и 0 сданных шагов
+    const introDone = window.VkatStorage ? window.VkatStorage.getSetting('life_intro_completed', false) : false;
+    if (!introDone && completedStepsCount() === 0) {
+      showIntroView(1);
+    } else {
+      showWorkbenchView();
     }
   }
 
@@ -1874,9 +1949,7 @@
     S.liveRunning = false;
     S.cursor = null;
     S.drawing = false;
-    if (S.tourActive) {
-      closeTour(false);
-    }
+    stopDemoSimulation();
     if (window.VkatStorage) window.VkatStorage.flushSync();
   }
 
@@ -1903,5 +1976,5 @@
   }
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
-  window.VkatLife = { init, enter, leave, startTour, closeTour, renderStartCard, _state: S };
+  window.VkatLife = { init, enter, leave, showIntroView, showWorkbenchView, renderStartCard, _state: S };
 })(window, document);

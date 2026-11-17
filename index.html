@@ -443,7 +443,8 @@
         <span class="life-step-dots" id="life-step-dots"></span>
       </div>
       <div class="life-header-right">
-        <button type="button" id="btn-life-tour-toggle" class="btn-ghost-sm life-btn-tour-toggle" title="Интерактивный тур: в чём прикол игры Конвея?">✨ Как играть? (30 сек)</button>
+        <button type="button" id="btn-life-open-intro" class="btn-ghost-sm life-btn-theory" title="Теория и правила симулятора">Теория и правила</button>
+        <button type="button" id="btn-life-skip-intro" class="btn-ghost-sm life-btn-skip" style="display: none;" title="Перейти к коду">В лабораторию →</button>
         <div class="life-pattern-toast" id="life-pattern-toast" style="display: none;">
           <span class="toast-icon" id="life-toast-icon">▪</span>
           <span class="toast-text" id="life-toast-text">Обнаружен паттерн</span>
@@ -451,30 +452,171 @@
       </div>
     </header>
 
+    <!-- ВВОДНЫЙ БРИФИНГ И ТЕОРИЯ (ЭКРАНЫ ОБУЧЕНИЯ) -->
+    <div id="life-intro-view" class="life-intro-view" style="display: none;">
+      <div class="life-intro-container">
+        <!-- Навигационные вкладки глав -->
+        <nav class="life-intro-tabs" id="life-intro-tabs">
+          <button type="button" class="intro-tab-btn active" data-slide="1">01 Конвей</button>
+          <button type="button" class="intro-tab-btn" data-slide="2">02 Окрестность Мура</button>
+          <button type="button" class="intro-tab-btn" data-slide="3">03 Законы B3/S23</button>
+          <button type="button" class="intro-tab-btn" data-slide="4">04 Задачи</button>
+        </nav>
+
+        <!-- Контейнер слайдов -->
+        <div class="life-intro-slides" id="life-intro-slides">
+          <!-- СЛАЙД 1: Концепт: Игра без игроков -->
+          <article class="intro-slide active" data-slide="1">
+            <div class="intro-kicker">// КОНЦЕПТ СИМУЛЯЦИИ</div>
+            <h2 class="intro-title">Джон Конвей и феномен эмерджентности</h2>
+            <div class="intro-content">
+              <p>В 1970 году британский математик Джон Конвей разработал модель «Жизнь» (Game of Life). Это математический клеточный автомат класса <strong>Zero-player game</strong> — игра с нулевым числом игроков.</p>
+              <p>Здесь нет персонажей, джойстиков или команд перемещения в коде. Твоя роль — <strong>архитектор законов физики</strong>. Ты задаёшь локальные правила поведения для отдельной клетки, а макромир эволюционирует сам.</p>
+              <div class="intro-box">
+                <div class="intro-box-title">Главный принцип клеточных автоматов</div>
+                <div class="intro-box-formula">
+                  <span>Простые правила одной клетки</span>
+                  <span class="formula-arrow">→</span>
+                  <span class="formula-accent">Сложное коллективное поведение</span>
+                </div>
+                <p class="intro-box-desc">Из двух условий рождаются вечные осцилляторы, пульсары, самодвижущиеся планеры (глайдеры) и вычислительные конвейеры, способные эмулировать компьютер Тьюринга.</p>
+              </div>
+            </div>
+            <div class="intro-footer">
+              <button type="button" class="life-btn life-btn-intro-next" data-next="2">Далее: Окрестность Мура →</button>
+            </div>
+          </article>
+
+          <!-- СЛАЙД 2: Окрестность Мура: 8 направлений -->
+          <article class="intro-slide" data-slide="2" style="display: none;">
+            <div class="intro-kicker">// ТОПОЛОГИЯ ПОЛЯ</div>
+            <h2 class="intro-title">Окрестность Мура: 8 направлений</h2>
+            <div class="intro-content">
+              <p>Клетка в симуляторе абсолютно локальна: у неё нет глобального зрения. Она ничего не знает о размерах сетки и далёких колониях.</p>
+              <p>Всё её окружение — это <strong>ровно 8 соседних ячеек</strong>: по горизонтали, вертикали и диагоналям. В координатах сетки это смещения <code>dx</code> и <code>dy</code> от −1 до +1, исключая пару <code>(0, 0)</code> (сама клетка не считается своим соседом).</p>
+              
+              <div class="intro-interactive-moore">
+                <div class="moore-widget-header">
+                  <span>Интерактивный тренажёр: кликай по соседям</span>
+                  <span class="moore-count-badge" id="moore-count-badge">Соседей: 3</span>
+                </div>
+                <div class="moore-grid-wrapper">
+                  <div class="moore-grid-3x3" id="moore-grid">
+                    <button type="button" class="moore-cell active" data-idx="0">(-1, -1)</button>
+                    <button type="button" class="moore-cell active" data-idx="1">(0, -1)</button>
+                    <button type="button" class="moore-cell active" data-idx="2">(1, -1)</button>
+                    <button type="button" class="moore-cell" data-idx="3">(-1, 0)</button>
+                    <div class="moore-center-cell">(x, y)</div>
+                    <button type="button" class="moore-cell" data-idx="4">(1, 0)</button>
+                    <button type="button" class="moore-cell" data-idx="5">(-1, 1)</button>
+                    <button type="button" class="moore-cell" data-idx="6">(0, 1)</button>
+                    <button type="button" class="moore-cell" data-idx="7">(1, 1)</button>
+                  </div>
+                  <div class="moore-prediction-card" id="moore-prediction-card">
+                    <div class="pred-row">
+                      <span class="pred-label">Если клетка жива:</span>
+                      <strong class="pred-val ok" id="moore-pred-alive">ВЫЖИВЕТ (2–3 соседа)</strong>
+                    </div>
+                    <div class="pred-row">
+                      <span class="pred-label">Если клетка пуста:</span>
+                      <strong class="pred-val born" id="moore-pred-dead">РОДИТСЯ НОВАЯ (ровно 3)</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="intro-footer">
+              <button type="button" class="life-btn life-btn-ghost life-btn-intro-prev" data-prev="1">← Назад</button>
+              <button type="button" class="life-btn life-btn-intro-next" data-next="3">Далее: Законы B3/S23 →</button>
+            </div>
+          </article>
+
+          <!-- СЛАЙД 3: Законы Жизни (B3/S23) -->
+          <article class="intro-slide" data-slide="3" style="display: none;">
+            <div class="intro-kicker">// ФИЗИКА КОНВЕЯ</div>
+            <h2 class="intro-title">Законы B3/S23: рождение, выживание, смерть</h2>
+            <div class="intro-content">
+              <p>Вселенная классического автомата управляется всего двумя условиями:</p>
+              <ul class="intro-rules-list">
+                <li><strong>B3 (Birth 3):</strong> в пустой ячейке зарождается жизнь, если рядом ровно 3 соседа.</li>
+                <li><strong>S23 (Survive 2, 3):</strong> живая клетка продолжает жить, если рядом 2 или 3 соседа.</li>
+                <li><strong>Смерть:</strong> меньше 2 — гибель от одиночества; больше 3 — гибель от перенаселения.</li>
+              </ul>
+
+              <div class="intro-demo-container">
+                <div class="intro-demo-toolbar">
+                  <span class="intro-demo-label">Полигон: 3 ключевых опыта</span>
+                  <div class="intro-demo-actions">
+                    <button type="button" class="life-btn life-btn-sm" id="btn-demo-single">1. Одиночество</button>
+                    <button type="button" class="life-btn life-btn-sm" id="btn-demo-blinker">2. Мигалка</button>
+                    <button type="button" class="life-btn life-btn-sm life-btn-primary" id="btn-demo-glider">3. Глайдер</button>
+                  </div>
+                </div>
+                <div class="intro-demo-canvas-row">
+                  <canvas id="life-demo-canvas" width="280" height="280"></canvas>
+                  <div class="intro-demo-info" id="intro-demo-info">
+                    <div class="demo-info-title" id="demo-info-title">Глайдер (5 клеток)</div>
+                    <p class="demo-info-desc" id="demo-info-desc">Клетки шагают сквозь пространство. Команды перемещения в коде нет — движение рождается из последовательных рождений и смертей соседей.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="intro-footer">
+              <button type="button" class="life-btn life-btn-ghost life-btn-intro-prev" data-prev="2">← Назад</button>
+              <button type="button" class="life-btn life-btn-intro-next" data-next="4">Далее: План разработки →</button>
+            </div>
+          </article>
+
+          <!-- СЛАЙД 4: План разработки симулятора -->
+          <article class="intro-slide" data-slide="4" style="display: none;">
+            <div class="intro-kicker">// ИНЖЕНЕРНЫЙ ПЛАН</div>
+            <h2 class="intro-title">Архитектура симулятора: 4 шага</h2>
+            <div class="intro-content">
+              <p>В лаборатории ты восстановишь движок симуляции на чистом Python по принципу «от простого к сложному»:</p>
+              
+              <div class="intro-roadmap">
+                <div class="roadmap-item">
+                  <div class="roadmap-badge">ШАГ 1</div>
+                  <div class="roadmap-info">
+                    <strong class="roadmap-title">Искра Жизни — should_live(alive, neighbors)</strong>
+                    <span class="roadmap-desc">Чистая логика if/else без матриц. Реализация правил B3/S23 для одной клетки.</span>
+                  </div>
+                </div>
+                <div class="roadmap-item">
+                  <div class="roadmap-badge">ШАГ 2</div>
+                  <div class="roadmap-info">
+                    <strong class="roadmap-title">Сенсор горизонта — is_alive(grid, x, y)</strong>
+                    <span class="roadmap-desc">Безопасная проверка границ поля сетки 50x50, предотвращающая ошибку IndexError.</span>
+                  </div>
+                </div>
+                <div class="roadmap-item">
+                  <div class="roadmap-badge">ШАГ 3</div>
+                  <div class="roadmap-info">
+                    <strong class="roadmap-title">Био-радар 8 направлений — count_neighbors(grid, x, y)</strong>
+                    <span class="roadmap-desc">Опрос окрестности Мура вокруг клетки через сенсор. Запуск легендарного Глайдера.</span>
+                  </div>
+                </div>
+                <div class="roadmap-item">
+                  <div class="roadmap-badge">ШАГ 4</div>
+                  <div class="roadmap-info">
+                    <strong class="roadmap-title">Матрица миров — step_rules(...)</strong>
+                    <span class="roadmap-desc">Пульт Создателя: разблокировка альтернативных вселенных (HighLife, Seeds) и пресетов.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="intro-footer">
+              <button type="button" class="life-btn life-btn-ghost life-btn-intro-prev" data-prev="3">← Назад</button>
+              <button type="button" class="life-btn life-btn-primary" id="btn-intro-enter-lab">Войти в лабораторию →</button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
     <main class="life-body" id="life-body">
       <!-- Левая колонка: интерактивная вселенная -->
       <section class="life-canvas-panel" id="life-canvas-panel">
-        <!-- Интерактивный тур (Этап 0) -->
-        <div id="life-tour-card" class="life-tour-card" style="display: none;">
-          <div class="life-tour-header">
-            <div class="life-tour-badge-row">
-              <span class="life-tour-step-pill" id="life-tour-pill">ТУР: 1 ИЗ 3</span>
-              <span class="life-tour-dots" id="life-tour-dots">
-                <span class="tour-dot active"></span>
-                <span class="tour-dot"></span>
-                <span class="tour-dot"></span>
-              </span>
-            </div>
-            <button type="button" id="btn-life-tour-close" class="life-tour-close-btn" title="Закрыть тур">✕</button>
-          </div>
-          <div class="life-tour-body">
-            <h4 class="life-tour-title" id="life-tour-title">1. Закон одиночества: 0–1 соседа</h4>
-            <p class="life-tour-desc" id="life-tour-desc">Поставь 1 точку на поле и нажми «Шаг». Посмотрим, что с ней сделает природа.</p>
-            <div class="life-tour-actions" id="life-tour-actions"></div>
-            <div class="life-tour-result" id="life-tour-result" style="display: none;"></div>
-          </div>
-        </div>
-
         <div class="life-canvas-container">
           <div class="life-hud">
             <div class="hud-left">

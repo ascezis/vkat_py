@@ -209,6 +209,7 @@ for t in tests:
     active: false,
     previousScreen: 'start',
     isRunning: false,
+    runSeq: 0,
     dom: {},
     highlighter: null,
     intellisense: null
@@ -305,6 +306,8 @@ for t in tests:
     }
 
     S.isRunning = true;
+    S.runSeq += 1;
+    const seq = S.runSeq;
     updateRunButtons();
     setTerminalStatus('running', 'Выполняется...');
 
@@ -321,6 +324,9 @@ for t in tests:
     } catch (err) {
       res = { stdout: '', error: String(err && err.message ? err.message : err) };
     } finally {
+      // Запуск отменён пользователем (стоп-кнопка) — игнорируем результат,
+      // чтобы таймаут-сообщение не перезаписало «Прервано пользователем».
+      if (seq !== S.runSeq) return;
       const dt = Math.round(performance.now() - t0);
       S.isRunning = false;
       updateRunButtons();
@@ -345,6 +351,7 @@ for t in tests:
 
   function stopExecution() {
     if (!S.isRunning) return;
+    S.runSeq += 1; // инвалидируем результат текущего запуска
     if (window.CodeChecker && typeof window.CodeChecker.getBridge === 'function') {
       const bridge = window.CodeChecker.getBridge();
       if (bridge && typeof bridge.terminateAndRespawn === 'function') {

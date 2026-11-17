@@ -3006,12 +3006,35 @@ body {
 
 /* ─── ВВОДНЫЙ БРИФИНГ И ТЕОРИЯ ────────────────────────────────────────────── */
 
-.intro-visual {
-  width: 100%;
-  max-width: 520px;
-  margin: 0 auto 18px auto;
+.intro-photo-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
 }
-.intro-visual svg.glyph { width: 100%; height: auto; display: block; }
+.intro-photo {
+  width: 220px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-panel);
+  padding: 10px 10px 6px;
+  margin: 0;
+}
+.intro-photo img {
+  display: block;
+  width: 100%;
+  /* монохром под дизайн-систему: реальное фото в палитре интерфейса */
+  filter: grayscale(1) contrast(1.05) brightness(0.92);
+}
+.intro-photo-attribution {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+@media (max-width: 900px) {
+  .intro-photo-row { flex-direction: column; align-items: center; }
+  .intro-photo { width: 260px; }
+}
 .intro-demo-hint {
   font-family: var(--font-mono);
   font-size: 11px;

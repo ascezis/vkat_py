@@ -1488,7 +1488,6 @@
       introView: d('life-intro-view'),
       introTabs: d('life-intro-tabs'),
       introSlides: d('life-intro-slides'),
-      introConway: d('intro-conway-visual'),
       demoToggle: d('btn-demo-toggle'),
       btnOpenIntro: d('btn-life-open-intro'),
       btnSkipIntro: d('btn-life-skip-intro'),
@@ -1988,10 +1987,6 @@
       });
     }
 
-    if (S.introSlide === 1 && S.dom.introConway && window.Glyphs) {
-      // Перегенерируем при каждом открытии — чтобы сработала анимация появления
-      S.dom.introConway.innerHTML = window.Glyphs.render('lifeConway');
-    }
     if (S.introSlide === 2) {
       updateMoorePredictions();
     } else if (S.introSlide === 3) {

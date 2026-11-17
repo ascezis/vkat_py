@@ -772,10 +772,12 @@
   function canvasCellFromEvent(e) {
     const rect = S.dom.canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
-    const cellW = rect.width / COLS;
-    const cellH = rect.height / ROWS;
-    const x = Math.floor((e.clientX - rect.left) / cellW);
-    const y = Math.floor((e.clientY - rect.top) / cellH);
+    const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+    const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+    const cellW = rect.width / GRID_W;
+    const cellH = rect.height / GRID_H;
+    const x = Math.floor((clientX - rect.left) / cellW);
+    const y = Math.floor((clientY - rect.top) / cellH);
     return inBounds(x, y) ? { x, y } : null;
   }
 
@@ -821,10 +823,10 @@
 
     canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-    canvas.addEventListener('mousedown', e => {
+    function onDown(e) {
       const cell = canvasCellFromEvent(e);
       if (!cell) return;
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       const erase = e.button === 2 || e.shiftKey;
       // Smart Pause: рисование мягко ставит симуляцию на паузу
       if (S.running) {
@@ -836,18 +838,19 @@
       S.drawingErase = erase;
       paintLine(null, cell, erase);
       S.lastPaintCell = cell;
-    });
+    }
 
-    canvas.addEventListener('mousemove', e => {
+    function onMove(e) {
       const cell = canvasCellFromEvent(e);
       S.cursor = cell;
       if (S.drawing && cell) {
+        if (e.cancelable && e.touches) e.preventDefault();
         paintLine(S.lastPaintCell, cell, S.drawingErase);
         S.lastPaintCell = cell;
       }
-    });
+    }
 
-    window.addEventListener('mouseup', () => {
+    function onUp() {
       if (!S.drawing) return;
       S.drawing = false;
       S.lastPaintCell = null;
@@ -857,7 +860,16 @@
       }
       S.smartPauseWasRunning = false;
       updatePlayButton();
-    });
+    }
+
+    canvas.addEventListener('mousedown', onDown);
+    canvas.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+
+    canvas.addEventListener('touchstart', onDown, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    window.addEventListener('touchcancel', onUp);
 
     canvas.addEventListener('mouseleave', () => {
       S.cursor = null;

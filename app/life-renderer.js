@@ -947,6 +947,8 @@
     S.dom.editorStatus.textContent = (window.VkatApp.state.completedTasks.has(step.id)) ? 'Сдано ✓' : 'Не проверено';
     S.dom.editorStatus.className = 'editor-status' + (window.VkatApp.state.completedTasks.has(step.id) ? ' ok' : '');
 
+    updateLineNumbers();
+
     S.dom.feedback.className = 'life-feedback-msg';
     S.dom.feedback.innerHTML = '';
     S.dom.hintContent.innerHTML = '';
@@ -1372,6 +1374,7 @@
       glyphSlot: d('life-glyph-slot'),
       taskDesc: d('life-task-desc'),
       editor: d('life-code-editor'),
+      lineNumbers: d('life-line-numbers'),
       editorStatus: d('life-editor-status'),
       feedback: d('life-feedback'),
       hintContent: d('life-hint-content'),
@@ -1439,7 +1442,22 @@
     });
 
     S.dom.editor.addEventListener('input', onEditorChange);
+    if (S.dom.editor && S.dom.lineNumbers) {
+      S.dom.editor.addEventListener('scroll', () => {
+        S.dom.lineNumbers.scrollTop = S.dom.editor.scrollTop;
+      });
+    }
     setupMouse();
+  }
+
+  function updateLineNumbers() {
+    if (!S.dom || !S.dom.lineNumbers || !S.dom.editor) return;
+    const lines = (S.dom.editor.value || '').split('\n').length;
+    let html = '';
+    for (let i = 1; i <= lines; i++) {
+      html += i + '\n';
+    }
+    S.dom.lineNumbers.textContent = html;
   }
 
   function onEditorChange() {
@@ -1447,6 +1465,7 @@
     if (!step) return;
     const appState = window.VkatApp.state;
     appState.codeDrafts[step.id] = S.dom.editor.value;
+    updateLineNumbers();
     if (window.VkatStorage) window.VkatStorage.saveDraftDebounced(step.id, S.dom.editor.value);
   }
 

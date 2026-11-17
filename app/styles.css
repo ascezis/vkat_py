@@ -2826,23 +2826,23 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 24px;
+  padding: 12px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
-  height: 52px;
+  height: 56px;
   flex-shrink: 0;
 }
 
 .life-header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 }
 
 .life-header-title {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.08em;
   font-weight: 600;
   color: var(--text);
@@ -2850,32 +2850,40 @@ body {
 
 .life-step-badge {
   font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: 12px;
+  padding: 3px 10px;
   background: var(--border);
   color: var(--brand-orange);
   border: 1px solid var(--border-strong);
+  font-weight: 500;
 }
 
 .life-step-dots {
   display: inline-flex;
-  gap: 6px;
+  gap: 8px;
+  align-items: center;
 }
 
 .life-dot {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-muted);
   background: transparent;
   border: 1px solid var(--border);
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .life-dot:hover {
   border-color: var(--border-strong);
   color: var(--text);
+  background: var(--bg-panel-alt);
 }
 
 .life-dot.current {
@@ -2896,9 +2904,10 @@ body {
 
 .life-body {
   display: grid;
-  grid-template-columns: 560px 1fr;
+  grid-template-columns: minmax(560px, 600px) 1fr;
   flex: 1;
   min-height: 0;
+  background: var(--bg);
 }
 
 /* Левая колонка (Canvas) */
@@ -2906,7 +2915,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  padding: 24px 28px;
   border-right: 1px solid var(--border);
   background: var(--bg);
   overflow-y: auto;
@@ -2918,7 +2927,7 @@ body {
   height: 500px;
   background: #000000;
   border: 1px solid var(--border-strong);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   flex-shrink: 0;
 }
 
@@ -2932,28 +2941,30 @@ body {
 /* HUD поверх Canvas */
 .life-hud {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
+  top: 10px;
+  left: 10px;
+  right: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   pointer-events: none;
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: rgba(236, 236, 236, 0.7);
+  font-size: 12px;
+  color: rgba(236, 236, 236, 0.75);
   z-index: 2;
 }
 
 .hud-item {
-  background: rgba(10, 10, 10, 0.75);
-  padding: 3px 8px;
+  background: rgba(10, 10, 10, 0.85);
+  padding: 4px 10px;
   border: 1px solid var(--border);
   margin-right: 6px;
+  letter-spacing: 0.04em;
 }
 
 .hud-item strong {
   color: var(--brand-orange);
+  font-weight: 600;
 }
 
 /* Панель управления */
@@ -2962,30 +2973,38 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 500px;
-  margin-top: 14px;
-  gap: 8px;
+  margin-top: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .life-controls-bar-secondary {
   margin-top: 10px;
   justify-content: flex-start;
+  gap: 10px;
 }
 
 .life-btn-group {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .life-btn {
   font-family: var(--font-mono);
-  font-size: 12px;
-  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
   background: var(--fill);
   color: var(--fill-text);
   border: 1px solid var(--fill);
   cursor: pointer;
+  transition: all 0.15s ease;
+  height: 36px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .life-btn:hover:not(:disabled) {
@@ -2993,7 +3012,7 @@ body {
 }
 
 .life-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -3015,22 +3034,36 @@ body {
 }
 
 .life-btn-sm {
-  font-size: 11px;
-  padding: 5px 10px;
+  font-size: 13px;
+  padding: 0 14px;
+  height: 36px;
 }
 
 .life-speed-control {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  height: 36px;
+  box-sizing: border-box;
 }
 
 .life-speed-control input[type="range"] {
-  width: 70px;
+  width: 90px;
   accent-color: var(--brand-orange);
+  cursor: pointer;
+}
+
+#life-speed-val {
+  min-width: 32px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .life-select {
@@ -3038,8 +3071,15 @@ body {
   border: 1px solid var(--border);
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 4px 8px;
+  font-size: 12px;
+  padding: 0 12px;
+  height: 36px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.life-select:hover:not(:disabled) {
+  border-color: var(--border-strong);
 }
 
 .life-select:disabled {
@@ -3048,116 +3088,140 @@ body {
 }
 
 .life-canvas-hint {
-  margin-top: 10px;
+  margin-top: 14px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
+  text-align: center;
 }
 
 /* Правая колонка (Задание и Редактор) */
 .life-editor-panel {
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 28px 36px;
   overflow-y: auto;
-  gap: 16px;
+  gap: 22px;
   background: var(--bg-panel);
   min-width: 0;
 }
 
 .life-task-card {
   border: 1px solid var(--border);
-  padding: 16px;
+  padding: 24px 28px;
   background: var(--bg);
+  max-width: 860px;
 }
 
 .life-task-card h2 {
-  font-size: 16px;
-  margin-bottom: 12px;
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
   color: var(--text);
+  letter-spacing: -0.01em;
 }
 
 .life-glyph-slot {
-  margin: 12px 0;
+  margin: 18px 0;
   display: flex;
   justify-content: center;
 }
 
+.life-narrative {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.65;
+  border-left: 3px solid var(--brand-orange);
+  padding-left: 14px;
+  margin-bottom: 16px;
+  max-width: 68ch;
+}
+
 .life-task-desc {
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.7;
   color: var(--text);
+  max-width: 68ch;
+}
+
+.life-task-desc p {
+  margin-bottom: 12px;
 }
 
 .life-task-desc ul {
-  margin: 8px 0 8px 20px;
+  margin: 10px 0 12px 24px;
 }
 
 .life-task-desc li {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .life-task-desc code {
   font-family: var(--font-mono);
-  font-size: 12px;
-  background: var(--bg-panel);
+  font-size: 13px;
+  background: var(--bg-panel-alt);
   border: 1px solid var(--border);
-  padding: 1px 5px;
-}
-
-.life-narrative {
-  color: var(--text-muted);
-  border-left: 2px solid var(--brand-orange);
-  padding-left: 10px;
-  margin-bottom: 10px;
+  padding: 2px 6px;
 }
 
 .life-hint-box {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .life-hint-content {
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .life-hint-text {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 6px;
+  line-height: 1.6;
+  margin-bottom: 8px;
 }
 
 .life-hint-code {
   font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-  background: var(--bg-panel);
+  font-size: 13px;
+  line-height: 1.65;
+  background: var(--bg-panel-alt);
   border: 1px solid var(--border);
-  border-left: 2px solid var(--brand-orange);
-  padding: 10px 12px;
-  margin: 6px 0;
+  border-left: 3px solid var(--brand-orange);
+  padding: 12px 16px;
+  margin: 8px 0;
   overflow-x: auto;
   white-space: pre;
 }
 
+/* Редактор кода */
 .life-code-wrapper {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 220px;
+  height: clamp(260px, 42vh, 460px);
+  min-height: 240px;
   border: 1px solid var(--border-strong);
   background: var(--bg);
+  max-width: 860px;
+}
+
+.life-code-wrapper:focus-within {
+  border-color: var(--text-muted);
 }
 
 .life-editor-header {
   display: flex;
   justify-content: space-between;
-  padding: 6px 12px;
+  align-items: center;
+  padding: 8px 16px;
   background: var(--bg-panel-alt);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.editor-status {
+  font-weight: 500;
 }
 
 .editor-status.ok {
@@ -3168,39 +3232,90 @@ body {
   color: var(--error);
 }
 
+.life-editor-container {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--bg);
+}
+
+.life-line-numbers {
+  width: 44px;
+  flex-shrink: 0;
+  padding: 16px 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-dim);
+  user-select: none;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  box-sizing: border-box;
+  background: var(--bg-panel-alt);
+}
+
 #life-code-editor {
   flex: 1;
   width: 100%;
+  height: 100%;
   background: transparent;
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.5;
-  padding: 12px;
+  font-size: 14px;
+  line-height: 1.75;
+  padding: 16px;
   border: none;
   resize: none;
   outline: none;
+  tab-size: 4;
 }
 
 .life-action-bar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  padding-top: 4px;
+  gap: 20px;
+  padding-top: 6px;
+  max-width: 860px;
 }
 
 .life-action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
+}
+
+#btn-life-submit {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 24px;
+  height: 42px;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: 1px solid var(--fill);
+}
+
+#btn-life-submit:hover:not(:disabled) {
+  background: var(--fill-hover);
+}
+
+#btn-life-run-local {
+  font-size: 13px;
+  padding: 0 18px;
+  height: 42px;
 }
 
 /* Обратная связь проверки */
 .life-feedback-msg {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: 14px;
   display: none;
 }
 
@@ -3211,12 +3326,12 @@ body {
 
 .life-fb-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
 }
 
 .life-fb-mark {
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.2;
 }
 
@@ -3229,34 +3344,38 @@ body {
 }
 
 .life-fb-title {
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
 }
 
 .life-fb-sub {
   color: var(--text-muted);
-  margin-top: 2px;
+  font-size: 13px;
+  margin-top: 4px;
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
 .life-fb-explain {
-  margin-top: 8px;
+  margin-top: 10px;
   color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .life-fb-console {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--error);
   background: var(--bg-panel-alt);
   border: 1px solid var(--border);
-  padding: 8px 10px;
-  margin-top: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
   overflow-x: auto;
   white-space: pre-wrap;
-  max-height: 140px;
+  max-height: 160px;
+  line-height: 1.5;
 }
 
 /* Кнопка «Следующий шаг» в фидбеке */

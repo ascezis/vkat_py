@@ -500,7 +500,8 @@ for t in tests:
     });
 
     document.addEventListener('mousedown', e => {
-      if (isOpen() && !e.target.closest('#sandbox-preset-menu')) close();
+      const t = /** @type {HTMLElement} */ (e.target);
+      if (isOpen() && t.closest && !t.closest('#sandbox-preset-menu')) close();
     });
 
     S.syncPresetMenu = sync;

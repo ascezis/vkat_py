@@ -261,6 +261,133 @@
     );
   }
 
+  // ---------- Схемы пет-проекта «Игра «Жизнь» ----------
+
+  function lifeNeighbors() {
+    n = 0;
+    // Сетка 3x3: клетки 36px, центр в (102, 90)
+    const cells = [
+      [48, 36], [84, 36], [120, 36],
+      [48, 72],           [120, 72],
+      [48, 108], [84, 108], [120, 108]
+    ];
+    let inner = cells.map(([x, y]) => rect(x, y, 36, 36, 'gm')).join('');
+    inner += rect(84, 72, 36, 36, 'gf') + tx(102, 95, 'x,y', 'gi small', mid);
+
+    // 8 пунктирных стрелок от центра к соседям
+    const targets = [
+      [66, 54], [102, 54], [138, 54],
+      [66, 90],           [138, 90],
+      [66, 126], [102, 126], [138, 126]
+    ];
+    inner += targets.map(([cx, cy]) => {
+      const dx = cx - 102, dy = cy - 90;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const ux = dx / len, uy = dy / len;
+      const x1 = 102 + ux * 11, y1 = 90 + uy * 11;
+      const x2 = cx - ux * 9, y2 = cy - uy * 9;
+      const head = 'M' + (x2 - ux * 6 + uy * 4) + ' ' + (y2 - uy * 6 - ux * 4) +
+        ' L' + x2 + ' ' + y2 +
+        ' L' + (x2 - ux * 6 - uy * 4) + ' ' + (y2 - uy * 6 + ux * 4);
+      return path('M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2, 'gl dash') + path(head, 'gl');
+    }).join('');
+
+    // подписи смещений по диагоналям
+    inner += tx(44, 44, '(-1,-1)', 'gt small', end) + tx(160, 44, '(1,-1)', 'gt small') +
+      tx(44, 140, '(-1,1)', 'gt small', end) + tx(160, 140, '(1,1)', 'gt small') +
+      // правый блок
+      tx(210, 64, '8 соседей', 'gT') +
+      tx(210, 88, 'dx: -1..1', 'gt') + tx(210, 108, 'dy: -1..1', 'gt') +
+      tx(210, 132, 'кроме (0, 0)', 'gt') +
+      tx(210, 172, 'сама клетка —', 'gt small') + tx(210, 186, 'не свой сосед', 'gt small');
+    return svg(inner);
+  }
+
+  function lifeRules() {
+    n = 0;
+    // Слева: рождение (B3), справа: выживание (S23)
+    let inner = tx(90, 40, 'B — рождение', 'gT', mid) + tx(270, 40, 'S — выживание', 'gT', mid) +
+      path('M180 52 V150', 'gl dash');
+
+    // B: три серых соседа -> яркая клетка
+    inner += rect(30, 64, 20, 20, 'gm') + rect(54, 64, 20, 20, 'gm') + rect(78, 64, 20, 20, 'gm') +
+      tx(112, 79, 'ровно 3 соседа', 'gt small') +
+      path('M60 90 V108 M54 102 L60 108 L66 102', 'gm') +
+      rect(50, 112, 20, 20, 'gf') + tx(112, 127, 'рождение', 'gt small');
+
+    // S: выживает при 2-3, гибнет при <=1 или >=4
+    inner += rect(200, 64, 20, 20, 'gf') +
+      path('M226 74 H242 M236 68 L242 74 L236 80', 'gm') +
+      rect(248, 64, 20, 20, 'gf') +
+      tx(234, 104, '2 или 3 соседа — выживает', 'gt small', mid) +
+      rect(200, 122, 20, 20, 'gf') +
+      tx(234, 137, '1 или 4+ соседей — гибель', 'gt small', mid);
+
+    inner += path('M60 158 V158', 'gl') +
+      tx(180, 190, 'B3 / S23', 'gT big', mid);
+    return svg(inner);
+  }
+
+  function lifePatterns() {
+    n = 0;
+    // 1. Блок (натюрморт 2x2)
+    let inner =
+      rect(48, 72, 14, 14, 'gf') + rect(62, 72, 14, 14, 'gf') +
+      rect(48, 86, 14, 14, 'gf') + rect(62, 86, 14, 14, 'gf') +
+      tx(62, 124, 'Блок', 'gT', mid) + tx(62, 140, 'натюрморт', 'gt small', mid) +
+      // 2. Мигалка (осциллятор, две фазы + цикл)
+      rect(140, 62, 14, 14, 'gf') + rect(154, 62, 14, 14, 'gf') + rect(168, 62, 14, 14, 'gf') +
+      rect(155, 96, 14, 14, 'gf') + rect(155, 110, 14, 14, 'gf') + rect(155, 124, 14, 14, 'gf') +
+      path('M196 72 V118 M190 112 L196 118 L202 112', 'gl') +
+      path('M116 118 V72 M110 78 L116 72 L122 78', 'gl') +
+      tx(160, 148, 'Мигалка', 'gT', mid) + tx(160, 164, 'осциллятор P=2', 'gt small', mid) +
+      // 3. Глайдер (корабль, v = c/4)
+      rect(282, 60, 14, 14, 'gf') + rect(296, 74, 14, 14, 'gf') +
+      rect(268, 88, 14, 14, 'gf') + rect(282, 88, 14, 14, 'gf') + rect(296, 88, 14, 14, 'gf') +
+      path('M270 112 L314 134 M314 134 L304 132 M314 134 L310 124', 'gm') +
+      tx(288, 158, 'v = c/4', 'gt small', mid) +
+      tx(288, 176, 'Глайдер', 'gT', mid) + tx(288, 192, 'корабль', 'gt small', mid);
+    return svg(inner);
+  }
+
+  // Практикум: три приёма темы «Алгоритмы» — поиск с ранним выходом,
+  // слияние двумя указателями, максимум скользящего окна.
+  function algorithms() {
+    n = 0;
+    const cell = (x, val, cls, tcls) => rect(x, 64, 18, 18, cls) + tx(x + 9, 77, val, tcls, mid);
+    return svg(
+      // 1. Линейный поиск: указатель i над первой ячейкой со значением x
+      cell(8, '3', 'gm', 'gT') + cell(30, '7', 'gf', 'gi') +
+      cell(52, '4', 'gm', 'gT') + cell(74, '7', 'gm', 'gT') +
+      cell(96, '9', 'gm', 'gT') +
+      path('M39 44 V56 M35 50 L39 56 L43 50', 'gm') +
+      tx(39, 38, 'i', 'gt', mid) +
+      [0, 1, 2, 3, 4].map(k => tx(17 + k * 22, 96, String(k), 'gt small', mid)).join('') +
+      tx(61, 126, 'поиск', 'gT', mid) + tx(61, 144, 'ранний выход', 'gt small', mid) +
+      // 2. Слияние: два указателя i/j сливают a и b в отсортированный результат
+      rect(140, 34, 20, 20, 'gl') + tx(150, 47, '1', 'gt', mid) +
+      rect(164, 34, 20, 20, 'gl') + tx(174, 47, '3', 'gt', mid) +
+      tx(132, 48, 'a', 'gt', end) +
+      rect(140, 60, 20, 20, 'gl') + tx(150, 73, '2', 'gt', mid) +
+      rect(164, 60, 20, 20, 'gl') + tx(174, 73, '4', 'gt', mid) +
+      tx(132, 74, 'b', 'gt', end) +
+      path('M150 84 V96 M146 90 L150 96 L154 90', 'gl') +
+      path('M174 84 V96 M170 90 L174 96 L178 90', 'gl') +
+      rect(140, 100, 20, 20, 'gf') + tx(150, 113, '1', 'gi', mid) +
+      rect(164, 100, 20, 20, 'gf') + tx(174, 113, '2', 'gi', mid) +
+      rect(188, 100, 20, 20, 'gf') + tx(198, 113, '3', 'gi', mid) +
+      rect(212, 100, 20, 20, 'gf') + tx(222, 113, '4', 'gi', mid) +
+      tx(186, 126, 'слияние', 'gT', mid) + tx(186, 144, 'два указателя', 'gt small', mid) +
+      // 3. Скользящее окно: скоба k=3 над ячейками, максимум окна залит
+      cell(248, '2', 'gm', 'gT') + cell(270, '1', 'gm', 'gT') +
+      cell(292, '3', 'gm', 'gT') + cell(314, '5', 'gf', 'gi') +
+      cell(336, '4', 'gm', 'gT') +
+      path('M292 52 H354 M292 52 V58 M354 52 V58', 'gl') +
+      tx(323, 44, 'k=3', 'gt small', mid) +
+      tx(301, 126, 'окно', 'gT', mid) + tx(301, 144, 'максимум', 'gt small', mid)
+    , 160);
+  }
+
   // ---------- Реестр ----------
 
   const REGISTRY = {
@@ -276,8 +403,17 @@
     'l1_tuples':   { draw: tuples,     cap: 'кортеж — запечатанный ряд: значения менять нельзя' },
     'l1_strings':  { draw: stringsMethods, cap: 'split режет строку в список, join склеивает обратно' },
     'l1_loops_adv':{ draw: whileLoop,  cap: 'while: условие перед кругом; break — выход, continue — дальше' },
-    'l1_nested_structures': { draw: nested, cap: 'вложенность: к значению идём по шагам — индекс, затем ключ' }
+    'l1_nested_structures': { draw: nested, cap: 'вложенность: к значению идём по шагам — индекс, затем ключ' },
+    'l2_algorithms': { draw: algorithms, cap: 'практикум: ранний выход в поиске, слияние двумя указателями, максимум скользящего окна' },
+    'lifeNeighbors': { draw: lifeNeighbors, cap: 'окрестность Мура: 8 направлений вокруг клетки (dx, dy)' },
+    'lifeRules':     { draw: lifeRules,     cap: 'правило B3/S23: рождение ровно при 3, жизнь при 2 или 3' },
+    'lifePatterns':  { draw: lifePatterns,  cap: 'архетипы Alife-System: натюрморты, осцилляторы и космические корабли' }
   };
+
+  function draw(topicId) {
+    const g = REGISTRY[topicId];
+    return g ? g.draw() : '';
+  }
 
   function render(topicId) {
     const g = REGISTRY[topicId];
@@ -290,5 +426,5 @@
     return REGISTRY[topicId] ? REGISTRY[topicId].cap : '';
   }
 
-  window.Glyphs = { render, caption };
+  window.Glyphs = { render, draw, caption };
 })();

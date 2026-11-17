@@ -165,6 +165,44 @@ interface SelftestEntry {
   wrong: Array<[string, string]>;
 }
 
+// ─── Пет-проект «Игра «Жизнь» (content/projects/life/tasks.js) ──────────────
+
+/** Режим JS-зеркала симуляции (app/life-renderer.js). */
+type LifeWorldMode = 'frozen' | 'chaos' | 'conway' | 'sandbox';
+
+/**
+ * Шаг пет-проекта. Тесты — тот же контракт TaskTest, что и у обычных
+ * code-заданий: сетка передаётся инлайном в выражении `call`.
+ */
+interface LifeStep {
+  id: string;
+  title: string;
+  /** Имя глифа из реестра Glyphs (app/glyphs.js). */
+  glyph: string;
+  worldMode: LifeWorldMode;
+  /** Нарратив «Сломанного мира» — что не так с вселенной на холсте. */
+  narrative: string;
+  /** HTML условия шага. */
+  taskHtml: string;
+  initialCode: string;
+  tests: TaskTest[];
+  /** Прогрессивные подсказки: текст, затем {code} с заготовкой. */
+  hints?: Array<string | { code: string }>;
+  improveTip?: string;
+  successMessage?: string;
+}
+
+/** Модуль пет-проекта (window.LIFE_MODULE, вне COURSE_TOPICS/COURSE_STAGES). */
+interface LifeModule {
+  id: string;
+  title: string;
+  kicker: string;
+  description: string;
+  /** Имя экрана в index.html (#screen-<screen>). */
+  screen: string;
+  steps: LifeStep[];
+}
+
 // ─── Профили и хранилище (app/storage.js) ───────────────────────────────────
 
 interface ProfilePosition {
@@ -222,6 +260,8 @@ interface CheckResult {
 
 /** Минимальный контракт PyodideWorkerBridge для тестов и отладки. */
 interface PyodideWorkerBridgeLike {
+  /** Ручная остановка: терминировать воркер и пересоздать песочницу. */
+  terminateAndRespawn(): void;
   DEFAULT_TIMEOUT_MS: number;
   INIT_TIMEOUT_MS: number;
   MAX_CONSECUTIVE_CRASHES: number;
@@ -249,12 +289,28 @@ interface CodeCheckerApi {
 // каждого модуля отдельная задача (TECH-DEBT Sprint 3+). Контракты есть у
 // модулей, у которых они реально помогают: storage, checker, контент.
 
+/** Минимальный контракт VkatSandbox (app/sandbox.js). */
+interface VkatSandboxApi {
+  init(): void;
+  enter(prevScreen?: string): void;
+  leave(): void;
+  runCode(): Promise<void>;
+  stopExecution(): void;
+  clearOutput(): void;
+  selectPreset(presetKey: string, opts?: { silent?: boolean }): void;
+  /** Отладочные хуки (используются тестами и консолью разработчика). */
+  _presets: Record<string, { title: string; code: string }>;
+  _state: Record<string, any>;
+}
+
 interface Window {
   VKAT_VERSION?: string;
+  VkatSandbox?: VkatSandboxApi;
   COURSE_STAGES?: CourseStage[];
   COURSE_TOPICS?: CourseTopic[];
   COURSE_SELFTEST?: Record<string, SelftestEntry>;
   CHEATSHEET_SECTIONS?: Array<Record<string, unknown>>;
+  LIFE_MODULE?: LifeModule;
   PYODIDE_WASM_BASE64?: string;
   PYODIDE_STDLIB_BASE64?: string;
   VKAT_CONNECT_ENDPOINT?: string;
@@ -267,6 +323,8 @@ interface Window {
   PythonHighlighter?: any;
   Glyphs?: Record<string, any>;
   VkatGridWarp?: Record<string, any>;
+  /** Экран пет-проекта «Игра «Жизнь» (app/life-renderer.js). */
+  VkatLife?: Record<string, any>;
 
   VkatStorage?: VkatStorageApi;
   CodeChecker?: CodeCheckerApi;

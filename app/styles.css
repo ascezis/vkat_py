@@ -158,23 +158,25 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 24px;
+  /* B3: нижний ряд карточек не должен уходить под sticky-футер при прокрутке */
+  padding-bottom: 72px;
+  padding: 12px 20px 10px;
 }
 
 .kicker {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
-  margin-bottom: 22px;
+  margin-bottom: 8px;
 }
 
 .start-center h1 {
-  font-size: 32px;
+  font-size: 25px;
   font-weight: 600;
-  max-width: 26ch;
-  min-height: 84px;
-  line-height: 1.3;
-  margin: 0 auto 20px;
+  max-width: 32ch;
+  min-height: 38px;
+  line-height: 1.25;
+  margin: 0 auto 8px;
 }
 
 .heading-prompt {
@@ -188,10 +190,10 @@ body {
 
 .start-sub {
   color: var(--text-muted);
-  font-size: 15px;
-  max-width: 48ch;
-  line-height: 1.7;
-  margin: 0 auto 44px;
+  font-size: 13.5px;
+  max-width: 66ch;
+  line-height: 1.5;
+  margin: 0 auto 12px;
 }
 
 .facts {
@@ -1124,29 +1126,31 @@ body {
 }
 
 /* ==========================================================================
-   КАРТОЧКИ ЭТАПОВ (СТАРТОВЫЙ ЭКРАН)
+   КАРТОЧКИ ЭТАПОВ И ПЕТ-ПРОЕКТОВ (СТАРТОВЫЙ ЭКРАН)
    ========================================================================== */
 
-.stage-cards {
-  display: flex;
-  gap: 24px;
-  max-width: 880px;
+.start-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(300px, 450px));
+  gap: 12px 18px;
   width: 100%;
-  margin: 36px 0 28px 0;
-  flex-wrap: wrap;
+  max-width: 940px;
+  margin: 10px auto 10px;
   justify-content: center;
 }
 
+.stage-cards {
+  display: contents;
+}
+
 .stage-card {
-  flex: 1 1 360px;
-  max-width: 420px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  padding: 24px 28px;
+  padding: 14px 18px 12px;
   text-align: left;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .stage-card:hover {
@@ -1157,45 +1161,49 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .stage-card-title {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text);
 }
 
 .stage-card-progress-label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .stage-card-desc {
   color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1.6;
-  margin-bottom: 20px;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-bottom: 8px;
   flex: 1;
 }
 
 .stage-card-meta {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--text-dim);
-  margin-bottom: 16px;
+  margin-bottom: 6px;
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
 .stage-card-note {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-dim);
   border-top: 1px dashed var(--border);
-  padding-top: 10px;
-  margin-bottom: 16px;
+  padding-top: 4px;
+  margin-bottom: 8px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stage-card-actions {
@@ -2496,20 +2504,31 @@ body {
 #screen-start > .bottombar { position: sticky; }
 
 @media (min-width: 861px) and (max-height: 860px) {
-  .start-center { padding: 20px 24px; }
-  .kicker { margin-bottom: 14px; }
-  .start-center h1 { font-size: 28px; max-width: 26ch; min-height: 74px; margin-bottom: 14px; }
-  .start-sub { margin-bottom: 20px; }
-  .stage-cards { margin: 20px 0 14px; }
-  .stage-card { padding: 20px 24px; }
-  .stage-card-desc { margin-bottom: 14px; }
-  .start-note { margin-top: 6px; }
-  .status-badge { margin-top: 6px; }
+  .start-center { padding: 16px 20px 12px; }
+  .kicker { margin-bottom: 8px; }
+  .start-center h1 { font-size: 26px; max-width: 28ch; min-height: 48px; margin-bottom: 10px; }
+  .start-sub { margin-bottom: 14px; font-size: 13.5px; }
+  .start-modules-grid { margin: 12px auto 10px; gap: 14px 18px; }
+  .stage-card { padding: 16px 20px; }
+  .stage-card-desc { margin-bottom: 10px; font-size: 12.5px; }
+  .stage-card-meta { margin-bottom: 8px; }
+  .stage-card-note { margin-bottom: 10px; }
+  .start-note { margin-top: 6px; font-size: 11px; }
+  .status-badge { margin-top: 4px; }
   .profiles-center { padding: 16px 20px; }
   .profiles-center .kicker { margin-bottom: 12px; }
   .profiles-grid { margin: 18px 0; }
   .profile-form { margin-top: 16px; padding: 22px 24px; }
   .form-group { margin-bottom: 14px; }
+}
+
+@media (max-width: 768px) {
+  .start-modules-grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    gap: 12px;
+    margin: 12px auto;
+  }
 }
 
 
@@ -2801,6 +2820,1264 @@ body {
 
 .hint-popover-more-link:hover {
   color: var(--text);
+}
+
+/* ==========================================================================
+   МОДУЛЬ ПЕТ-ПРОЕКТА: GAME OF LIFE (.life-*)
+   ========================================================================== */
+
+#screen-life {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#screen-life.active {
+  display: flex;
+}
+
+.life-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.life-header-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.life-header-title {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.life-step-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 10px;
+  background: var(--border);
+  color: var(--brand-orange);
+  border: 1px solid var(--border-strong);
+  font-weight: 500;
+}
+
+.life-step-dots {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.life-dot {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.life-dot:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--bg-panel-alt);
+}
+
+.life-dot.current {
+  color: var(--fill-text);
+  background: var(--fill);
+  border-color: var(--fill);
+}
+
+.life-dot.done {
+  color: var(--brand-orange);
+  border-color: var(--brand-orange);
+}
+
+.life-dot.done.current {
+  color: var(--fill-text);
+  background: var(--brand-orange);
+}
+
+.life-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Левая колонка (Canvas) */
+.life-canvas-panel {
+  width: var(--life-left-width, 560px);
+  min-width: 380px;
+  max-width: calc(100% - 420px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 28px;
+  border-right: none;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+/* Разделитель колонок (сплиттер) */
+.life-splitter {
+  width: 8px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  user-select: none;
+  position: relative;
+  transition: background 0.15s ease;
+  z-index: 5;
+}
+
+.life-splitter:hover,
+.life-splitter.is-dragging {
+  background: var(--brand-orange);
+}
+
+.life-splitter:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: -1px;
+}
+
+.life-splitter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 28px;
+  background: var(--border-strong);
+  border-radius: 1px;
+}
+
+.life-splitter:hover::after,
+.life-splitter.is-dragging::after {
+  background: #ffffff;
+}
+
+/* Кнопки шапки для переключения режимов */
+.life-btn-theory,
+.life-btn-skip {
+  color: var(--brand-orange);
+  border-color: rgba(255, 106, 0, 0.4);
+  background: rgba(255, 106, 0, 0.08);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 5px 12px;
+  transition: all 0.2s ease;
+}
+
+.life-btn-theory:hover,
+.life-btn-skip:hover {
+  background: rgba(255, 106, 0, 0.2);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+/* ─── ВВОДНЫЙ БРИФИНГ И ТЕОРИЯ ────────────────────────────────────────────── */
+
+.life-intro-view {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 32px 24px 48px;
+  box-sizing: border-box;
+}
+
+.life-intro-container {
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.life-intro-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.intro-tab-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.03em;
+}
+
+.intro-tab-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.intro-tab-btn.active {
+  color: #0b0b0c;
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  font-weight: 600;
+}
+
+.intro-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: introFadeIn 0.2s ease-out;
+}
+
+@keyframes introFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.intro-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--brand-orange);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.intro-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.intro-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(236, 236, 236, 0.88);
+}
+
+.intro-content p {
+  margin: 0 0 14px 0;
+}
+
+.intro-content strong {
+  color: #ffffff;
+}
+
+.intro-box {
+  background: #121215;
+  border: 1px solid var(--border-strong);
+  padding: 18px 22px;
+  margin: 18px 0;
+}
+
+.intro-box-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.intro-box-formula {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.formula-arrow {
+  color: var(--brand-orange);
+  font-weight: bold;
+}
+
+.formula-accent {
+  color: var(--brand-orange);
+  font-weight: 600;
+}
+
+.intro-box-desc {
+  font-size: 13px;
+  color: rgba(236, 236, 236, 0.75);
+  margin: 0 !important;
+}
+
+.intro-rules-list {
+  margin: 8px 0 12px 20px;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.intro-rules-list li strong {
+  color: var(--brand-orange);
+}
+
+/* Интерактивный виджет окрестности Мура */
+.intro-interactive-moore {
+  background: #121215;
+  border: 1px solid var(--border-strong);
+  padding: 14px 18px;
+  margin: 14px 0 20px;
+}
+
+.moore-widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.moore-count-badge {
+  color: var(--brand-orange);
+  font-weight: 600;
+}
+
+.moore-grid-wrapper {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.moore-grid-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 64px);
+  gap: 6px;
+  user-select: none;
+}
+
+.moore-cell {
+  width: 64px;
+  height: 64px;
+  background: #1a1a1e;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.moore-cell:hover {
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+.moore-cell.active {
+  background: rgba(255, 106, 0, 0.25);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 106, 0, 0.35);
+  font-weight: 600;
+}
+
+.moore-center-cell {
+  width: 64px;
+  height: 64px;
+  background: #000000;
+  border: 2px solid var(--brand-orange);
+  color: var(--brand-orange);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.moore-prediction-card {
+  flex: 1;
+  min-width: 240px;
+  background: #0b0b0c;
+  border: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pred-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pred-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.pred-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.pred-val.ok {
+  color: #00e676;
+}
+
+.pred-val.born {
+  color: var(--brand-orange);
+}
+
+.pred-val.die {
+  color: #ff5252;
+}
+
+/* Интерактивный демо-полигон на слайде 3 */
+.intro-demo-container {
+  background: #121215;
+  border: 1px solid var(--border-strong);
+  padding: 14px 18px;
+  margin: 12px 0 20px;
+}
+
+.intro-demo-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.intro-demo-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.intro-demo-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.intro-demo-canvas-row {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#life-demo-canvas {
+  width: 280px;
+  height: 280px;
+  background: #000000;
+  border: 1px solid var(--border-strong);
+  display: block;
+  flex-shrink: 0;
+}
+
+.intro-demo-info {
+  flex: 1;
+  min-width: 220px;
+}
+
+.demo-info-title {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand-orange);
+  margin-bottom: 8px;
+}
+
+.demo-info-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(236, 236, 236, 0.85);
+  margin: 0 !important;
+}
+
+/* Роадмап на слайде 4 */
+.intro-roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.roadmap-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 14px 18px;
+  background: #121215;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s ease;
+}
+
+.roadmap-item:hover {
+  border-color: var(--border-strong);
+}
+
+.roadmap-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--brand-orange);
+  padding: 3px 8px;
+  background: rgba(255, 106, 0, 0.1);
+  border: 1px solid rgba(255, 106, 0, 0.3);
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.roadmap-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roadmap-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.roadmap-desc {
+  font-size: 12px;
+  color: rgba(236, 236, 236, 0.75);
+  line-height: 1.5;
+}
+
+.intro-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.life-canvas-container {
+  position: relative;
+  width: 500px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  background: #000000;
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
+}
+
+#life-main-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+/* HUD поверх Canvas */
+.life-hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(236, 236, 236, 0.75);
+  z-index: 2;
+}
+
+.hud-item {
+  background: rgba(10, 10, 10, 0.85);
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  margin-right: 6px;
+  letter-spacing: 0.04em;
+}
+
+.hud-item strong {
+  color: var(--brand-orange);
+  font-weight: 600;
+}
+
+/* Панель управления */
+.life-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 500px;
+  margin-top: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.life-controls-bar-secondary {
+  margin-top: 10px;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.life-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.life-btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: 1px solid var(--fill);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  height: 36px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.life-btn:hover:not(:disabled) {
+  background: var(--fill-hover);
+}
+
+.life-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.life-btn.active {
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  color: #ffffff;
+}
+
+.life-btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+.life-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-panel);
+  border-color: var(--text-muted);
+}
+
+.life-btn-sm {
+  font-size: 13px;
+  padding: 0 14px;
+  height: 36px;
+}
+
+.life-speed-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.life-speed-control input[type="range"] {
+  width: 90px;
+  accent-color: var(--brand-orange);
+  cursor: pointer;
+}
+
+#life-speed-val {
+  min-width: 32px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.life-select {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 0 12px;
+  height: 36px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.life-select:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.life-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.life-canvas-hint {
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* Правая колонка (Задание и Редактор) */
+.life-editor-panel {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  overflow-y: auto;
+  gap: 20px;
+  background: var(--bg);
+}
+
+.life-task-card {
+  border: 1px solid var(--border);
+  padding: 24px 28px;
+  background: var(--bg-panel);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.life-task-card h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.life-glyph-slot {
+  margin: 14px 0 20px 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.life-glyph-slot svg.glyph {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  display: block;
+}
+
+.life-glyph-slot .visual-cap {
+  display: none !important;
+}
+
+.life-narrative {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.65;
+  border-left: 3px solid var(--brand-orange);
+  padding-left: 14px;
+  margin-bottom: 16px;
+  max-width: 82ch;
+}
+
+.life-task-desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+  max-width: 82ch;
+}
+
+.life-task-desc p {
+  margin-bottom: 12px;
+}
+
+.life-task-desc ul {
+  margin: 10px 0 12px 24px;
+}
+
+.life-task-desc li {
+  margin-bottom: 6px;
+}
+
+.life-task-desc code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+}
+
+.life-hint-box {
+  margin-top: 16px;
+}
+
+.life-hint-content {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.life-hint-item {
+  border: 1px solid var(--border);
+  background: var(--bg-panel-alt);
+  padding: 12px 16px;
+}
+
+.life-hint-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.life-hint-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0 0 6px 0;
+}
+
+.life-hint-code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--brand-orange);
+  padding: 10px 14px;
+  margin: 6px 0 0 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+
+/* Редактор кода */
+.life-code-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: clamp(260px, 42vh, 480px);
+  min-height: 240px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.life-code-wrapper:focus-within {
+  border-color: var(--text-muted);
+}
+
+.life-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--bg-panel-alt);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.editor-status {
+  font-weight: 500;
+}
+
+.editor-status.ok {
+  color: var(--brand-orange);
+}
+
+.editor-status.err {
+  color: var(--error);
+}
+
+.life-editor-container {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--bg);
+}
+
+.life-line-numbers {
+  width: 44px;
+  flex-shrink: 0;
+  padding: 16px 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-dim);
+  user-select: none;
+  pointer-events: none;
+  overflow: hidden;
+  white-space: pre;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+  box-sizing: border-box;
+  background: var(--bg-panel-alt);
+}
+
+.life-editor-highlight {
+  position: absolute;
+  top: 0;
+  left: 44px;
+  right: 0;
+  bottom: 0;
+  padding: 16px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  pointer-events: none;
+  tab-size: 4;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+#life-code-editor {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  color: transparent !important;
+  caret-color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.75;
+  padding: 16px;
+  border: none !important;
+  resize: none;
+  outline: none;
+  tab-size: 4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+#life-code-editor::selection {
+  background: rgba(38, 79, 120, 0.6);
+  color: transparent;
+}
+
+.life-action-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.life-action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+#btn-life-submit {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 24px;
+  height: 42px;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: 1px solid var(--fill);
+}
+
+#btn-life-submit:hover:not(:disabled) {
+  background: var(--fill-hover);
+}
+
+#btn-life-run-local {
+  font-size: 13px;
+  padding: 0 18px;
+  height: 42px;
+}
+
+/* Обратная связь проверки */
+.life-feedback-msg {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  display: none;
+}
+
+.life-feedback-msg.ok,
+.life-feedback-msg.err {
+  display: block;
+}
+
+.life-fb-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.life-fb-mark {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.life-fb-mark.ok {
+  color: var(--brand-orange);
+}
+
+.life-fb-mark.err {
+  color: var(--error);
+}
+
+.life-fb-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.life-fb-sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 4px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.life-fb-explain {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.life-fb-console {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--error);
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  margin-top: 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  max-height: 160px;
+  line-height: 1.5;
+}
+
+/* Кнопка «Следующий шаг» в фидбеке */
+.life-feedback-msg .life-btn {
+  margin-top: 10px;
+}
+
+/* Карточка пет-проекта на стартовом экране */
+.life-start-card-host {
+  display: flex;
+  flex-direction: column;
+}
+
+.life-start-card {
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--brand-orange);
+  background: var(--bg-panel);
+  padding: 18px 20px;
+}
+
+.life-start-card-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-orange);
+}
+
+.life-start-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 6px;
+}
+
+.life-start-card-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.life-start-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.life-start-card-progress {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Оверлей WORLD_BIRTH */
+.life-birth-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 106, 0, 0.2) 0%, rgba(10, 10, 10, 0.85) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: life-fade-in 0.4s ease-out;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.birth-message {
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.birth-message h2 {
+  font-size: 28px;
+  color: #ffffff;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 16px var(--brand-orange);
+}
+
+.birth-message p {
+  color: var(--brand-orange);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Тост обнаружения паттерна */
+.life-pattern-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a1a1a;
+  border: 1px solid var(--brand-orange);
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #fff;
+  animation: life-pop 0.3s ease-out;
+}
+
+.life-pattern-toast .toast-icon {
+  color: var(--brand-orange);
+}
+
+@keyframes life-pop {
+  0% { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes life-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Адаптив: узкие экраны */
+@media (max-width: 900px) {
+  .life-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .life-canvas-panel {
+    width: 100% !important;
+    max-width: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .life-splitter {
+    display: none;
+  }
+
+  .life-editor-panel {
+    width: 100%;
+    min-width: 0;
+    padding: 20px 24px;
+  }
+
+  .life-canvas-container,
+  #life-main-canvas,
+  .life-controls-bar {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  #life-main-canvas {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-pattern-toast,
+  .life-birth-overlay {
+    animation: none;
+  }
 }
 
 

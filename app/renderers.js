@@ -534,6 +534,24 @@
       });
     });
 
+    // Пет-проект: Alife-System
+    if (window.LIFE_MODULE) {
+      const lm = window.LIFE_MODULE;
+      const lifeHeader = document.createElement('div');
+      lifeHeader.className = 'tree-stage-header';
+      lifeHeader.innerHTML = `
+        <div class="tree-stage-title" style="color: var(--brand-orange); cursor: pointer;">
+          <span>★ ${lm.title}</span>
+          <span class="tree-stage-progress">${lm.steps.length} шага</span>
+        </div>
+      `;
+      lifeHeader.addEventListener('click', () => {
+        dom.treeDrawer.classList.remove('open');
+        dom.treeBackdrop.classList.remove('open');
+        window.VkatApp.showScreen('life');
+      });
+      dom.treeBody.appendChild(lifeHeader);
+    }
     const sandboxHeader = document.createElement('div');
     sandboxHeader.className = 'tree-stage-header';
     sandboxHeader.innerHTML = `

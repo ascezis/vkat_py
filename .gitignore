@@ -24,3 +24,6 @@ ai-prompts/
 CLAUDE/
 CLAUDE-*/
 patches/
+
+# Локальный e2e-профиль браузера (dev/verify_sandbox_e2e.py)
+dev/.edge_profile_sandbox/

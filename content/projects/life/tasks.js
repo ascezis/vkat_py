@@ -1,5 +1,5 @@
 /**
- * вкат.py — Пет-проект «Игра «Жизнь» Конвея» (модуль life)
+ * вкат.py — Пет-проект «Alife-System» (модуль life)
  *
  * Отдельный модуль контента (вне COURSE_TOPICS/COURSE_STAGES): собственный
  * экран #screen-life, канвас-симуляция и 4-шаговая прогрессия «Сломанный мир».
@@ -24,9 +24,9 @@
 
   const LIFE_MODULE = {
     id: 'life',
-    title: 'Пет-проект: Игра «Жизнь»',
+    title: 'Пет-проект: Alife-System',
     kicker: 'клеточные автоматы',
-    description: 'Оживи вселенную Конвея за 4 шага: границы, окрестность Мура, законы B3/S23 и альтернативные миры. Каждое решение исцеляет сломанный мир на холсте.',
+    description: 'Оживи вселенную Alife-System за 4 шага: границы, окрестность Мура, законы B3/S23 и альтернативные миры. Каждое решение исцеляет сломанный мир на холсте.',
     screen: 'life',
     steps: [
       {
@@ -34,7 +34,7 @@
         title: 'Шаг 1: Сенсор границ мира',
         glyph: 'lifeNeighbors',
         worldMode: 'frozen',
-        narrative: 'Вселенная Конвея замкнута в сетке 50x50. Сейчас мир застыл: колония на холсте не умирает и не рождается, потому что любая попытка заглянуть за горизонт (отрицательные координаты или координата за краем поля) роняет симулятор с IndexError. Напиши безопасный сенсор — и мир начнёт дышать.',
+        narrative: 'Вселенная Alife-System замкнута в сетке 50x50. Сейчас мир застыл: колония на холсте не умирает и не рождается, потому что любая попытка заглянуть за горизонт (отрицательные координаты или координата за краем поля) роняет симулятор с IndexError. Напиши безопасный сенсор — и мир начнёт дышать.',
         taskHtml: '<p>Напиши функцию <code>is_alive(grid, x, y)</code>, которая возвращает <code>True</code>, только если ячейка жива. Правила:</p><ul><li><code>grid</code> — матрица, доступ к ячейке: <code>grid[y][x]</code> (y — номер строки, x — номер столбца);</li><li>живая ячейка — <code>1</code>;</li><li>если координаты выходят за пределы поля (x или y меньше 0 либо больше размера матрицы) — возвращай <code>False</code>, а не ошибку.</li></ul>',
         initialCode: 'def is_alive(grid, x, y):\n    # Верни True, если ячейка в пределах поля и жива,\n    # иначе False. За границей поля клеток нет.\n    pass\n',
         tests: [
@@ -78,7 +78,7 @@
       },
       {
         id: 'life_step_3',
-        title: 'Шаг 3: Законы Конвея (B3/S23)',
+        title: 'Шаг 3: Законы Alife-System (B3/S23)',
         glyph: 'lifeRules',
         worldMode: 'chaos',
         narrative: 'Момент истины. Клетки видят соседей, но законов жизни ещё нет: любая колония гибнет в первый же кадр. Сформулируй правила рождения и выживания — и мир исцелится.',
@@ -100,14 +100,14 @@
           { code: 'def should_live(alive, neighbors):\n    if neighbors == 3:\n        return True\n    if alive and neighbors == 2:\n        return True\n    return False' }
         ],
         improveTip: 'Правило B3/S23 записывается одним выражением: return neighbors == 3 or (alive and neighbors == 2). Логика «рождается при 3» общая для живых и мёртвых.',
-        successMessage: 'Мир исцелён: законы Конвея B3/S23 приведены в действие!'
+        successMessage: 'Мир исцелён: законы Alife-System B3/S23 приведены в действие!'
       },
       {
         id: 'life_step_4',
         title: 'Шаг 4: Хакер правил вселенной',
         glyph: 'lifePatterns',
         worldMode: 'sandbox',
-        narrative: 'Ты оживил вселенную Конвея, но Конвей — лишь одна из сотен возможных вселенных. Параметризуй законы через списки правил birth/survival — и открой песочницу с пресетами и альтернативными физиками.',
+        narrative: 'Ты оживил вселенную Alife-System, но B3/S23 — лишь одна из сотен возможных вселенных. Параметризуй законы через списки правил birth/survival — и открой песочницу с пресетами и альтернативными физиками.',
         taskHtml: '<p>Напиши универсальный валидатор <code>step_rules(alive, neighbors, birth, survival)</code>, где <code>birth</code> и <code>survival</code> — списки чисел соседей:</p><ul><li>мёртвая клетка оживает, если <code>neighbors</code> входит в <code>birth</code>;</li><li>живая клетка выживает, если <code>neighbors</code> входит в <code>survival</code>;</li><li>иначе — <code>False</code>.</li></ul><p>Проверь свой валидатор на альтернативных вселенных в тестах: HighLife (B36/S23) и Seeds (B2/S — выживания нет вовсе).</p>',
         initialCode: 'BIRTH = [3]\nSURVIVAL = [2, 3]\n\ndef step_rules(alive, neighbors, birth, survival):\n    # Мёртвая оживает при neighbors in birth,\n    # живая выживает при neighbors in survival\n    pass\n',
         tests: [
@@ -124,7 +124,7 @@
           { code: 'def step_rules(alive, neighbors, birth, survival):\n    if not alive and neighbors in ___:\n        return True\n    if alive and neighbors in ___:\n        return True\n    return False' },
           { code: 'def step_rules(alive, neighbors, birth, survival):\n    if not alive and neighbors in birth:\n        return True\n    if alive and neighbors in survival:\n        return True\n    return False' }
         ],
-        improveTip: 'Конвей B3/S23, HighLife B36/S23 и Seeds B2/S — три вселенных, отличающихся только двумя списками. Один валидатор описывает их все.',
+        improveTip: 'Канон B3/S23, HighLife B36/S23 и Seeds B2/S — три вселенных, отличающихся только двумя списками. Один валидатор описывает их все.',
         successMessage: 'Вселенная параметризована: в песочнице открыты альтернативные физики!'
       }
     ]

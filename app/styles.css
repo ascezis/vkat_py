@@ -1130,7 +1130,8 @@ body {
 .stage-cards {
   display: flex;
   gap: 24px;
-  max-width: 880px;
+  /* 3 карточки этапов в ряд: 3 x 360 (basis) + 2 x 24 (gap) = 1128 */
+  max-width: 1128px;
   width: 100%;
   margin: 36px 0 28px 0;
   flex-wrap: wrap;
@@ -3263,10 +3264,11 @@ body {
   margin-top: 10px;
 }
 
-/* Карточка пет-проекта на стартовом экране */
+/* Карточка пет-проекта на стартовом экране.
+   Ширина = ряду карточек этапов (1128px), чтобы замыкать композицию снизу */
 .life-start-card-host {
   width: 100%;
-  max-width: 640px;
+  max-width: 1128px;
 }
 
 .life-start-card {

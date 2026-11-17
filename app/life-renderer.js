@@ -47,7 +47,7 @@
 
   /** Канонические вселенные правил для JS-зеркала (шаг 4). */
   const UNIVERSES = {
-    conway: { label: 'Конвей B3/S23', birth: [3], survival: [2, 3] },
+    conway: { label: 'Alife B3/S23', birth: [3], survival: [2, 3] },
     highlife: { label: 'HighLife B36/S23', birth: [3, 6], survival: [2, 3] },
     seeds: { label: 'Seeds B2/S', birth: [2], survival: [] }
   };

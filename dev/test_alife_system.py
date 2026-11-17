@@ -77,12 +77,16 @@ print(f"Экран: {life_module['screen']} | Шагов: {len(life_module['step
 # Эталонные решения
 REF_SOLUTIONS = {
     'life_step_1': """
+def should_live(alive, neighbors):
+    return neighbors == 3 or (alive and neighbors == 2)
+""",
+    'life_step_2': """
 def is_alive(grid, x, y):
     if x < 0 or y < 0 or y >= len(grid) or x >= len(grid[0]):
         return False
     return grid[y][x] == 1
 """,
-    'life_step_2': """
+    'life_step_3': """
 def count_neighbors(grid, x, y):
     count = 0
     for dy in range(-1, 2):
@@ -91,10 +95,6 @@ def count_neighbors(grid, x, y):
                 continue
             count += is_alive(grid, x + dx, y + dy)
     return count
-""",
-    'life_step_3': """
-def should_live(alive, neighbors):
-    return neighbors == 3 or (alive and neighbors == 2)
 """,
     'life_step_4': """
 BIRTH = [3]
@@ -112,19 +112,19 @@ def step_rules(alive, neighbors, birth, survival):
 # Неправильные решения для проверки строгости тестов
 WRONG_SOLUTIONS = {
     'life_step_1': [
+        ('клетка не выживает при 2 соседях', 'def should_live(alive, neighbors):\n    return neighbors == 3'),
+        ('клетка выживает при 4 соседях (нет защиты от перенаселения)', 'def should_live(alive, neighbors):\n    return neighbors in (2, 3, 4) if alive else neighbors == 3'),
+        ('рождается при 2 соседях', 'def should_live(alive, neighbors):\n    return neighbors in (2, 3)')
+    ],
+    'life_step_2': [
         ('нет проверки границ (IndexError)', 'def is_alive(grid, x, y):\n    return grid[y][x] == 1'),
         ('перепутаны x и y (grid[x][y])', 'def is_alive(grid, x, y):\n    if x < 0 or y < 0 or x >= len(grid) or y >= len(grid[0]): return False\n    return grid[x][y] == 1'),
         ('всегда False', 'def is_alive(grid, x, y):\n    return False')
     ],
-    'life_step_2': [
+    'life_step_3': [
         ('считает саму клетку (без dx==0 and dy==0)', 'def count_neighbors(grid, x, y):\n    c = 0\n    for dy in range(-1, 2):\n        for dx in range(-1, 2):\n            c += is_alive(grid, x + dx, y + dy)\n    return c'),
         ('считает только 4 соседа (без диагоналей)', 'def count_neighbors(grid, x, y):\n    return is_alive(grid, x+1, y) + is_alive(grid, x-1, y) + is_alive(grid, x, y+1) + is_alive(grid, x, y-1)'),
         ('всегда 0', 'def count_neighbors(grid, x, y):\n    return 0')
-    ],
-    'life_step_3': [
-        ('клетка не выживает при 2 соседях', 'def should_live(alive, neighbors):\n    return neighbors == 3'),
-        ('клетка выживает при 4 соседях (нет защиты от перенаселения)', 'def should_live(alive, neighbors):\n    return neighbors in (2, 3, 4) if alive else neighbors == 3'),
-        ('рождается при 2 соседях', 'def should_live(alive, neighbors):\n    return neighbors in (2, 3)')
     ],
     'life_step_4': [
         ('игнорирует birth', 'def step_rules(alive, neighbors, birth, survival):\n    return alive and neighbors in survival'),

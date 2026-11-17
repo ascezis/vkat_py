@@ -225,13 +225,13 @@
     <div class="start-center">
       <div class="kicker">Платформа CONNECT</div>
       <h1 id="start-heading"><span class="heading-prompt">&gt;</span> <span id="start-typewriter">Пишешь код — сразу видишь результат</span></h1>
-      <p class="start-sub">Два модуля: экспресс-вкат в группу и углублённая практика с автопроверкой. Без лекций и воды — честное исполнение в браузере без сервера и интернета.</p>
+      <p class="start-sub">Четыре модуля: экспресс-вкат, углублённая практика, практикум и пет-проект Alife-System. Без лекций и воды — честное исполнение в браузере без сервера и интернета.</p>
 
-      <!-- Карточки этапов курса (генерируются динамически из COURSE_STAGES) -->
-      <div id="stage-cards" class="stage-cards"></div>
-
-      <!-- Карточка пет-проекта «Alife-System» (генерируется из LIFE_MODULE) -->
-      <div id="life-start-card" class="life-start-card-host"></div>
+      <!-- Карточки модулей курса и пет-проекта в сбалансированной сетке 2x2 -->
+      <div class="start-modules-grid">
+        <div id="stage-cards" class="stage-cards"></div>
+        <div id="life-start-card" class="stage-card stage-card-life"></div>
+      </div>
 
       <div class="start-note">прогресс сохраняется на этом устройстве</div>
       <div id="start-status" class="status-badge">Загрузка Python...</div>

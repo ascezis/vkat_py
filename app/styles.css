@@ -2828,7 +2828,29 @@ body {
 .sandbox-banner-text {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
+  text-align: left;
+}
+
+#btn-start-sandbox {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--fill);
+  color: var(--fill-text);
+  border: 1px solid var(--fill);
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+#btn-start-sandbox:hover { background: var(--fill-hover); }
+
+#btn-start-sandbox:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
 }
 
 .sandbox-banner-title {
@@ -2890,7 +2912,7 @@ body {
   padding: 2px 7px;
   background: var(--bg-panel-alt);
   border: 1px solid var(--border);
-  color: var(--text-dim);
+  color: var(--text-muted);
   letter-spacing: 0.04em;
 }
 
@@ -2924,17 +2946,23 @@ body {
 }
 
 .sandbox-btn-primary:hover {
-  background: #ff7f24;
+  filter: brightness(1.1);
 }
 
 .sandbox-btn-danger {
-  background: #ff5252;
+  background: var(--error);
   color: #ffffff;
   font-weight: 600;
 }
 
 .sandbox-btn-danger:hover {
-  background: #ff6e6e;
+  filter: brightness(1.1);
+}
+
+.sandbox-btn:focus-visible,
+.sandbox-tool-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 .sandbox-btn-ghost {
@@ -2986,22 +3014,101 @@ body {
 .sandbox-toolbar-label {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
-.sandbox-select {
+.sandbox-menu {
+  position: relative;
+}
+
+.sandbox-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sandbox-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 240px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
-  padding: 4px 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sandbox-menu-btn:hover,
+.sandbox-menu-btn[aria-expanded="true"] {
+  border-color: var(--border-strong);
+}
+
+.sandbox-menu-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.sandbox-menu-caret {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.sandbox-menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 100%;
+  width: max-content;
+  max-width: 340px;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
   outline: none;
+}
+
+.sandbox-menu-list[hidden] { display: none; }
+
+.sandbox-menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px 8px 28px;
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
   cursor: pointer;
 }
 
-.sandbox-select:focus {
-  border-color: var(--brand-orange);
+.sandbox-menu-item .sandbox-menu-tag {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.sandbox-menu-item.is-active {
+  background: var(--border);
+  color: var(--text);
+}
+
+.sandbox-menu-item[aria-selected="true"] {
+  color: var(--text);
+}
+
+.sandbox-menu-item[aria-selected="true"]::before {
+  content: "✓";
+  position: absolute;
+  left: 11px;
 }
 
 .sandbox-editor-actions {
@@ -3016,7 +3123,7 @@ body {
   padding: 3px 8px;
   background: transparent;
   border: 1px solid var(--border);
-  color: var(--text-dim);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -3054,11 +3161,19 @@ body {
 }
 
 .sandbox-editor-hint {
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
+.sandbox-editor-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sandbox-editor-status [hidden] { display: none; }
+
 .sandbox-save-status {
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 /* Правая колонка: терминал вывода */
@@ -3067,7 +3182,7 @@ body {
   min-width: 320px;
   display: flex;
   flex-direction: column;
-  background: #080b10;
+  background: var(--bg-panel-alt);
 }
 
 .sandbox-terminal-header {
@@ -3075,64 +3190,46 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: #0d1117;
+  background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 11px;
   gap: 12px;
 }
 
-.terminal-status-row {
+.sandbox-term-left,
+.sandbox-term-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.sandbox-term-right { gap: 14px; }
+
 .terminal-dot {
+  display: inline-block;
+  flex: none;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--text-dim);
 }
 
-.terminal-dot.ready {
-  background: var(--text-dim);
-}
-
 .terminal-dot.running {
   background: var(--brand-orange);
-  box-shadow: 0 0 6px var(--brand-orange);
   animation: term-dot-pulse 1s infinite alternate;
 }
 
-.terminal-dot.ok {
-  background: #00ff66;
-  box-shadow: 0 0 6px #00ff66;
-}
-
-.terminal-dot.error {
-  background: #ff5252;
-  box-shadow: 0 0 6px #ff5252;
-}
+.terminal-dot.ok { background: var(--text); }
+.terminal-dot.error { background: var(--error); }
 
 @keyframes term-dot-pulse {
   from { opacity: 0.4; }
   to { opacity: 1; }
 }
 
-.terminal-status-text {
-  color: var(--text-muted);
-}
-
-.terminal-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.terminal-meta-item {
-  color: var(--text-dim);
-}
+.term-status-text { color: var(--text-muted); }
+.sandbox-term-badge { color: var(--text-muted); }
 
 .sandbox-terminal-body {
   flex: 1;
@@ -3147,6 +3244,10 @@ body {
 .terminal-welcome-msg {
   padding: 12px 0;
   user-select: none;
+}
+
+.terminal-welcome-msg .welcome-line {
+  color: var(--text-muted);
 }
 
 .term-dim {
@@ -3164,11 +3265,11 @@ body {
 }
 
 .terminal-output.stdout {
-  color: #39ff14;
+  color: var(--text);
 }
 
 .terminal-output.error {
-  color: #ff5252;
+  color: var(--error);
 }
 
 .terminal-output.muted {

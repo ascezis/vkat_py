@@ -443,14 +443,21 @@
         <div class="sandbox-editor-toolbar">
           <div class="sandbox-preset-group">
             <span class="sandbox-toolbar-label">// ШАБЛОН:</span>
-            <select id="sandbox-preset-select" class="sandbox-select">
-              <option value="empty">Чистый скрипт</option>
-              <option value="benchmark">Замер скорости (Benchmark)</option>
-              <option value="binary_search">Алгоритм: Бинарный поиск O(log N)</option>
-              <option value="freq_dict">Алгоритм: Частотный словарь</option>
-              <option value="comprehensions">Продвинутые списки и срезы</option>
-              <option value="oop_stack">Структура данных: Стек (Stack)</option>
-            </select>
+            <div class="sandbox-menu" id="sandbox-preset-menu">
+              <button type="button" id="sandbox-preset-btn" class="sandbox-menu-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="sandbox-preset-list">
+                <span id="sandbox-preset-current" class="sandbox-menu-current">Чистый скрипт</span>
+                <span class="sandbox-menu-caret" aria-hidden="true">▾</span>
+              </button>
+              <ul id="sandbox-preset-list" class="sandbox-menu-list" role="listbox" tabindex="-1" hidden></ul>
+              <select id="sandbox-preset-select" class="sandbox-select-native" tabindex="-1" aria-hidden="true">
+                <option value="empty" data-tag="основа">Чистый скрипт</option>
+                <option value="benchmark" data-tag="замер">Замер скорости</option>
+                <option value="binary_search" data-tag="алгоритм">Бинарный поиск</option>
+                <option value="freq_dict" data-tag="алгоритм">Частотный словарь</option>
+                <option value="comprehensions" data-tag="списки">Продвинутые списки и срезы</option>
+                <option value="oop_stack" data-tag="структура">Стек (Stack)</option>
+              </select>
+            </div>
           </div>
           <div class="sandbox-editor-actions">
             <button type="button" id="btn-sandbox-copy" class="sandbox-tool-btn" title="Скопировать код в буфер">Скопировать</button>
@@ -469,7 +476,10 @@
 
         <div class="sandbox-editor-footer">
           <span class="sandbox-editor-hint">Ctrl + Enter — быстрый запуск • Tab — 4 пробела</span>
-          <span class="sandbox-save-status" id="sandbox-save-status">сохранено локально</span>
+          <span class="sandbox-editor-status">
+            <button type="button" id="btn-sandbox-undo" class="sandbox-tool-btn" hidden>Вернуть прежний код</button>
+            <span class="sandbox-save-status" id="sandbox-save-status">сохранено локально</span>
+          </span>
         </div>
       </section>
 
@@ -477,7 +487,7 @@
       <section class="sandbox-terminal-panel">
         <div class="sandbox-terminal-header">
           <div class="sandbox-term-left">
-            <span id="sandbox-term-dot" class="term-status-dot ready"></span>
+            <span id="sandbox-term-dot" class="terminal-dot ready"></span>
             <span id="sandbox-term-status" class="term-status-text">Готов к запуску</span>
           </div>
           <div class="sandbox-term-right">

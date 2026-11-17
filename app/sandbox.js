@@ -16,6 +16,8 @@
 
   const document = window.document || (typeof globalThis !== 'undefined' && globalThis.document) || null;
 
+  const SANDBOX_DRAFT_KEY = '__sandbox__';
+
   // ─── Заготовки кода (Пресеты) ────────────────────────────────────────────────
 
   const PRESETS = {
@@ -231,6 +233,7 @@ for t in tests:
       lineNumbers: d('sandbox-line-numbers'),
       autocompletePopup: d('sandbox-autocomplete-popup'),
       saveStatus: d('sandbox-save-status'),
+      btnUndo: d('btn-sandbox-undo'),
       termDot: d('sandbox-term-dot'),
       termStatus: d('sandbox-term-status'),
       termTime: d('sandbox-term-time'),
@@ -257,12 +260,38 @@ for t in tests:
     updateLineNumbers();
     if (S.highlighter) S.highlighter.update();
     const code = S.dom.editor ? S.dom.editor.value : '';
+    if (!S.suppressUndoHide) hideUndo();
     if (window.VkatStorage) {
-      window.VkatStorage.setSetting('vkat_sandbox_code', code);
+      // Черновик хранится в данных активного профиля, а не в общих настройках
+      window.VkatStorage.saveDraftDebounced(SANDBOX_DRAFT_KEY, code);
       if (S.dom.saveStatus) {
         S.dom.saveStatus.textContent = 'сохранено локально';
       }
     }
+  }
+
+  // ─── «Вернуть прежний код» после замены шаблоном ─────────────────────────────
+
+  function showUndo(prevCode) {
+    S.undoCode = prevCode;
+    if (S.undoTimer) clearTimeout(S.undoTimer);
+    S.undoTimer = setTimeout(hideUndo, 20000);
+    if (S.dom.btnUndo) S.dom.btnUndo.hidden = false;
+  }
+
+  function hideUndo() {
+    S.undoCode = null;
+    if (S.undoTimer) { clearTimeout(S.undoTimer); S.undoTimer = null; }
+    if (S.dom.btnUndo) S.dom.btnUndo.hidden = true;
+  }
+
+  function undoReplace() {
+    if (S.undoCode == null || !S.dom.editor) return;
+    const code = S.undoCode;
+    S.dom.editor.value = code;
+    hideUndo();
+    onEditorChange();
+    S.dom.editor.focus();
   }
 
   // ─── Запуск и исполнение кода ────────────────────────────────────────────────
@@ -349,7 +378,7 @@ for t in tests:
       S.dom.termOutput.className = 'terminal-output ' + (type || '');
       S.dom.termOutput.textContent = content;
       // Подсчёт строк вывода
-      const lines = content.split('\n').length;
+      const lines = content ? content.replace(/\n$/, '').split('\n').length : 0;
       if (S.dom.termLines) {
         S.dom.termLines.textContent = 'Строк: ' + lines;
       }
@@ -372,11 +401,116 @@ for t in tests:
 
   // ─── Пресеты и действия ──────────────────────────────────────────────────────
 
-  function selectPreset(presetKey) {
+  // ─── Меню шаблонов (замена нативного select; select остаётся источником значения) ───
+
+  function initPresetMenu() {
+    const sel = S.dom.presetSelect;
+    const btn = document.getElementById('sandbox-preset-btn');
+    const list = document.getElementById('sandbox-preset-list');
+    const cur = document.getElementById('sandbox-preset-current');
+    if (!sel || !btn || !list || !cur) return;
+
+    let activeIdx = -1;
+    const opts = Array.from(sel.options);
+
+    list.innerHTML = '';
+    opts.forEach((o, i) => {
+      const li = document.createElement('li');
+      li.className = 'sandbox-menu-item';
+      li.setAttribute('role', 'option');
+      li.dataset.value = o.value;
+      const name = document.createElement('span');
+      name.textContent = o.textContent;
+      li.appendChild(name);
+      if (o.dataset.tag) {
+        const tag = document.createElement('span');
+        tag.className = 'sandbox-menu-tag';
+        tag.textContent = o.dataset.tag;
+        li.appendChild(tag);
+      }
+      li.addEventListener('mousedown', e => e.preventDefault());
+      li.addEventListener('click', () => choose(i));
+      li.addEventListener('mousemove', () => setActive(i));
+      list.appendChild(li);
+    });
+
+    function items() { return Array.from(list.children); }
+
+    function sync() {
+      const idx = Math.max(0, sel.selectedIndex);
+      cur.textContent = opts[idx] ? opts[idx].textContent : '';
+      items().forEach((li, i) => li.setAttribute('aria-selected', String(i === idx)));
+    }
+
+    function setActive(i) {
+      activeIdx = i;
+      items().forEach((li, k) => li.classList.toggle('is-active', k === i));
+      const li = items()[i];
+      if (li && li.scrollIntoView) li.scrollIntoView({ block: 'nearest' });
+    }
+
+    function isOpen() { return !list.hidden; }
+
+    function open() {
+      list.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      setActive(Math.max(0, sel.selectedIndex));
+    }
+
+    function close() {
+      list.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    function choose(i) {
+      close();
+      btn.focus();
+      if (i === sel.selectedIndex) return;
+      sel.selectedIndex = i;
+      sync();
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    btn.addEventListener('click', () => (isOpen() ? close() : open()));
+
+    btn.addEventListener('keydown', e => {
+      const n = opts.length;
+      if (e.key === 'Escape' && isOpen()) {
+        e.preventDefault(); e.stopPropagation(); close();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); e.stopPropagation();
+        if (!isOpen()) { open(); return; }
+        setActive((activeIdx + (e.key === 'ArrowDown' ? 1 : -1) + n) % n);
+      } else if ((e.key === 'Enter' || e.key === ' ') && isOpen()) {
+        e.preventDefault(); e.stopPropagation(); choose(activeIdx);
+      } else if (e.key === 'Home' && isOpen()) {
+        e.preventDefault(); setActive(0);
+      } else if (e.key === 'End' && isOpen()) {
+        e.preventDefault(); setActive(n - 1);
+      } else if (e.key === 'Tab' && isOpen()) {
+        close();
+      }
+    });
+
+    document.addEventListener('mousedown', e => {
+      if (isOpen() && !e.target.closest('#sandbox-preset-menu')) close();
+    });
+
+    S.syncPresetMenu = sync;
+    sync();
+  }
+
+  function selectPreset(presetKey, opts) {
+    const silent = !!(opts && opts.silent);
     const p = PRESETS[presetKey] || PRESETS.empty;
     if (S.dom.editor) {
+      const prev = S.dom.editor.value;
       S.dom.editor.value = p.code;
+      S.suppressUndoHide = true;
       onEditorChange();
+      S.suppressUndoHide = false;
+      if (!silent && prev.trim() && prev !== p.code) showUndo(prev);
+      else hideUndo();
     }
     clearOutput();
     if (S.dom.editor) {
@@ -452,6 +586,7 @@ for t in tests:
     if (S.dom.btnStop) S.dom.btnStop.addEventListener('click', stopExecution);
     if (S.dom.btnClearOut) S.dom.btnClearOut.addEventListener('click', clearOutput);
     if (S.dom.btnReset) S.dom.btnReset.addEventListener('click', resetCode);
+    if (S.dom.btnUndo) S.dom.btnUndo.addEventListener('click', undoReplace);
     if (S.dom.btnCopy) S.dom.btnCopy.addEventListener('click', copyCode);
     if (S.dom.btnDownload) S.dom.btnDownload.addEventListener('click', downloadCode);
 
@@ -459,6 +594,7 @@ for t in tests:
       S.dom.presetSelect.addEventListener('change', e => {
         selectPreset(e.target.value);
       });
+      initPresetMenu();
     }
 
     // Подсветка синтаксиса и автодополнение в редакторе песочницы
@@ -518,13 +654,29 @@ for t in tests:
       S.previousScreen = prevScreen;
     }
 
-    // Загрузка сохранённого драфта из VkatStorage
-    const savedCode = window.VkatStorage ? window.VkatStorage.getSetting('vkat_sandbox_code', null) : null;
-    if (savedCode && savedCode.trim()) {
-      if (S.dom.editor) S.dom.editor.value = savedCode;
-    } else if (S.dom.editor && !S.dom.editor.value.trim()) {
-      if (S.dom.presetSelect) S.dom.presetSelect.value = 'empty';
-      selectPreset('empty');
+    // Редактор мог остаться от другого профиля на этом компьютере — очищаем,
+    // затем подгружаем черновик активного профиля (или шаблон по умолчанию).
+    hideUndo();
+    if (S.dom.editor) S.dom.editor.value = '';
+    const applyDraft = (saved) => {
+      if (!S.active) return;
+      if (typeof saved === 'string' && saved.trim()) {
+        if (S.dom.editor) S.dom.editor.value = saved;
+      } else {
+        if (S.dom.presetSelect) S.dom.presetSelect.value = 'empty';
+        if (S.syncPresetMenu) S.syncPresetMenu();
+        selectPreset('empty', { silent: true });
+      }
+      updateLineNumbers();
+      if (S.highlighter) S.highlighter.update();
+    };
+    if (window.VkatStorage) {
+      window.VkatStorage.flushSync();
+      window.VkatStorage.load()
+        .then(data => applyDraft(data && data.drafts ? data.drafts[SANDBOX_DRAFT_KEY] : null))
+        .catch(() => applyDraft(null));
+    } else {
+      applyDraft(null);
     }
 
     updateLineNumbers();
@@ -536,6 +688,7 @@ for t in tests:
 
   function leave() {
     S.active = false;
+    hideUndo();
     if (S.isRunning) {
       stopExecution();
     }

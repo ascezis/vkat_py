@@ -1856,11 +1856,11 @@
     const h = S.dom.demoCanvas.height;
 
     // Фон
-    ctx.fillStyle = '#0a0d13';
+    ctx.fillStyle = PALETTE.bg;
     ctx.fillRect(0, 0, w, h);
 
     // Сетка
-    ctx.strokeStyle = '#181d27';
+    ctx.strokeStyle = PALETTE.gridLines;
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = 0; x <= w; x += DEMO_CELL) {
@@ -1875,7 +1875,7 @@
 
     // Клетки
     if (!S.demoGrid) return;
-    ctx.fillStyle = '#00ff66';
+    ctx.fillStyle = PALETTE.cellNew;
     for (let y = 0; y < DEMO_SIZE; y++) {
       for (let x = 0; x < DEMO_SIZE; x++) {
         if (S.demoGrid[y * DEMO_SIZE + x] === 1) {

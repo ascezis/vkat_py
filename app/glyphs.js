@@ -330,8 +330,8 @@
       tx(270, 178, '1 или 4+ соседей', 'gt small', mid) +
       tx(270, 192, '→ гибель', 'gt small', mid);
 
-    inner += tx(180, 196, 'B3 / S23', 'gT big', mid);
-    return svg(inner, 208);
+    inner += tx(180, 228, 'B3 / S23', 'gT big', mid);
+    return svg(inner, 240);
   }
 
   function lifePatterns() {

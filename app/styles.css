@@ -2843,7 +2843,7 @@ body {
   display: none;
   flex-direction: column;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   background-color: var(--bg);
   color: var(--text);
   overflow: hidden;
@@ -2857,80 +2857,78 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 28px;
+  gap: 16px;
+  padding: 0 28px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-panel);
+  background: var(--bg);
   height: 56px;
   flex-shrink: 0;
 }
 
-.life-header-left {
+.life-header-left,
+.life-header-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
 }
 
+.life-header-right {
+  flex-shrink: 0;
+}
+
 .life-header-title {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  letter-spacing: 0.08em;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .life-step-badge {
   font-family: var(--font-mono);
   font-size: 12px;
-  padding: 3px 10px;
-  background: var(--border);
-  color: var(--brand-orange);
-  border: 1px solid var(--border-strong);
-  font-weight: 500;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .life-step-dots {
   display: inline-flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .life-dot {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
   font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-weight: 500;
+  color: var(--text-dim);
   background: transparent;
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
 .life-dot:hover {
   border-color: var(--border-strong);
   color: var(--text);
-  background: var(--bg-panel-alt);
 }
 
+/* сдан: линия и цифра ярче, без заливки */
+.life-dot.done {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* текущий: светлая инверсия, как везде в системе */
 .life-dot.current {
   color: var(--fill-text);
   background: var(--fill);
   border-color: var(--fill);
-}
-
-.life-dot.done {
-  color: var(--brand-orange);
-  border-color: var(--brand-orange);
-}
-
-.life-dot.done.current {
-  color: var(--fill-text);
-  background: var(--brand-orange);
 }
 
 .life-body {
@@ -2952,69 +2950,70 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px 28px;
-  border-right: none;
+  padding: 20px 28px;
   background: var(--bg);
   overflow-y: auto;
 }
 
-/* Разделитель колонок (сплиттер) */
+/* Колонка поля: всё выровнено по ширине холста */
+.life-stage {
+  --life-field: min(100%, max(280px, calc(100vh - 56px - 264px)));
+  width: var(--life-field);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Разделитель колонок: 1px линия, зона захвата шире */
 .life-splitter {
-  width: 8px;
-  background: var(--border);
+  width: 9px;
+  margin: 0 -4px;
+  background: transparent;
   cursor: col-resize;
   flex-shrink: 0;
   user-select: none;
   position: relative;
-  transition: background 0.15s ease;
   z-index: 5;
-}
-
-.life-splitter:hover,
-.life-splitter.is-dragging {
-  background: var(--brand-orange);
-}
-
-.life-splitter:focus-visible {
-  outline: 2px solid var(--brand-orange);
-  outline-offset: -1px;
 }
 
 .life-splitter::after {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2px;
-  height: 28px;
-  background: var(--border-strong);
-  border-radius: 1px;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: var(--border);
+  transition: background 0.15s ease;
 }
 
 .life-splitter:hover::after,
 .life-splitter.is-dragging::after {
-  background: #ffffff;
+  background: var(--brand-orange);
+  width: 2px;
+  left: 3px;
 }
 
-/* Кнопки шапки для переключения режимов */
+.life-splitter:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -1px;
+}
+
+/* Кнопки шапки: нейтральные, как остальные второстепенные */
 .life-btn-theory,
 .life-btn-skip {
-  color: var(--brand-orange);
-  border-color: rgba(255, 106, 0, 0.4);
-  background: rgba(255, 106, 0, 0.08);
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: transparent;
   font-family: var(--font-mono);
   font-size: 12px;
-  letter-spacing: 0.02em;
   padding: 5px 12px;
-  transition: all 0.2s ease;
 }
 
 .life-btn-theory:hover,
 .life-btn-skip:hover {
-  background: rgba(255, 106, 0, 0.2);
-  border-color: var(--brand-orange);
-  color: #ffffff;
+  background: var(--bg-panel);
+  border-color: var(--text-muted);
 }
 
 /* ─── ВВОДНЫЙ БРИФИНГ И ТЕОРИЯ ────────────────────────────────────────────── */
@@ -3125,15 +3124,13 @@ body {
 .intro-kicker {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--brand-orange);
-  letter-spacing: 0.08em;
-  font-weight: 600;
+  color: var(--text-dim);
 }
 
 .intro-title {
   font-size: 22px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -3141,7 +3138,7 @@ body {
 .intro-content {
   font-size: 14px;
   line-height: 1.7;
-  color: rgba(236, 236, 236, 0.88);
+  color: var(--text-muted);
 }
 
 .intro-content p {
@@ -3149,7 +3146,7 @@ body {
 }
 
 .intro-content strong {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .intro-box {
@@ -3162,9 +3159,7 @@ body {
 .intro-box-title {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  color: var(--text-dim);
   margin-bottom: 8px;
 }
 
@@ -3190,7 +3185,7 @@ body {
 
 .intro-box-desc {
   font-size: 13px;
-  color: rgba(236, 236, 236, 0.75);
+  color: var(--text-muted);
   margin: 0 !important;
 }
 
@@ -3259,14 +3254,13 @@ body {
 
 .moore-cell:hover {
   border-color: var(--brand-orange);
-  color: #ffffff;
+  color: var(--text);
 }
 
 .moore-cell.active {
   background: rgba(255, 106, 0, 0.25);
   border-color: var(--brand-orange);
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 106, 0, 0.35);
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -3415,12 +3409,11 @@ body {
 .roadmap-badge {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--brand-orange);
+  color: var(--text-dim);
   padding: 3px 8px;
-  background: rgba(255, 106, 0, 0.1);
-  border: 1px solid rgba(255, 106, 0, 0.3);
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  font-weight: 500;
   flex-shrink: 0;
 }
 
@@ -3433,12 +3426,12 @@ body {
 .roadmap-title {
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .roadmap-desc {
   font-size: 12px;
-  color: rgba(236, 236, 236, 0.75);
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
@@ -3452,13 +3445,10 @@ body {
 
 .life-canvas-container {
   position: relative;
-  width: 500px;
-  max-width: 100%;
+  width: 100%;
   aspect-ratio: 1 / 1;
-  height: auto;
-  background: #000000;
+  background: var(--bg);
   border: 1px solid var(--border-strong);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   flex-shrink: 0;
 }
 
@@ -3469,50 +3459,49 @@ body {
   cursor: crosshair;
 }
 
-/* HUD поверх Canvas */
+/* Строка состояния над полем */
 .life-hud {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  pointer-events: none;
+  gap: 12px;
+  height: 24px;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: rgba(236, 236, 236, 0.75);
-  z-index: 2;
+  color: var(--text-dim);
 }
 
-.hud-item {
-  background: rgba(10, 10, 10, 0.85);
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  margin-right: 6px;
-  letter-spacing: 0.04em;
+.hud-left {
+  display: flex;
+  gap: 16px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .hud-item strong {
-  color: var(--brand-orange);
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 500;
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Панель управления */
+#life-sparkline {
+  width: 100px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Панели управления */
 .life-controls-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 500px;
-  margin-top: 16px;
   gap: 12px;
   flex-wrap: wrap;
 }
 
 .life-controls-bar-secondary {
-  margin-top: 10px;
   justify-content: flex-start;
-  gap: 10px;
 }
 
 .life-btn-group {
@@ -3576,10 +3565,10 @@ body {
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-muted);
-  background: var(--bg-panel);
+  color: var(--text-dim);
+  background: transparent;
   border: 1px solid var(--border);
-  padding: 4px 10px;
+  padding: 4px 12px;
   height: 36px;
   box-sizing: border-box;
 }
@@ -3598,6 +3587,7 @@ body {
 }
 
 .life-select {
+  color-scheme: dark;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   color: var(--text);
@@ -3619,11 +3609,9 @@ body {
 }
 
 .life-canvas-hint {
-  margin-top: 14px;
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-dim);
-  text-align: center;
 }
 
 /* Правая колонка (Задание и Редактор) */
@@ -3663,7 +3651,7 @@ body {
 
 .life-glyph-slot svg.glyph {
   width: 100%;
-  max-width: 500px;
+  max-width: 460px;
   height: auto;
   display: block;
 }
@@ -3676,7 +3664,7 @@ body {
   color: var(--text-muted);
   font-size: 15px;
   line-height: 1.65;
-  border-left: 3px solid var(--brand-orange);
+  border-left: 2px solid var(--border-strong);
   padding-left: 14px;
   margin-bottom: 16px;
   max-width: 82ch;
@@ -3746,7 +3734,7 @@ body {
   line-height: 1.65;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--brand-orange);
+  border-left: 2px solid var(--border-strong);
   padding: 10px 14px;
   margin: 6px 0 0 0;
   overflow-x: auto;
@@ -3780,8 +3768,7 @@ body {
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
+  color: var(--text-dim);
 }
 
 .editor-status {
@@ -3789,7 +3776,7 @@ body {
 }
 
 .editor-status.ok {
-  color: var(--brand-orange);
+  color: var(--text);
 }
 
 .editor-status.err {
@@ -3995,9 +3982,7 @@ body {
 .life-start-card-kicker {
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--brand-orange);
+  color: var(--text-dim);
 }
 
 .life-start-card-title {
@@ -4031,7 +4016,7 @@ body {
 .life-birth-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle, rgba(255, 106, 0, 0.2) 0%, rgba(10, 10, 10, 0.85) 70%);
+  background: rgba(10, 10, 10, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4046,14 +4031,13 @@ body {
 }
 
 .birth-message h2 {
-  font-size: 28px;
-  color: #ffffff;
-  letter-spacing: 0.15em;
-  text-shadow: 0 0 16px var(--brand-orange);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .birth-message p {
-  color: var(--brand-orange);
+  color: var(--text-muted);
   font-size: 12px;
   margin-top: 6px;
 }
@@ -4063,12 +4047,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #1a1a1a;
-  border: 1px solid var(--brand-orange);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
   padding: 4px 12px;
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: #fff;
+  font-size: 12px;
+  color: var(--text);
   animation: life-pop 0.3s ease-out;
 }
 
@@ -4110,16 +4094,9 @@ body {
     padding: 20px 24px;
   }
 
-  .life-canvas-container,
-  #life-main-canvas,
-  .life-controls-bar {
+  .life-stage {
     width: 100%;
     max-width: 500px;
-  }
-
-  #life-main-canvas {
-    height: auto;
-    aspect-ratio: 1 / 1;
   }
 }
 

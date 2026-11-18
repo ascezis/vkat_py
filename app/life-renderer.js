@@ -323,8 +323,7 @@
     const dpr = window.devicePixelRatio || 1;
     canvas.width = CANVAS_PX * dpr;
     canvas.height = CANVAS_PX * dpr;
-    canvas.style.width = CANVAS_PX + 'px';
-    canvas.style.height = CANVAS_PX + 'px';
+    // размер на экране задаёт CSS (.life-canvas-container), битмап остаётся CANVAS_PX*dpr
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
   }
@@ -950,7 +949,7 @@
   }
 
   function updatePlayButton() {
-    S.dom.btnPlay.textContent = S.running ? '⏸ Пауза' : '▶ Старт';
+    S.dom.btnPlay.textContent = S.running ? 'Пауза' : 'Старт';
   }
 
   // ─── Панель шага (правая колонка) ────────────────────────────────────────────
@@ -959,7 +958,7 @@
     const step = S.module.steps[S.currentStepIndex];
     const n = S.currentStepIndex + 1;
 
-    S.dom.stepIndicator.textContent = 'ШАГ ' + n + ' ИЗ ' + S.module.steps.length;
+    S.dom.stepIndicator.textContent = 'шаг ' + n + ' из ' + S.module.steps.length;
     S.dom.taskTitle.textContent = step.title;
     if (window.Glyphs && step.glyph) {
       S.dom.glyphSlot.innerHTML = window.Glyphs.draw ? window.Glyphs.draw(step.glyph) : (window.Glyphs.render(step.glyph) || '');
@@ -1137,7 +1136,7 @@
     } finally {
       S.isChecking = false;
       S.dom.btnSubmit.disabled = false;
-      S.dom.btnSubmit.textContent = 'Проверить решение (Ctrl+Enter)';
+      S.dom.btnSubmit.textContent = 'Проверить';
     }
   }
 
@@ -1911,7 +1910,7 @@
       }, 130);
     }
     if (S.dom.demoToggle) {
-      S.dom.demoToggle.textContent = paused ? '▶ Запустить' : '⏸ Пауза';
+      S.dom.demoToggle.textContent = paused ? 'Запустить' : 'Пауза';
     }
   }
 

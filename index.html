@@ -534,13 +534,13 @@
     <header class="life-header">
       <div class="life-header-left">
         <button type="button" id="btn-life-back" class="btn-ghost-sm" title="Вернуться в курс">← В меню курса</button>
-        <span class="life-header-title">ПЕТ-ПРОЕКТ: ALIFE-SYSTEM</span>
-        <span class="life-step-badge" id="life-step-indicator">ШАГ 1 ИЗ 4</span>
+        <span class="life-header-title">Alife-System</span>
+        <span class="life-step-badge" id="life-step-indicator">шаг 1 из 4</span>
         <span class="life-step-dots" id="life-step-dots"></span>
       </div>
       <div class="life-header-right">
         <button type="button" id="btn-life-open-intro" class="btn-ghost-sm life-btn-theory" title="Теория и правила симулятора">Теория и правила</button>
-        <button type="button" id="btn-life-skip-intro" class="btn-ghost-sm life-btn-skip" style="display: none;" title="Перейти к коду">В лабораторию →</button>
+        <button type="button" id="btn-life-skip-intro" class="btn-ghost-sm life-btn-skip" style="display: none;" title="Перейти к коду">В лабораторию</button>
         <div class="life-pattern-toast" id="life-pattern-toast" style="display: none;">
           <span class="toast-icon" id="life-toast-icon">▪</span>
           <span class="toast-text" id="life-toast-text">Обнаружен паттерн</span>
@@ -563,7 +563,7 @@
         <div class="life-intro-slides" id="life-intro-slides">
           <!-- СЛАЙД 1: Концепт: Игра без игроков -->
           <article class="intro-slide active" data-slide="1">
-            <div class="intro-kicker">// КОНЦЕПТ СИМУЛЯЦИИ</div>
+            <div class="intro-kicker">концепт симуляции</div>
             <h2 class="intro-title">Джон Конвей и феномен эмерджентности</h2>
             <div class="intro-photo-row">
             <figure class="intro-photo">
@@ -591,7 +591,7 @@
 
           <!-- СЛАЙД 2: Окрестность Мура: 8 направлений -->
           <article class="intro-slide" data-slide="2" style="display: none;">
-            <div class="intro-kicker">// ТОПОЛОГИЯ ПОЛЯ</div>
+            <div class="intro-kicker">топология поля</div>
             <h2 class="intro-title">Окрестность Мура: 8 направлений</h2>
             <div class="intro-content">
               <p>Клетка в симуляторе абсолютно локальна: у неё нет глобального зрения. Она ничего не знает о размерах сетки и далёких колониях.</p>
@@ -635,7 +635,7 @@
 
           <!-- СЛАЙД 3: Законы Жизни (B3/S23) -->
           <article class="intro-slide" data-slide="3" style="display: none;">
-            <div class="intro-kicker">// ФИЗИКА КОНВЕЯ</div>
+            <div class="intro-kicker">физика Конвея</div>
             <h2 class="intro-title">Законы B3/S23: рождение, выживание, смерть</h2>
             <div class="intro-content">
               <p>Вселенная классического автомата управляется всего двумя условиями:</p>
@@ -652,7 +652,7 @@
                     <button type="button" class="life-btn life-btn-sm" id="btn-demo-single">1. Одиночество</button>
                     <button type="button" class="life-btn life-btn-sm" id="btn-demo-blinker">2. Мигалка</button>
                     <button type="button" class="life-btn life-btn-sm life-btn-primary" id="btn-demo-glider">3. Глайдер</button>
-                    <button type="button" class="life-btn life-btn-sm" id="btn-demo-toggle">⏸ Пауза</button>
+                    <button type="button" class="life-btn life-btn-sm" id="btn-demo-toggle">Пауза</button>
                   </div>
                 </div>
                 <div class="intro-demo-hint">Полигон живой: тыкай в клетки — клик ставит или убирает, зажми и веди — рисуй. Эволюция идёт сама, ⏸ — пауза.</div>
@@ -673,7 +673,7 @@
 
           <!-- СЛАЙД 4: План разработки симулятора -->
           <article class="intro-slide" data-slide="4" style="display: none;">
-            <div class="intro-kicker">// ИНЖЕНЕРНЫЙ ПЛАН</div>
+            <div class="intro-kicker">инженерный план</div>
             <h2 class="intro-title">Архитектура симулятора: 4 шага</h2>
             <div class="intro-content">
               <p>В лаборатории ты восстановишь движок симуляции на чистом Python по принципу «от простого к сложному»:</p>
@@ -721,23 +721,22 @@
     <main class="life-body" id="life-body">
       <!-- Левая колонка: интерактивная вселенная -->
       <section class="life-canvas-panel" id="life-canvas-panel">
-        <div class="life-canvas-container">
-          <div class="life-hud">
-            <div class="hud-left">
-              <span class="hud-item">GEN: <strong id="life-stat-gen">0000</strong></span>
-              <span class="hud-item">POP: <strong id="life-stat-pop">0</strong></span>
-              <span class="hud-item">Δ: <strong id="life-stat-density">0.00%</strong></span>
-            </div>
-            <div class="hud-right">
-              <canvas id="life-sparkline" width="100" height="24" title="История популяции"></canvas>
-            </div>
+        <div class="life-stage">
+        <div class="life-hud" aria-label="Состояние поля">
+          <div class="hud-left">
+            <span class="hud-item">поколение <strong id="life-stat-gen">0000</strong></span>
+            <span class="hud-item">живых <strong id="life-stat-pop">0</strong></span>
+            <span class="hud-item">плотность <strong id="life-stat-density">0.00%</strong></span>
           </div>
+          <canvas id="life-sparkline" width="100" height="24" title="История популяции"></canvas>
+        </div>
 
+        <div class="life-canvas-container">
           <canvas id="life-main-canvas" width="500" height="500"></canvas>
 
           <div id="life-birth-overlay" class="life-birth-overlay" style="display: none;">
             <div class="birth-message">
-              <h2>МИР ОЖИЛ</h2>
+              <h2>Мир ожил</h2>
               <p>Законы Alife-System активированы</p>
             </div>
           </div>
@@ -745,20 +744,19 @@
 
         <div class="life-controls-bar">
           <div class="life-btn-group">
-            <button type="button" id="btn-life-play" class="life-btn life-btn-sm">▶ Старт</button>
-            <button type="button" id="btn-life-step" class="life-btn life-btn-sm life-btn-ghost">⏭ Шаг</button>
-            <button type="button" id="btn-life-clear" class="life-btn life-btn-sm life-btn-ghost">↺ Очистить</button>
-            <button type="button" id="btn-life-random" class="life-btn life-btn-sm life-btn-ghost">🎲 Рандом</button>
+            <button type="button" id="btn-life-play" class="life-btn life-btn-sm">Старт</button>
+            <button type="button" id="btn-life-step" class="life-btn life-btn-sm life-btn-ghost">Шаг</button>
+            <button type="button" id="btn-life-clear" class="life-btn life-btn-sm life-btn-ghost">Очистить</button>
+            <button type="button" id="btn-life-random" class="life-btn life-btn-sm life-btn-ghost">Случайно</button>
           </div>
+        </div>
 
+        <div class="life-controls-bar life-controls-bar-secondary">
           <div class="life-speed-control">
             <label for="life-speed-slider">Скорость:</label>
             <input type="range" id="life-speed-slider" min="1" max="30" value="10">
             <span id="life-speed-val">10/с</span>
           </div>
-        </div>
-
-        <div class="life-controls-bar life-controls-bar-secondary">
           <div class="life-presets-dropdown">
             <select id="life-preset-select" class="life-select" disabled title="Пресеты откроются после Шага 4">
               <option value="" disabled selected>Пресеты...</option>
@@ -777,6 +775,7 @@
 
         <div class="life-canvas-hint">
           <span>ЛКМ — рисовать клетки</span> · <span>ПКМ / Shift+ЛКМ — стирать</span>
+        </div>
         </div>
       </section>
 
@@ -797,7 +796,7 @@
 
         <div class="life-code-wrapper">
           <div class="life-editor-header">
-            <span>РЕШЕНИЕ (PYTHON 3)</span>
+            <span>решение · python 3</span>
             <span id="life-editor-status" class="editor-status">Не проверено</span>
           </div>
           <div class="life-editor-container">
@@ -812,7 +811,7 @@
           <div id="life-feedback" class="life-feedback-msg"></div>
           <div class="life-action-buttons">
             <button type="button" id="btn-life-run-local" class="life-btn life-btn-ghost" disabled title="Откроется после сдачи шагов 1-3">Испытать на поле</button>
-            <button type="button" id="btn-life-submit" class="life-btn" title="Ctrl + Enter">Проверить решение (Ctrl+Enter)</button>
+            <button type="button" id="btn-life-submit" class="life-btn" title="Ctrl + Enter">Проверить</button>
           </div>
         </div>
       </section>

@@ -268,7 +268,7 @@
   /**
    * Запускает проверку предсказания.
    * Приоритет источника ответа: task.expectedOutput → реальный запуск через Pyodide.
-   * Засчитывает задание после ПЕРВОЙ отправки независимо от верности ответа.
+   * Засчитывает задание только при верном ответе.
    */
   async function runPredictCheck() {
     const dom = window.VkatApp.dom;
@@ -293,27 +293,27 @@
       // Сохраняем черновик ответа
       state.codeDrafts[task.id] = dom.predictInput.value;
 
-      // Элемент считается пройденным после первой отправки (не блокирует!)
-      state.completedTasks.add(task.id);
-      window.VkatApp.saveStorage();
-      window.VkatApp.updateCourseProgress();
-      window.VkatRenderers.renderStepDots(state.topics[state.currentTopicIndex]);
-
       dom.predictResultBox.classList.add('visible');
       revealResult(dom.predictResultBox);
 
       const matchRes = fuzzyPredictMatch(userVal, actualVal);
 
-      // Телеметрия CONNECT: отправка предсказания (засчитывается с первой попытки)
+      // Телеметрия CONNECT: попытка решения predict
       if (window.VkatConnect) {
         window.VkatConnect.trackCheck(task, {
           passed: matchRes.match,
-          completed: true,
+          completed: matchRes.match,
           userAnswer: dom.predictInput.value
         });
       }
 
       if (matchRes.match) {
+        // Успех: отмечаем задачу выполненной только при совпадении ответа
+        state.completedTasks.add(task.id);
+        window.VkatApp.saveStorage();
+        window.VkatApp.updateCourseProgress();
+        window.VkatRenderers.renderStepDots(state.topics[state.currentTopicIndex]);
+
         dom.predictResultMark.className = 'result-mark ok';
         dom.predictResultMark.textContent = '✓';
         dom.predictResultTitle.className = 'result-title';
@@ -324,7 +324,11 @@
           subMsg += `\n\n${matchRes.tip}`;
         }
         dom.predictResultSub.textContent = subMsg;
+        dom.predictExplainContent.textContent = task.explain || '';
+        dom.btnPredictNext.style.display = 'inline-block';
+        dom.btnPredictNext.focus();
       } else {
+        // Ошибка: задание не засчитывается, перейти дальше нельзя
         dom.predictResultMark.className = 'result-mark err';
         dom.predictResultMark.textContent = '×';
         dom.predictResultTitle.className = 'result-title err';
@@ -343,11 +347,9 @@
           }
         }
         dom.predictResultSub.textContent = diffMsg;
+        dom.predictExplainContent.textContent = '';
+        dom.btnPredictNext.style.display = 'none';
       }
-
-      dom.predictExplainContent.textContent = task.explain || '';
-      dom.btnPredictNext.style.display = 'inline-block';
-      dom.btnPredictNext.focus();
     } catch (err) {
       console.error('Ошибка в predict:', err);
       dom.predictResultBox.classList.add('visible');
@@ -356,7 +358,7 @@
       dom.predictResultTitle.className = 'result-title err';
       dom.predictResultTitle.textContent = 'Ошибка при проверке';
       dom.predictResultSub.textContent = err.message || String(err);
-      dom.btnPredictNext.style.display = 'inline-block';
+      dom.btnPredictNext.style.display = 'none';
     } finally {
       dom.btnPredictCheck.disabled = false;
       dom.btnPredictCheck.textContent = 'Проверить';

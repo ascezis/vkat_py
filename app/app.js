@@ -82,6 +82,7 @@
 
     // Редактор кода
     dom.paneCode = document.getElementById('pane-code');
+    dom.codePaneLabel = document.getElementById('code-pane-label');
     dom.editor = document.getElementById('code-editor');
     dom.editorHighlight = document.getElementById('editor-highlight');
     dom.lineNumbers = document.getElementById('line-numbers');

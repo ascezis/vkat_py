@@ -228,16 +228,21 @@
     dom.explainLabel.textContent = 'объяснение';
     dom.explainTitle.textContent = task.title;
 
+    // Подпись редактора: при починке подсказывает контекст отладки
+    if (dom.codePaneLabel) {
+      dom.codePaneLabel.textContent = task.kind === 'fix' ? 'исправь ошибку в коде' : 'твой код';
+    }
+
     // Метки tier / fix
     let badgeHtml = '';
     const tier = task.tier || 'main';
     if (tier === 'warmup') {
       badgeHtml += '<span class="badge-tier">разминка</span>';
     } else if (tier === 'star') {
-      badgeHtml += '<span class="badge-tier">★ задача</span>';
+      badgeHtml += '<span class="badge-tier badge-star">★ задача</span>';
     }
     if (task.kind === 'fix') {
-      badgeHtml += '<span class="badge-fix">найди ошибку</span>';
+      badgeHtml += '<span class="badge-fix">починка</span>';
     }
 
     if (badgeHtml) {

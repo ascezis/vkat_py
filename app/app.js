@@ -526,7 +526,7 @@
       window.VkatRenderers.renderCodeView(task);
     }
 
-    window.VkatRenderers.renderVisual(topic);
+    window.VkatRenderers.renderVisual(topic, task);
     requestAnimationFrame(window.VkatRenderers.fitVisual);
     window.VkatRenderers.renderStepDots(topic);
 

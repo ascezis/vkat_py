@@ -576,21 +576,29 @@
   // ─── SVG-схема темы ───────────────────────────────────────────────────────────
 
   /**
-   * Перерисовываем только при смене темы, чтобы анимация появления не мигала на каждом шаге.
+   * Отрисовывает SVG-глиф: либо точечный глиф для текущего задания (task.glyph или task.id),
+   * либо общую схему темы (topic.id).
    */
-  function renderVisual(topic) {
+  function renderVisual(topic, currentTask) {
     const targets = [document.getElementById('visual'), document.getElementById('theory-visual')];
-    const html = window.Glyphs ? window.Glyphs.render(topic.id) : '';
-    const label = window.Glyphs ? window.Glyphs.caption(topic.id) : '';
+    if (!window.Glyphs) return;
+
+    // Сначала ищем специализированный глиф для конкретного шага, иначе — глиф темы
+    const taskKey = currentTask && (currentTask.glyph || currentTask.id);
+    const key = (taskKey && window.Glyphs.caption(taskKey)) ? taskKey : topic.id;
+
+    const html = window.Glyphs.render(key);
+    const label = window.Glyphs.caption(key);
+
     targets.forEach(el => {
       if (!el) return;
-      if (!html) { el.hidden = true; el.innerHTML = ''; delete el.dataset.topic; return; }
+      if (!html) { el.hidden = true; el.innerHTML = ''; delete el.dataset.glyphKey; return; }
       el.hidden = false;
       el.classList.remove('is-open');            // на каждом шаге начинаем со «свёрнуто, если не влезло»
       el.setAttribute('aria-label', 'Схема: ' + label);
-      if (el.dataset.topic !== topic.id) {
+      if (el.dataset.glyphKey !== key) {
         el.innerHTML = html;
-        el.dataset.topic = topic.id;
+        el.dataset.glyphKey = key;
       }
     });
   }

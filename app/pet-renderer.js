@@ -657,7 +657,7 @@
           : 'Свободный запуск: печатай и пробуй. Испытание «Угадайка» откроется после шага 3.';
         const sandboxHint = (born && state)
           ? ' Сцена обновлена: словарь pet из твоего кода применён к Байту.'
-          : (born ? ' Изменяй словарь pet — Байт на сцене отреагирует.' : '');
+          : (born ? ' Управляй Байтом кодом: feed(pet) — покормить, play(pet) — поиграть, или меняй словарь pet руками.' : '');
         fb.innerHTML = '<div class="life-fb-row"><span class="life-fb-mark ok">▶</span>' +
           '<div><div class="life-fb-title">Запуск завершён</div>' +
           '<div class="life-fb-sub">' + escapeHtml(secretHint + sandboxHint) + '</div></div></div>' +

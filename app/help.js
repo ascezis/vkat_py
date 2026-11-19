@@ -37,11 +37,21 @@
   // Множество requestId, которые когда-либо были обработаны/помещены в очередь в текущей сессии
   const handledRequestIds = new Set();
 
+  function resolveHelpBase() {
+    if (typeof window !== 'undefined' && typeof window.VKAT_HELP_ENDPOINT === 'string' && window.VKAT_HELP_ENDPOINT.trim()) {
+      return window.VKAT_HELP_ENDPOINT.trim().replace(/\/+$/, '');
+    }
+    if (typeof window !== 'undefined' && window.VkatConnect && typeof window.VkatConnect.resolveEndpoint === 'function') {
+      const endpoint = window.VkatConnect.resolveEndpoint();
+      if (endpoint) {
+        return String(endpoint).trim().replace(/\/+$/, '');
+      }
+    }
+    return null;
+  }
+
   function isServedUnderConnectApp() {
-    if (typeof window === 'undefined' || !window.location) return false;
-    if (window.VKAT_HELP_ENDPOINT) return true;
-    const pathname = window.location.pathname || '';
-    return /^\/app(\/|$)/.test(pathname);
+    return Boolean(resolveHelpBase());
   }
 
   function getOrCreateCapability() {
@@ -72,8 +82,9 @@
   }
 
   function getPollUrl() {
-    if (typeof window !== 'undefined' && window.VKAT_HELP_ENDPOINT) {
-      return String(window.VKAT_HELP_ENDPOINT).replace(/\/+$/, '') + '/help/poll';
+    const base = resolveHelpBase();
+    if (base) {
+      return base + '/help/poll';
     }
     return '/help/poll';
   }
@@ -442,6 +453,25 @@
     }
   }
 
+  function triggerImmediatePoll() {
+    if (!activeProfileId || !isServedUnderConnectApp()) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    if (isFlight) return;
+    clearPollTimer();
+    doPoll();
+  }
+
+  function onVisibilityChange() {
+    if (typeof document !== 'undefined' && !document.hidden) {
+      triggerImmediatePoll();
+    }
+  }
+
+  function onOnline() {
+    triggerImmediatePoll();
+  }
+
   function startSession(profileId) {
     stopSession();
     if (!profileId || !isServedUnderConnectApp()) return;
@@ -451,7 +481,13 @@
     flightResult = null;
     resultQueue = [];
     handledRequestIds.clear();
-    scheduleNextPoll();
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('online', onOnline);
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', onVisibilityChange);
+    }
+    doPoll();
   }
 
   function stopSession() {
@@ -462,6 +498,12 @@
     resultQueue = [];
     handledRequestIds.clear();
     clearPollTimer();
+    if (typeof window !== 'undefined' && window.removeEventListener) {
+      window.removeEventListener('online', onOnline);
+    }
+    if (typeof document !== 'undefined' && document.removeEventListener) {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    }
     for (const card of activeCards.values()) {
       card.close();
     }

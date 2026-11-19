@@ -2653,6 +2653,17 @@ body {
   height: auto;
 }
 
+/* Воздух в тексте слайдов терариума (правило пользователя: текст дышит) */
+#pet-intro-view .intro-slide { gap: 26px; }
+#pet-intro-view .intro-slide h2 { margin: 0 0 4px; }
+#pet-intro-view .intro-slide p {
+  margin: 0;
+  line-height: 1.7;
+  max-width: 58ch;
+}
+#pet-intro-view .intro-visual { padding: 12px 0 22px; }
+#pet-intro-view .life-btn { margin-top: 12px; }
+
 .pet-stdin-row {
   display: flex;
   flex-direction: column;

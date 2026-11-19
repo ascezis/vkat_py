@@ -343,6 +343,8 @@ interface Window {
   VkatCheckers?: Record<string, any>;
   VkatProfiles?: Record<string, any>;
   VkatConnect?: Record<string, any>;
+  /** Удалённая помощь препода (app/help.js) — UI-модуль, контракт не зафиксирован. */
+  VkatHelp?: Record<string, any>;
   VkatStorage?: Record<string, any>;
 }
 

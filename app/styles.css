@@ -2600,16 +2600,19 @@ body {
   .visual { max-width: none; }
   .editor, .predict-input { font-size: 16px; }   /* iOS не зумит поле при фокусе */
   .editor-wrapper { height: 260px; }
-  /* Карусель: стрелки парой по центру над сеткой */
+  /* Карусель: пара стрелок по центру над сеткой.
+     Не grid-areas: spanning-элемент 'grid grid' распирает auto-треки,
+     и стрелки разъезжаются по четвертям. Flex-wrap + order. */
   .modules-carousel {
-    grid-template-columns: auto auto;
-    grid-template-areas:
-      'prev next'
-      'grid grid';
+    display: flex;
+    flex-wrap: wrap;
     justify-content: center;
+    align-items: center;
     gap: 12px;
   }
+  .modules-nav-prev, .modules-nav-next { order: 1; }
   .modules-nav-arrow { width: 72px; height: 44px; }
+  .start-modules-grid { order: 2; margin: 0 auto; }
   .projects-center { padding: 12px 20px 20px; }
 }
 

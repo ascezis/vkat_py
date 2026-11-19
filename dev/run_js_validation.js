@@ -1105,6 +1105,17 @@ async function runStorageValidation() {
   check('Life: скаффолд содержит __STUDENT_CODE__, simulate_step и get_grid_json',
     lifeIndexHtml.includes('__STUDENT_CODE__') && lifeIndexHtml.includes('def simulate_step(grid)') && lifeIndexHtml.includes('def get_grid_json(grid)'));
 
+  // Витрина пет-проектов: карусель на старте + hero-карточка на своём экране
+  const projectsAppJs = fs.readFileSync(path.join(__dirname, '..', 'app', 'app.js'), 'utf8');
+  check('Projects: index.html содержит витрину <div id="screen-projects">', lifeIndexHtml.includes('id="screen-projects"'));
+  check('Projects: стартовая карусель содержит стрелки btn-modules-prev/next',
+    lifeIndexHtml.includes('id="btn-modules-prev"') && lifeIndexHtml.includes('id="btn-modules-next"'));
+  check('Projects: hero-карточка life-start-card живёт на витрине между start и life',
+    lifeIndexHtml.indexOf('id="screen-start"') < lifeIndexHtml.indexOf('id="life-start-card"') &&
+    lifeIndexHtml.indexOf('id="life-start-card"') < lifeIndexHtml.indexOf('id="screen-life"'));
+  check('Projects: экран витрины в allowlist deep-link app.js',
+    /'start', 'lesson', 'projects', 'life'/.test(projectsAppJs));
+
   const lifeStylesCss = fs.readFileSync(path.join(__dirname, '..', 'app', 'styles.css'), 'utf8');
   check('Life: styles.css содержит селекторы .life-canvas-container и .life-hud',
     lifeStylesCss.includes('.life-canvas-container') && lifeStylesCss.includes('.life-hud'));

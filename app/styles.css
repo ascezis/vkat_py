@@ -1265,22 +1265,97 @@ body {
 }
 
 /* ==========================================================================
-   КАРТОЧКИ ЭТАПОВ И ПЕТ-ПРОЕКТОВ (СТАРТОВЫЙ ЭКРАН)
+   КАРТОЧКИ ЭТАПОВ, КАРУСЕЛЬ МОДУЛЕЙ И ВИТРИНА ПЕТ-ПРОЕКТОВ (СТАРТОВЫЙ ЭКРАН)
    ========================================================================== */
 
-.start-modules-grid {
+/* Карусель: стрелки <> по бокам сетки модулей ведут на витрину пет-проектов */
+.modules-carousel {
   display: grid;
-  grid-template-columns: repeat(2, minmax(300px, 450px));
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'prev grid next';
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 10px auto 10px;
+}
+
+.modules-nav-prev { grid-area: prev; }
+.modules-nav-next { grid-area: next; }
+
+.modules-nav-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 72px;
+  padding: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.modules-nav-arrow svg { width: 15px; height: 18px; }
+
+.modules-nav-arrow:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--bg-panel-alt);
+}
+
+.modules-nav-arrow:focus-visible {
+  outline: 1px solid var(--brand-orange);
+  outline-offset: 2px;
+}
+
+.start-modules-grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
   gap: 12px 18px;
   width: 100%;
-  max-width: 940px;
-  margin: 10px auto 10px;
+  max-width: 1080px;
+  margin: 0 auto;
   justify-content: center;
 }
 
 .stage-cards {
   display: contents;
 }
+
+/* Витрина пет-проектов (#screen-projects) */
+.projects-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 20px 24px;
+}
+
+.projects-note {
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Hero-карточка пет-проекта: та же stage-card, но крупнее и с глифом сверху */
+.project-hero {
+  width: 100%;
+  max-width: 640px;
+  margin: 4px 0 0;
+  text-align: left;
+}
+
+.project-hero .visual-canvas { padding: 12px 6px 0; }
+.project-hero .visual-cap { padding: 8px 6px; border-top: none; background: transparent; }
+.project-hero .glyph { width: auto; max-width: 100%; max-height: 220px; margin: 0 auto; }
+.project-hero .stage-card-title { font-size: 20px; }
+.project-hero .stage-card-desc { font-size: 14px; }
 
 .stage-card {
   background: var(--bg-panel);
@@ -2497,6 +2572,11 @@ body {
 .glyph .hop { animation: hop 5s steps(1, end) 1.2s infinite; }
 
 .screen.active { animation: screen-in .22s ease-out; }
+/* Направленный переход карусели «модули ↔ пет-проекты» (гасится глобальным reduced-motion) */
+.screen.active.screen-slide-right { animation: screen-slide-right .28s cubic-bezier(0.16, 1, 0.3, 1); }
+.screen.active.screen-slide-left { animation: screen-slide-left .28s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes screen-slide-right { from { opacity: 0; transform: translateX(48px); } to { opacity: 1; transform: none; } }
+@keyframes screen-slide-left { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: none; } }
 .result.visible { animation: pop .2s ease-out; }
 .result-mark.ok { animation: pop .3s ease-out; }
 
@@ -2506,7 +2586,7 @@ body {
   html, body { height: 100vh; height: 100dvh; min-height: 0; }
   body { overflow: hidden; }
   .screen { min-height: 0; }
-  #screen-start, #screen-finish, #screen-profiles { overflow-y: auto; }
+  #screen-start, #screen-finish, #screen-profiles, #screen-projects { overflow-y: auto; }
   .main-panes { grid-template-rows: minmax(0, 1fr); }
   .pane-theory { min-height: 0; }
 }
@@ -2520,6 +2600,17 @@ body {
   .visual { max-width: none; }
   .editor, .predict-input { font-size: 16px; }   /* iOS не зумит поле при фокусе */
   .editor-wrapper { height: 260px; }
+  /* Карусель: стрелки парой по центру над сеткой */
+  .modules-carousel {
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      'prev next'
+      'grid grid';
+    justify-content: center;
+    gap: 12px;
+  }
+  .modules-nav-arrow { width: 72px; height: 44px; }
+  .projects-center { padding: 12px 20px 20px; }
 }
 
 /* --- Уважение к настройке «меньше движения» --- */
@@ -2659,7 +2750,10 @@ body {
   .kicker { margin-bottom: 8px; }
   .start-center h1 { font-size: 26px; max-width: 28ch; min-height: 48px; margin-bottom: 10px; }
   .start-sub { margin-bottom: 14px; font-size: 14px; }
-  .start-modules-grid { margin: 12px auto 10px; gap: 14px 18px; }
+  .modules-carousel { margin: 12px auto 10px; gap: 12px; }
+  .modules-nav-arrow { height: 56px; }
+  .start-modules-grid { gap: 14px 18px; }
+  .projects-center { padding: 16px 20px 12px; }
   .stage-card { padding: 16px 20px; }
   .stage-card-desc { margin-bottom: 10px; font-size: 13px; }
   .stage-card-meta { margin-bottom: 8px; }

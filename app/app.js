@@ -50,8 +50,12 @@
     dom.screenStart = document.getElementById('screen-start');
     dom.screenLesson = document.getElementById('screen-lesson');
     dom.screenFinish = document.getElementById('screen-finish');
+    dom.screenProjects = document.getElementById('screen-projects');
     dom.screenLife = document.getElementById('screen-life');
     dom.screenSandbox = document.getElementById('screen-sandbox');
+    dom.btnModulesPrev = document.getElementById('btn-modules-prev');
+    dom.btnModulesNext = document.getElementById('btn-modules-next');
+    dom.btnProjectsBack = document.getElementById('btn-projects-back');
 
     dom.topbar = document.getElementById('app-topbar');
     dom.mark = document.getElementById('app-mark');
@@ -446,6 +450,18 @@
 
   // ─── Навигация экранов ────────────────────────────────────────────────────────
 
+  function animateScreenSlide(el, cls) {
+    // Направленный вход экрана (карусель «модули ↔ пет-проекты»).
+    // Класс снимается по факту анимации; таймер — страховка (reduced-motion гасит анимации).
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth; // перезапуск при повторном входе
+    el.classList.add(cls);
+    const done = () => el.classList.remove(cls);
+    el.addEventListener('animationend', done, { once: true });
+    setTimeout(done, 450);
+  }
+
   function showScreen(screen) {
     // Экран пет-проекта: перед уходом остановить live-режим и сбросить ввод
     const wasLife = dom.screenLife && dom.screenLife.classList.contains('active');
@@ -458,11 +474,14 @@
       window.VkatSandbox.leave();
     }
     const wasLesson = dom.screenLesson && dom.screenLesson.classList.contains('active');
+    const wasStart = dom.screenStart.classList.contains('active');
+    const wasProjects = dom.screenProjects && dom.screenProjects.classList.contains('active');
 
     if (dom.screenProfiles) dom.screenProfiles.classList.remove('active');
     dom.screenStart.classList.remove('active');
     dom.screenLesson.classList.remove('active');
     dom.screenFinish.classList.remove('active');
+    if (dom.screenProjects) dom.screenProjects.classList.remove('active');
     if (dom.screenLife) dom.screenLife.classList.remove('active');
     if (dom.screenSandbox) dom.screenSandbox.classList.remove('active');
 
@@ -472,9 +491,9 @@
       dom.screenStart.classList.add('active');
       dom.topbar.style.display = 'none';
       window.VkatRenderers.renderStartCards();
-      if (window.VkatLife) window.VkatLife.renderStartCard();
       startTypewriter();
       if (state.gridWarp) state.gridWarp.resume();
+      if (wasProjects) animateScreenSlide(dom.screenStart, 'screen-slide-left');
     } else {
       stopTypewriter();
       if (state.gridWarp) state.gridWarp.pause();
@@ -486,6 +505,12 @@
       } else if (screen === 'lesson') {
         dom.screenLesson.classList.add('active');
         dom.topbar.style.display = 'flex';
+      } else if (screen === 'projects') {
+        // Витрина пет-проектов: hero-карточка рендерится заново ради свежего прогресса
+        if (dom.screenProjects) dom.screenProjects.classList.add('active');
+        dom.topbar.style.display = 'none';
+        if (window.VkatLife) window.VkatLife.renderStartCard();
+        if (wasStart) animateScreenSlide(dom.screenProjects, 'screen-slide-right');
       } else if (screen === 'life') {
         dom.screenLife.classList.add('active');
         dom.topbar.style.display = 'none';
@@ -781,6 +806,10 @@
     if (dom.btnTreeStart) dom.btnTreeStart.addEventListener('click', openTreeDrawer);
     if (dom.btnTopbarSandbox) dom.btnTopbarSandbox.addEventListener('click', () => showScreen('sandbox'));
     if (dom.btnStartSandbox) dom.btnStartSandbox.addEventListener('click', () => showScreen('sandbox'));
+    // Карусель модулей: стрелки <> ведут на витрину пет-проектов
+    if (dom.btnModulesPrev) dom.btnModulesPrev.addEventListener('click', () => showScreen('projects'));
+    if (dom.btnModulesNext) dom.btnModulesNext.addEventListener('click', () => showScreen('projects'));
+    if (dom.btnProjectsBack) dom.btnProjectsBack.addEventListener('click', () => showScreen('start'));
     if (dom.btnTreeClose) dom.btnTreeClose.addEventListener('click', closeTreeDrawer);
     if (dom.treeBackdrop) dom.treeBackdrop.addEventListener('click', closeTreeDrawer);
 
@@ -930,7 +959,7 @@
     if (activeProfile) {
       await loadStorage();
       const urlScreen = new URLSearchParams(window.location.search).get('screen') || (window.location.hash ? window.location.hash.slice(1) : null);
-      if (urlScreen && ['start', 'lesson', 'life', 'sandbox', 'profiles', 'finish'].includes(urlScreen)) {
+      if (urlScreen && ['start', 'lesson', 'projects', 'life', 'sandbox', 'profiles', 'finish'].includes(urlScreen)) {
         showScreen(urlScreen);
       } else {
         showScreen('start');

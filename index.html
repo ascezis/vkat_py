@@ -226,12 +226,29 @@
     <div class="start-center">
       <div class="kicker">Платформа CONNECT</div>
       <h1 id="start-heading"><span class="heading-prompt">&gt;</span> <span id="start-typewriter">Пишешь код — сразу видишь результат</span></h1>
-      <p class="start-sub">Четыре модуля: экспресс-вкат, углублённая практика, практикум и пет-проект Alife-System. Без лекций и воды — честное исполнение в браузере без сервера и интернета.</p>
+      <p class="start-sub">Три модуля: экспресс-вкат, углублённая практика, практикум — и большой пет-проект
+        Alife-System соседним экраном, по стрелке. Без лекций и воды — честное исполнение в браузере без сервера и
+        интернета.</p>
 
-      <!-- Карточки модулей курса и пет-проекта в сбалансированной сетке 2x2 -->
-      <div class="start-modules-grid">
-        <div id="stage-cards" class="stage-cards"></div>
-        <div id="life-start-card" class="stage-card"></div>
+      <!-- Карточки модулей курса; стрелки по бокам ведут на витрину пет-проектов -->
+      <div class="modules-carousel">
+        <button type="button" id="btn-modules-prev" class="modules-nav-arrow" aria-label="Пет-проекты: Alife-System"
+          title="Пет-проекты: Alife-System">
+          <svg viewBox="0 0 15 18" fill="none" aria-hidden="true">
+            <path d="M11 2.5L4 9L11 15.5" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+        <div class="start-modules-grid">
+          <div id="stage-cards" class="stage-cards"></div>
+        </div>
+        <button type="button" id="btn-modules-next" class="modules-nav-arrow" aria-label="Пет-проекты: Alife-System"
+          title="Пет-проекты: Alife-System">
+          <svg viewBox="0 0 15 18" fill="none" aria-hidden="true">
+            <path d="M4 2.5L11 9L4 15.5" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
       </div>
 
       <!-- Баннер песочницы Python -->
@@ -553,11 +570,28 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 4: ПЕТ-ПРОЕКТ ALIFE-SYSTEM -->
+  <!-- ЭКРАН 4: ВИТРИНА ПЕТ-ПРОЕКТОВ -->
+  <div id="screen-projects" class="screen">
+    <header class="life-header">
+      <div class="life-header-left">
+        <button type="button" id="btn-projects-back" class="btn-ghost-sm" title="Вернуться к модулям курса">← Модули
+          курса</button>
+        <span class="life-header-title">Пет-проекты</span>
+      </div>
+    </header>
+    <main class="projects-center">
+      <div class="kicker">витрина пет-проектов</div>
+      <!-- Hero-карточка модуля; id нужен валидатору, рендерит life-renderer.js -->
+      <div id="life-start-card" class="stage-card project-hero"></div>
+      <div class="projects-note">следующий пет-проект появится на этой полке</div>
+    </main>
+  </div>
+
+  <!-- ЭКРАН 5: ПЕТ-ПРОЕКТ ALIFE-SYSTEM -->
   <div id="screen-life" class="screen">
     <header class="life-header">
       <div class="life-header-left">
-        <button type="button" id="btn-life-back" class="btn-ghost-sm" title="Вернуться в курс">← В меню курса</button>
+        <button type="button" id="btn-life-back" class="btn-ghost-sm" title="Вернуться на витрину пет-проектов">← Пет-проекты</button>
         <span class="life-header-title">Alife-System</span>
         <span class="life-step-badge" id="life-step-indicator">шаг 1 из 4</span>
         <span class="life-step-dots" id="life-step-dots"></span>

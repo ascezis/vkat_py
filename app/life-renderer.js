@@ -1415,9 +1415,13 @@
     const done = n >= total;
     const btnText = n === 0 ? 'Начать' : (done ? 'Повторить' : 'Продолжить');
     const percent = total > 0 ? Math.round((n / total) * 100) : 0;
+    const glyph = (window.Glyphs && typeof window.Glyphs.render === 'function')
+      ? window.Glyphs.render('lifePatterns')
+      : '';
 
-    host.className = 'stage-card';
+    host.className = 'stage-card project-hero';
     host.innerHTML =
+      glyph +
       '<div class="stage-card-header">' +
         '<div class="stage-card-title">Alife-System</div>' +
         '<div class="stage-card-progress-label">' + (done ? '✓ пройдено' : n + ' из ' + total) + '</div>' +
@@ -1506,7 +1510,7 @@
   }
 
   function setupEvents() {
-    S.dom.btnBack.addEventListener('click', () => window.VkatApp.showScreen('start'));
+    S.dom.btnBack.addEventListener('click', () => window.VkatApp.showScreen('projects'));
     if (S.dom.btnOpenIntro) S.dom.btnOpenIntro.addEventListener('click', () => showIntroView(1));
     if (S.dom.btnSkipIntro) S.dom.btnSkipIntro.addEventListener('click', showWorkbenchView);
     if (S.dom.btnEnterLab) S.dom.btnEnterLab.addEventListener('click', showWorkbenchView);

@@ -579,7 +579,7 @@
       lifeHeader.addEventListener('click', () => {
         dom.treeDrawer.classList.remove('open');
         dom.treeBackdrop.classList.remove('open');
-        window.VkatApp.showScreen('life');
+        window.VkatApp.showScreen('projects');
       });
       dom.treeBody.appendChild(lifeHeader);
     }

@@ -3,7 +3,7 @@
   width: 100%; min-width: 0; color: var(--text); background: var(--bg-panel);
   border: 1px solid var(--border); font-family: var(--font-mono);
 }
-.pet-heading, .pet-bubble, .pet-stats, .pet-actions { padding: 14px clamp(12px, 4%, 24px); }
+.pet-heading, .pet-bubble, .pet-stats, .pet-actions { padding: 16px clamp(16px, 4%, 26px); }
 .pet-heading { display: flex; justify-content: space-between; align-items: center; }
 .pet-heading h2 { font: 600 28px/1.2 var(--font-sans); }
 .pet-heading h2 span, .pet-bubble > span:first-child { color: var(--brand-orange); }
@@ -38,17 +38,17 @@
 .pet-chew, .pet-egg .pet-actor { display: none; }
 .pet-bubble { display: flex; align-items: baseline; gap: .55em; border-bottom: 1px solid var(--border); font-size: 14px; }
 .pet-bubble i { width: .5em; height: .9em; background: var(--brand-orange); margin-left: -.35em; animation: pet-cursor 1.3s steps(1,end) infinite; }
-.pet-stats { display: grid; gap: 8px; }
-.pet-stat { position: relative; display: grid; align-items: center; grid-template-columns: 7em minmax(12px,1fr) 4ch; gap: 12px; font-size: 12px; }
+.pet-stats { display: grid; gap: 12px; padding-block: 20px 16px; }
+.pet-stat { position: relative; display: grid; align-items: center; grid-template-columns: 8em minmax(12px,1fr) 4ch; gap: 14px; font-size: 12px; }
 .pet-stat > span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .pet-stat meter { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
-.pet-track { display: block; height: 5px; background: var(--border); }
+.pet-track { display: block; height: 6px; background: var(--border); }
 .pet-stat-fill { display: block; height: 100%; background: var(--fill); transform-origin: left; transform: scaleX(0); transition: transform .35s ease-out; }
 .pet-stat[data-pet-level="low"] .pet-stat-fill { background: var(--brand-orange); }
 .pet-stat[data-pet-level="critical"] .pet-stat-fill { background: var(--error); }
-.pet-actions { padding-top: 2px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.pet-actions { padding-top: 4px; padding-bottom: 20px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 .pet-actions button, .pet-preview select, .pet-preview button {
-  font: 500 13px var(--font-mono); border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--text); min-height: 44px; cursor: pointer;
+  font: 500 13px var(--font-mono); border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--text); min-height: 46px; cursor: pointer;
 }
 .pet-actions button { display: flex; align-items: center; justify-content: center; gap: 7px; line-height: 1; white-space: nowrap; }
 .pet-actions svg { display: block; width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; }
@@ -141,27 +141,38 @@
 
 /* Экран терариума. Общие стили Alife задают основу, здесь выровнена сетка питомца. */
 #screen-pet .life-canvas-panel {
-  width: clamp(520px, 44vw, 620px);
-  max-width: calc(100% - 420px);
-  padding: 24px clamp(20px, 3vw, 40px);
+  width: clamp(520px, 43vw, 620px);
+  max-width: calc(100% - 440px);
+  padding: 30px clamp(24px, 3vw, 44px);
+  border-right: 1px solid var(--border);
 }
 #screen-pet .life-stage { width: 100%; max-width: 540px; }
 #screen-pet .pet-stage-host { width: 100%; padding: 0; }
-#screen-pet .pet-terrarum { gap: 14px; }
-#screen-pet .pet-hud { height: auto; min-height: 36px; gap: 8px; }
+#screen-pet .pet-terrarum { gap: 16px; }
+#screen-pet .pet-hud { height: auto; min-height: 42px; gap: 12px; }
 #screen-pet .pet-hud-actions { min-width: 0; }
 #screen-pet .pet-hud-actions .life-btn { white-space: nowrap; }
-#screen-pet .life-editor-panel { padding: 24px clamp(20px, 3vw, 40px); gap: 16px; }
-#screen-pet .life-action-bar { display: grid; grid-template-columns: 1fr auto; gap: 12px 16px; }
-#screen-pet .life-feedback-msg { min-width: 0; }
-#screen-pet .life-action-buttons { grid-column: 2; grid-row: 1; }
-#screen-pet .pet-stdin-row { grid-column: 1 / -1; padding-inline: 0; }
-#screen-pet .pet-stdin-input { width: 100%; max-width: 100%; }
+#screen-pet .life-canvas-hint { padding-inline: 2px; line-height: 1.5; }
+#screen-pet .life-editor-panel { padding: 30px clamp(24px, 3vw, 44px); gap: 18px; }
+#screen-pet .life-task-card { padding: 24px clamp(22px, 2.4vw, 34px); }
+#screen-pet .life-task-card h2 { margin-bottom: 14px; line-height: 1.25; }
+#screen-pet #pet-glyph-slot:empty { display: none; }
+#screen-pet #pet-glyph-slot:not(:empty) { margin: 4px 0 24px; padding: 10px 16px; background: var(--bg-panel-alt); border: 1px solid var(--border); }
+#screen-pet #pet-glyph-slot .glyph { max-width: 340px; }
+#screen-pet #pet-task-desc:empty { display: none; }
+#screen-pet .life-code-wrapper { min-height: 260px; height: clamp(280px, 39vh, 430px); }
+#screen-pet .life-action-bar { display: flex; flex-direction: column; align-items: stretch; gap: 16px; padding-top: 0; }
+#screen-pet .life-action-buttons { order: 0; align-self: flex-start; gap: 10px; }
+#screen-pet .life-feedback-msg { order: 1; width: 100%; min-width: 0; }
+#screen-pet .life-feedback-msg:empty { display: none; }
+#screen-pet .pet-stdin-row { order: 2; width: 100%; padding: 16px 0 0; gap: 8px; }
+#screen-pet .pet-stdin-row label { line-height: 1.4; }
+#screen-pet .pet-stdin-input { width: 100%; max-width: 100%; min-height: 64px; }
 
 @media (max-width: 900px) {
-  #screen-pet .life-canvas-panel { width: 100%; max-width: none; padding: 20px 24px; }
+  #screen-pet .life-canvas-panel { width: 100%; max-width: none; padding: 24px; border-right: 0; }
   #screen-pet .life-stage { max-width: 540px; }
-  #screen-pet .life-editor-panel { width: 100%; min-width: 0; padding: 20px 24px; }
+  #screen-pet .life-editor-panel { width: 100%; min-width: 0; padding: 24px; }
 }
 @media (max-width: 520px) {
   #screen-pet .life-header { height: auto; min-height: 56px; padding: 10px 16px; gap: 8px; }
@@ -171,15 +182,16 @@
   #screen-pet .life-step-dots { display: none; }
   #screen-pet .life-header-right { margin-left: auto; }
   #screen-pet .life-header-right .btn-ghost-sm { white-space: nowrap; }
-  #screen-pet .life-canvas-panel { padding: 16px; }
-  #screen-pet .life-editor-panel { padding: 16px; gap: 14px; }
-  #screen-pet .life-task-card { padding: 18px; }
+  #screen-pet .life-canvas-panel { padding: 18px 16px 22px; }
+  #screen-pet .life-editor-panel { padding: 22px 16px 28px; gap: 18px; }
+  #screen-pet .life-task-card { padding: 20px; }
+  #screen-pet #pet-glyph-slot:not(:empty) { padding: 8px; margin-bottom: 20px; }
+  #screen-pet #pet-glyph-slot .glyph { max-width: 300px; }
   #screen-pet .pet-hud { flex-wrap: wrap; }
   #screen-pet .pet-hud-actions { margin-left: auto; gap: 6px; }
   #screen-pet .pet-hud-actions .life-btn { padding-inline: 8px; font-size: 11px; }
   #screen-pet .life-canvas-hint { line-height: 1.5; }
-  #screen-pet .life-action-bar { grid-template-columns: 1fr; }
-  #screen-pet .life-action-buttons { grid-column: 1; grid-row: auto; width: 100%; }
+  #screen-pet .life-action-buttons { align-self: stretch; width: 100%; }
   #screen-pet .life-action-buttons .life-btn { flex: 1; min-width: 0; }
-  #screen-pet .pet-stdin-row { grid-column: 1; }
+  #screen-pet .pet-stat { grid-template-columns: 7.5em minmax(12px,1fr) 4ch; gap: 10px; }
 }

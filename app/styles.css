@@ -2460,7 +2460,7 @@ body {
 .visual-cap span { color: var(--text-dim); flex-shrink: 0; }
 
 /* элементы схемы */
-.glyph rect, .glyph path, .glyph circle { fill: none; stroke-width: 1; stroke-linecap: square; }
+.glyph rect, .glyph path, .glyph circle, .glyph ellipse { fill: none; stroke-width: 1; stroke-linecap: square; }
 .glyph .gl { stroke: var(--border-strong); }
 .glyph .gm { stroke: var(--text); }
 .glyph .gf { fill: var(--fill); stroke: var(--fill); }

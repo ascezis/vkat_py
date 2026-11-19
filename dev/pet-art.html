@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Байт · Просмотр анимаций</title>
+<link rel="stylesheet" href="../app/styles.css"><link rel="stylesheet" href="../app/pet-art.css">
+<style>
+.pet-preview { width: min(540px, calc(100% - 28px)); margin: auto; padding: 20px 0; }
+.pet-preview-tools { margin-top: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--text-muted); font: 12px var(--font-mono); }
+.pet-preview-tools :is(select,button) { padding: 4px 10px; }
+</style></head><body>
+<main class="pet-preview"><div id="pet-mount"></div>
+<div class="pet-preview-tools"><label for="pet-pose">Просмотр позы</label>
+<select id="pet-pose">
+<option value="egg">Яйцо</option><option value="hatch">Вылупление</option><option value="idle" selected>В покое</option>
+<option value="eat">Ест</option><option value="play">Играет</option><option value="sleep">Спит</option>
+<option value="hungry">Голоден</option><option value="sad">Грустит</option><option value="full">Сыт</option><option value="happy-full">Счастлив</option></select>
+<button type="button" id="pet-run" hidden>Успешный прогон</button></div></main>
+<script src="../app/pet-art.js"></script><script>
+  const art = window.PetArt;
+  document.querySelector('#pet-mount').innerHTML = art.render();
+  const stage = document.querySelector('#pet-stage');
+  const picker = document.querySelector('#pet-pose');
+  const run = document.querySelector('#pet-run');
+  let timer, cracks = 0;
+  const sample = { food: 68, mood: 84, energy: 72 };
+  function show(name) {
+    clearTimeout(timer);
+    picker.value = name;
+    run.hidden = name !== 'egg';
+    if (name === 'egg') {
+      cracks = 0;
+      art.cracks(stage, cracks);
+    }
+    const values = { ...sample };
+    if (name === 'hungry') values.food = 15;
+    if (name === 'sad') values.mood = 29;
+    if (['happy-full','full','eat'].includes(name)) values.food = 96;
+    if (name === 'happy-full') values.energy = 88;
+    art.setStats(stage, values);
+    art.pose(stage, name);
+    if (name === 'eat') timer = setTimeout(() => show('full'), 1450);
+    if (name === 'play') timer = setTimeout(() => show(art.expression(values)), 1000);
+    if (name === 'hatch') timer = setTimeout(() => show('idle'), 1600);
+  }
+  picker.addEventListener('change', () => show(picker.value));
+  run.addEventListener('click', () => {
+    if (++cracks > 3) return show('hatch');
+    art.cracks(stage, cracks);
+    art.pose(stage, 'egg', ['','тук!','тук-тук!','уже близко…'][cracks]);
+  });
+  stage.addEventListener('click', event => {
+    const button = event.target.closest('[data-pet-action]');
+    if (button) show(button.dataset.petAction);
+  });
+  show('idle');
+</script></body></html>

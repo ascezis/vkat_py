@@ -1,0 +1,119 @@
+/* ПИТОМЕЦ. Публичные классы, DOM и жизненный цикл описаны в pet-art.js. */
+.pet-stage {
+  width: 100%; min-width: 0; color: var(--text); background: var(--bg-panel);
+  border: 1px solid var(--border); font-family: var(--font-mono);
+}
+.pet-heading, .pet-bubble, .pet-stats, .pet-actions { padding: 14px clamp(12px, 4%, 24px); }
+.pet-heading { display: flex; justify-content: space-between; align-items: center; }
+.pet-heading h2 { font: 600 28px/1.2 var(--font-sans); }
+.pet-heading h2 span, .pet-bubble > span:first-child { color: var(--brand-orange); }
+#pet-status { font-size: 12px; color: var(--text-muted); }
+#pet-status::before { content: '▪ '; color: var(--brand-orange); }
+.pet-field {
+  position: relative; display: grid; place-items: center; overflow: hidden;
+  border-block: 1px solid var(--border); background-color: var(--bg);
+  background-image: radial-gradient(var(--border) .8px, var(--bg) 1px); background-size: 14px 14px;
+}
+.pet-field::before, .pet-field::after {
+  content: ''; position: absolute; width: 10px; height: 10px; border-color: var(--line-dim);
+}
+.pet-field::before { left: 12px; top: 12px; border-left: 1px solid var(--line-dim); border-top: 1px solid var(--line-dim); }
+.pet-field::after { right: 12px; bottom: 12px; border-right: 1px solid var(--line-dim); border-bottom: 1px solid var(--line-dim); }
+.pet-sprite { display: block; width: min(100%, 424px); fill: var(--bg); }
+.pet-platform { fill: none; stroke: var(--border-strong); stroke-width: 1; }
+.pet-shadow { fill: var(--line-dim); }
+.pet-light { fill: var(--fill); }
+.pet-shading { fill: var(--fill-hover); }
+.pet-accent, .pet-zzz { fill: var(--brand-orange); }
+.pet-sheen, .pet-lids, .pet-smile, .pet-crack { fill: none; stroke: var(--bg); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.pet-sheen { stroke: var(--bg-panel); opacity: .14; stroke-width: 4; }
+.pet-actor, .pet-body, .pet-shell, .pet-shell-base, .pet-shell-top { transform-origin: 158px 159px; }
+.pet-blink, .pet-chew, .pet-zzz text { transform-box: fill-box; transform-origin: center; }
+.pet-shell, .pet-crack, .pet-eye-star, .pet-zzz, .pet-bowl, .pet-sparks, .pet-crumb,
+.pet-lids, .pet-chew, .pet-dots, .pet-egg .pet-actor { display: none; }
+.pet-bubble { display: flex; align-items: baseline; gap: .55em; border-bottom: 1px solid var(--border); font-size: 14px; }
+.pet-bubble i { width: .5em; height: .9em; background: var(--brand-orange); margin-left: -.35em; animation: pet-cursor 1.3s steps(1,end) infinite; }
+.pet-stats { display: grid; gap: 8px; }
+.pet-stat { position: relative; display: grid; align-items: center; grid-template-columns: 7em minmax(12px,1fr) 4ch; gap: 12px; font-size: 12px; }
+.pet-stat > span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.pet-stat meter { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
+.pet-track { display: block; height: 5px; background: var(--border); }
+.pet-stat-fill { display: block; height: 100%; background: var(--fill); transform-origin: left; transform: scaleX(0); transition: transform .35s ease-out; }
+.pet-stat[data-pet-level="low"] .pet-stat-fill { background: var(--brand-orange); }
+.pet-stat[data-pet-level="critical"] .pet-stat-fill { background: var(--error); }
+.pet-actions { padding-top: 2px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.pet-actions button, .pet-preview select, .pet-preview button {
+  font: 500 13px var(--font-mono); border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--text); min-height: 44px; cursor: pointer;
+}
+.pet-actions button { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; }
+.pet-actions svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.pet-actions button:hover:enabled, .pet-preview button:hover:enabled { border-color: var(--brand-orange); }
+.pet-actions button:focus-visible, .pet-preview :is(select,button):focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 2px; }
+.pet-actions button:disabled, .pet-preview button:disabled { color: var(--text-dim); cursor: default; }
+
+.pet-egg .pet-shell, .pet-state-hatch .pet-shell { display: inline; }
+.pet-egg .pet-shell { animation: pet-pulse 2.6s ease-in-out infinite; }
+:is(.pet-cracks-1,.pet-cracks-2,.pet-cracks-3) .pet-crack-one,
+:is(.pet-cracks-2,.pet-cracks-3) .pet-crack-two, .pet-cracks-3 .pet-crack-three,
+.pet-state-hatch .pet-crack { display: inline; }
+.pet-state-hatch .pet-shell-top { animation: pet-lift 1.6s ease-in-out both; }
+.pet-state-hatch .pet-shell-base { animation: pet-split 1.6s ease-in-out both; }
+.pet-state-hatch .pet-actor { animation: pet-emerge 1.6s ease-out both; }
+.pet-state-idle .pet-body, .pet-state-full .pet-body { animation: pet-breathe 3.6s ease-in-out infinite; }
+.pet-state-idle .pet-actor { animation: pet-shuffle 17s ease-in-out infinite; }
+.pet-state-idle .pet-blink { animation: pet-blink 7.7s ease-in-out -2s infinite; }
+.pet-state-idle .pet-open > g:last-child .pet-blink { animation-delay: -1.96s; }
+.pet-state-eat .pet-actor { animation: pet-eat 1.45s ease-in-out both; }
+:is(.pet-state-eat,.pet-state-hungry) .pet-bowl, .pet-state-eat :is(.pet-chew,.pet-crumb),
+:is(.pet-state-play,.pet-state-happy-full) .pet-sparks, .pet-state-happy-full .pet-eye-star,
+:is(.pet-state-sleep,.pet-state-full) .pet-lids, .pet-state-sleep .pet-zzz, .pet-state-sad .pet-dots { display: inline; }
+.pet-state-eat .pet-smile, :is(.pet-state-sleep,.pet-state-sad,.pet-state-full) .pet-open,
+.pet-state-sad .pet-smile { display: none; }
+.pet-state-eat .pet-chew { animation: pet-chew .26s ease-in-out .32s 3; }
+.pet-state-eat .pet-crumb { animation: pet-scatter .3s ease-out .32s 3 both; }
+.pet-state-full .pet-actor { transform: scale(1.07,.93); }
+.pet-state-play .pet-actor { animation: pet-hop 1s ease-in-out both; }
+.pet-state-play .pet-sparks { animation: pet-flash 1s ease-out both; }
+.pet-state-sleep .pet-actor { transform: scale(1.12,.70); }
+.pet-state-sleep .pet-body { animation: pet-breathe 5.4s ease-in-out infinite; }
+.pet-zzz { font: 600 14px var(--font-mono); }
+.pet-zzz text { animation: pet-drift 3s ease-in-out infinite; }
+.pet-zzz text:nth-child(2) { animation-delay: -1s; }
+.pet-zzz text:nth-child(3) { animation-delay: -2s; }
+.pet-state-hungry .pet-body { transform: skewX(-7deg) scale(.88,.88); }
+.pet-state-hungry .pet-face { transform: translate(9px,7px); }
+.pet-state-hungry .pet-actor { animation: pet-shiver 2.1s linear infinite; }
+.pet-state-sad .pet-body { opacity: .65; transform: scale(1.02,.83); animation: pet-sigh 6s ease-in-out infinite; }
+.pet-state-sad .pet-face { transform: translateY(4px); }
+.pet-state-happy-full .pet-actor { animation: pet-bounce 1.8s ease-in-out infinite; }
+.pet-state-happy-full .pet-sparks { animation: pet-glint 1.8s ease-in-out infinite; }
+
+@keyframes pet-cursor { 52% { opacity: 0; } }
+@keyframes pet-pulse { 50% { transform: scale(1.025,.975); } }
+@keyframes pet-lift {
+  18%,34% { transform: rotate(-4deg); } 26%,40% { transform: rotate(4deg); }
+  64% { transform: translate(-17px,-35px) rotate(-23deg); }
+  90%,100% { transform: translate(-62px,18px) rotate(-65deg); opacity: 0; }
+}
+@keyframes pet-split { 0%,40% { transform: none; } 76% { opacity: 1; } 100% { transform: translate(53px,4px) rotate(37deg); opacity: 0; } }
+@keyframes pet-emerge { 0%,40% { transform: scale(.3,.2); opacity: 0; } 70% { transform: translateY(-14px) scale(.94,1.07); opacity: 1; } 88% { transform: scale(1.07,.93); } 100% { transform: none; } }
+@keyframes pet-breathe { 50% { transform: scale(1.035,.955); } }
+@keyframes pet-shuffle { 78%,86% { transform: none; } 81% { transform: translateX(-3px) rotate(-3deg); } 84% { transform: rotate(2deg); } }
+@keyframes pet-blink { 0%,43%,47%,77%,81%,100% { transform: none; } 45%,79% { transform: scaleY(.07); } }
+@keyframes pet-eat { 0%,100% { transform: none; } 24%,42%,61%,80% { transform: translateX(26px) rotate(20deg) scale(1,.87); } 33%,52%,71% { transform: translateX(25px) rotate(15deg) scale(.96,.94); } }
+@keyframes pet-chew { 50% { transform: scale(1.3,.3); } }
+@keyframes pet-scatter { from { opacity: 0; transform: translate(5px,6px); } 30% { opacity: 1; } to { opacity: 0; transform: translate(-5px,-7px); } }
+@keyframes pet-hop { 12%,81% { transform: scale(1.13,.82); } 43% { transform: translate(7px,-37px) rotate(12deg) scale(.93,1.04); } 68% { transform: translateY(-8px) rotate(-6deg); } }
+@keyframes pet-flash { 0%,100% { opacity: 0; } 35%,70% { opacity: 1; transform: translateY(-5px); } }
+@keyframes pet-drift { 0% { opacity: 0; transform: translate(-4px,4px); } 35%,65% { opacity: 1; } 100% { opacity: 0; transform: translate(6px,-8px); } }
+@keyframes pet-shiver { 16%,24% { transform: translateX(-1.5px); } 20%,28% { transform: translateX(1.5px); } 32%,100% { transform: none; } }
+@keyframes pet-sigh { 55% { transform: scale(1.04,.80); } }
+@keyframes pet-bounce { 45% { transform: translateY(-7px) rotate(-2deg); } 85% { transform: scale(1.03,.97); } }
+@keyframes pet-glint { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) {
+  .pet-state-eat .pet-actor { transform: translateX(26px) rotate(17deg) scale(1,.88); }
+  .pet-state-play .pet-actor { transform: translateY(-22px) rotate(10deg); }
+  .pet-state-happy-full .pet-actor { transform: translateY(-4px); }
+  .pet-state-hatch .pet-shell-top { transform: translate(-58px,29px) rotate(-58deg) scale(.62); }
+  .pet-state-hatch .pet-shell-base { transform: translate(69px,1px) rotate(30deg) scale(.65); }
+}

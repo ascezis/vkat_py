@@ -623,7 +623,17 @@
       const accepted = acceptedCodeBefore(S.module.steps.length);
       const draft = S.dom.editor.value;
       const prefix = (accepted ? accepted + '\n\n' : '') + 'PET_SECRET = ' + (1 + Math.floor(Math.random() * 10)) + '\n\n';
-      const code = scaffold.replace('__STUDENT_CODE__', prefix + draft);
+      // Песочница: код ученика получает ЖИВОЙ словарь питомца; после выполнения
+      // финальное состояние печатается и применяется к сцене — правки кода
+      // («Запустить») реально меняют Байта. Черновик исполняется РОВНО ОДИН раз —
+      // после инжекции pet (иначе NameError на первой строке).
+      const born = completedStepsCount() >= 1;
+      let code = scaffold.replace('__STUDENT_CODE__', prefix);
+      if (born && S.petModel) {
+        code += '\nPET_JSON = """' + JSON.stringify(S.petModel) + '"""\n' +
+          'pet = json.loads(PET_JSON)\n' + draft + '\n' +
+          'print(pet_state_json(pet))\n';
+      }
       const stdinLines = S.dom.stdinInput.value.split('\n').filter((line, i, arr) => !(line === '' && i === arr.length - 1));
       const result = await window.CodeChecker.runCode(code, 7000, stdinLines);
       const fb = S.dom.feedback;
@@ -634,13 +644,23 @@
           '<div class="life-fb-sub">' + escapeHtml(result.error) + '</div></div></div>' +
           (result.stdout ? '<pre class="life-fb-console">' + escapeHtml(result.stdout) + '</pre>' : '');
       } else {
+        // Применяем итоговое состояние питомца, если код его вернул
+        const state = born ? parseStateJson(result.stdout) : null;
+        if (state) {
+          S.petModel = state;
+          renderStats();
+          applyExpressionPose();
+        }
         fb.className = 'life-feedback-msg ok';
         const secretHint = (completedStepsCount() >= 3)
           ? 'Угадайка: Байт загадал число от 1 до 10. PET_SECRET запечатан — угадай циклом!'
           : 'Свободный запуск: печатай и пробуй. Испытание «Угадайка» откроется после шага 3.';
+        const sandboxHint = (born && state)
+          ? ' Сцена обновлена: словарь pet из твоего кода применён к Байту.'
+          : (born ? ' Изменяй словарь pet — Байт на сцене отреагирует.' : '');
         fb.innerHTML = '<div class="life-fb-row"><span class="life-fb-mark ok">▶</span>' +
           '<div><div class="life-fb-title">Запуск завершён</div>' +
-          '<div class="life-fb-sub">' + escapeHtml(secretHint) + '</div></div></div>' +
+          '<div class="life-fb-sub">' + escapeHtml(secretHint + sandboxHint) + '</div></div></div>' +
           '<pre class="life-fb-console">' + escapeHtml(result.stdout || '(пустой вывод)') + '</pre>';
       }
       showFeedback();

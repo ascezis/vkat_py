@@ -38,7 +38,7 @@
     <ellipse rx="10" ry="15"/><circle class="pet-light" cx="-2" cy="-6" r="3.4"/>
     <path class="pet-accent pet-eye-star" d="M2 0l1.5 3L7 4.5 3.5 6 2 9 .5 6-3 4.5.5 3z"/></g></g>`;
   const sprite = `<svg class="pet-sprite" viewBox="0 0 320 200" aria-hidden="true" focusable="false">
-    <path class="pet-platform" d="M47 162h226m-214 4h12m5 0h77m68 0h29"/>
+    <path class="pet-platform" d="M47 162h239m-227 4h12m5 0h77m68 0h42"/>
     <ellipse class="pet-shadow" cx="158" cy="159" rx="49" ry="3"/>
     <g class="pet-mood"><g class="pet-actor"><g class="pet-body">
       <path class="pet-light" d="M101 125q1-21 13-38 11-18 32-22 8-2 13-16 3-7 7 2 2 7 0 12 9-3 15-11 5-4 5 3l-3 12q24 7 31 33 3 12 9 23 9 16-2 25-5 4-14 3-6 10-20 7-10 6-23 1-12 5-23 0-16 4-25-5-13 2-20-6-7-9 5-23z"/>
@@ -51,8 +51,8 @@
         <ellipse class="pet-chew" cx="158" cy="126" rx="5" ry="4"/>
         <g class="pet-accent"><ellipse cx="120" cy="125" rx="6" ry="3"/><ellipse cx="194" cy="125" rx="6" ry="3"/></g>
       </g></g></g></g>
-    <g class="pet-bowl"><path class="pet-accent" d="M210 148h42q-3 14-21 14t-21-14z"/><path class="pet-light" d="M213 146q3-6 7-4 5-9 11-3 7-4 10 2 6-2 8 5z"/></g>
-    <path class="pet-crumb pet-accent" d="M202 132h4v4h-4zm12-6h3v3h-3zm-8-7h2v2h-2z"/>
+    <g class="pet-bowl"><path class="pet-accent" d="M236 148h42q-3 14-21 14t-21-14z"/><path class="pet-light" d="M239 146q3-6 7-4 5-9 11-3 7-4 10 2 6-2 8 5z"/></g>
+    <path class="pet-crumb pet-accent" d="M228 132h4v4h-4zm9-7h3v3h-3zm-6-8h2v2h-2z"/>
     <path class="pet-sparks pet-accent" d="M94 66l2 7 7 2-7 2-2 7-2-7-7-2 7-2zm133 23 2 5 5 2-5 2-2 5-2-5-5-2 5-2zm-9-35h4v4h-4z"/>
     <g class="pet-zzz"><text x="216" y="110">z</text><text x="228" y="97">z</text><text x="242" y="81">Z</text></g>
     <g class="pet-shell"><g class="pet-shell-top">

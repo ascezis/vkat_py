@@ -71,6 +71,7 @@
 .pet-state-idle .pet-blink, .pet-state-happy-full .pet-blink, .pet-state-hungry .pet-blink { animation: pet-blink 7.7s ease-in-out -2s infinite; }
 .pet-state-idle .pet-open > g:last-child .pet-blink { animation-delay: -1.96s; }
 .pet-state-eat .pet-actor { animation: pet-eat 1.45s ease-in-out both; }
+.pet-state-eat .pet-bowl { transform-origin: 257px 160px; animation: pet-serve 1.45s ease-in-out both; }
 :is(.pet-state-eat,.pet-state-hungry) .pet-bowl, .pet-state-eat :is(.pet-chew,.pet-crumb),
 :is(.pet-state-play,.pet-state-happy-full) .pet-sparks, .pet-state-happy-full .pet-eye-star,
 :is(.pet-state-sleep,.pet-state-full) .pet-lids, .pet-state-sleep .pet-zzz, .pet-state-sad .pet-dots { display: inline; }
@@ -110,7 +111,17 @@
 @keyframes pet-shuffle { 0%,78%,86%,100% { transform: translateX(0); } 81% { transform: translateX(-2px); } 84% { transform: translateX(1px); } }
 @keyframes pet-look { 0%,38%,55%,100% { transform: translateX(0); } 43%,50% { transform: translateX(2px); } 77%,84% { transform: translateX(-2px); } }
 @keyframes pet-blink { 0%,43%,47%,77%,81%,100% { transform: none; } 45%,79% { transform: scaleY(.07); } }
-@keyframes pet-eat { 0%,100% { transform: none; } 24%,42%,61%,80% { transform: translateX(26px) rotate(20deg) scale(1,.87); } 33%,52%,71% { transform: translateX(25px) rotate(15deg) scale(.96,.94); } }
+@keyframes pet-eat {
+  0%,100% { transform: translateX(0) rotate(0); }
+  18%,76% { transform: translateX(7px) rotate(4deg); }
+  30%,48%,66% { transform: translateX(9px) rotate(6deg) scale(1,.97); }
+  39%,57% { transform: translateX(7px) rotate(4deg) scale(1,1.01); }
+}
+@keyframes pet-serve {
+  0% { opacity: 0; transform: translateX(12px); }
+  14%,76% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(12px); }
+}
 @keyframes pet-chew { 50% { transform: scale(1.3,.3); } }
 @keyframes pet-scatter { from { opacity: 0; transform: translate(5px,6px); } 30% { opacity: 1; } to { opacity: 0; transform: translate(-5px,-7px); } }
 @keyframes pet-hop { 12%,81% { transform: scale(1.13,.82); } 43% { transform: translate(7px,-37px) rotate(12deg) scale(.93,1.04); } 68% { transform: translateY(-8px) rotate(-6deg); } }
@@ -121,7 +132,7 @@
 @keyframes pet-bounce { 45% { transform: translateY(-7px) rotate(-2deg); } 85% { transform: scale(1.03,.97); } }
 @keyframes pet-glint { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) {
-  .pet-state-eat .pet-actor { transform: translateX(26px) rotate(17deg) scale(1,.88); }
+  .pet-state-eat .pet-actor { transform: translateX(7px) rotate(5deg) scale(1,.97); }
   .pet-state-play .pet-actor { transform: translateY(-22px) rotate(10deg); }
   .pet-state-happy-full .pet-actor { transform: translateY(-4px); }
   .pet-state-hatch .pet-shell-top { transform: translate(-58px,29px) rotate(-58deg) scale(.62); }

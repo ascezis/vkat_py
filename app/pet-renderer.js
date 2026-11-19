@@ -34,6 +34,33 @@
 
   const STAT_KEYS = ['сытость', 'настроение', 'энергия'];
 
+  // Реплики Байта: пул фраз на случай/состояние (кроме дефолтов арта).
+  // petSay не повторяет фразу дважды подряд.
+  const PHRASES = {
+    egg: ['тук…', 'тук-тук…', 'кто там?', 'скорлупа не вечна', 'уже скоро?'],
+    hatch: ['я здесь!', 'привет, создатель!', 'первый вдох!'],
+    idle: ['мррр', 'тут тепло и уютно', 'слежу за курсором', 'пиши-пиши', 'хвостик доволен', 'а что дальше?'],
+    stroke: ['мррр-мррр!', 'ещё!', 'ты лучший хозяин', '+1 в копилку дружбы', '…и это бесплатно'],
+    eat: ['ням-ням', 'хрум!', 'ещё ложечку', 'м-м-м, корм с душой'],
+    full: ['ур-р…', 'сыт и доволен', 'доеду до сотни'],
+    play: ['лови искру!', 'прыг-скок', 'ещё раунд!', 'йо-хо-хо!'],
+    sleep: ['тише…', 'zzz-дзин', 'вижу сон про print', 'подзарядка…'],
+    hungry: ['где моя миска?', 'кормить! кормить!', 'сытость тает на глазах'],
+    sad: ['посиди со мной…', 'настроение ниже плинтуса', 'питомцу нужны объятия'],
+    'happy-full': ['мррр!', 'жизнь удалась', 'всё по максимуму!', 'лучший день!']
+  };
+  let lastPhrase = '';
+  function petSay(pool) {
+    const arr = PHRASES[pool];
+    if (!arr || !arr.length) return '';
+    let s = arr[Math.floor(Math.random() * arr.length)];
+    if (arr.length > 1) {
+      while (s === lastPhrase) s = arr[Math.floor(Math.random() * arr.length)];
+    }
+    lastPhrase = s;
+    return s;
+  }
+
   function defaultModel() {
     return { 'имя': 'Байт', 'сытость': 50, 'настроение': 50, 'энергия': 50 };
   }
@@ -143,7 +170,8 @@
 
   function applyExpressionPose() {
     if (!S.petModel) return;
-    pose(window.PetArt.expression(modelToArt(S.petModel)));
+    const expr = window.PetArt.expression(modelToArt(S.petModel));
+    pose(expr, petSay(expr));
   }
 
   function renderStats() {
@@ -159,7 +187,7 @@
     if (n >= 1 && !S.petModel) S.petModel = defaultModel();
     if (n === 0) {
       S.petModel = null;
-      pose('egg', 'тук…');
+      pose('egg', petSay('egg'));
       window.PetArt.cracks(S.dom.stage, S.eggCracks);
     } else {
       applyExpressionPose();
@@ -385,7 +413,7 @@
     if (completedStepsCount() > 0 || !window.PetArt || !S.dom.stage) return;
     S.eggCracks = Math.min(3, S.eggCracks + 1);
     window.PetArt.cracks(S.dom.stage, S.eggCracks);
-    pose('egg', S.eggCracks >= 3 ? 'тук! тук! тук!' : 'тук-тук…');
+    pose('egg', S.eggCracks >= 3 ? 'тук! тук! тук!' : petSay('egg'));
   }
 
   function renderFailFeedback(result) {
@@ -451,7 +479,7 @@
     if (wasMode === 'egg' && S.worldMode !== 'egg' && window.PetArt && S.dom.stage) {
       S.eggCracks = 3;
       window.PetArt.cracks(S.dom.stage, 3);
-      pose('hatch', 'я здесь!');
+      pose('hatch', petSay('hatch'));
       schedulePose(1600);
     }
   }
@@ -508,7 +536,7 @@
       m['энергия'] = Math.min(100, m['энергия'] + 30);
       m['настроение'] = Math.min(100, m['настроение'] + 5);
       S.petModel = m;
-      pose('sleep');
+      pose('sleep', petSay('sleep'));
       renderStats();
       schedulePose(1600);
       return;
@@ -541,7 +569,7 @@
       }
       S.petModel = state;
       renderStats();
-      pose(kind, null);
+      pose(kind, petSay(kind));
       // Контракт PetArt: eat → 1450 мс → full → выражение по статам; play → 1000 мс
       schedulePose(kind === 'eat' ? 1450 : 1000);
     } catch (err) {
@@ -841,7 +869,7 @@
         if (stage && S.petModel && !e.target.closest('[data-pet-action]')) {
           S.petModel['настроение'] = Math.min(100, S.petModel['настроение'] + 1);
           renderStats();
-          pose('idle', 'мррр');
+          pose('idle', petSay('stroke'));
           schedulePose(1200);
         }
       });

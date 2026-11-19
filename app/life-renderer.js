@@ -1431,7 +1431,7 @@
         '<span>1 тема</span>' +
         '<span>' + total + ' задания</span>' +
       '</div>' +
-      '<div class="stage-card-note">Клеточные автоматы B3/S23 и интерактивная песочница.</div>' +
+      '<div class="stage-card-note">★ Продвинутый (после Тамагочи): клеточные автоматы B3/S23 и интерактивная песочница.</div>' +
       '<div class="stage-card-actions">' +
         '<button type="button" class="stage-card-btn" id="btn-life-open">' + btnText + '</button>' +
         '<span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">' + percent + '%</span>' +

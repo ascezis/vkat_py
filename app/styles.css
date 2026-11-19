@@ -2627,7 +2627,48 @@ body {
   .glyph .f { opacity: 1; }
 }
 
-/* --- Скроллбары в цвет интерфейса --- */
+/* ==========================================================================
+   ТЕРАРИУМ (ПЕТ-ПРОЕКТ ТАМАГОЧИ): HUD часов, сцена PetArt, строки ввода
+   ========================================================================== */
+
+.pet-terrarum { display: flex; flex-direction: column; gap: 10px; }
+
+.pet-hud-actions { display: flex; gap: 8px; }
+
+.pet-stage-host {
+  display: grid;
+  place-items: center;
+  padding: 10px clamp(8px, 2%, 20px);
+}
+
+.pet-stdin-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pet-stdin-input {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 54px;
+}
+
+.pet-stdin-input:focus {
+  outline: 1px solid var(--border-strong);
+  outline-offset: -1px;
+}
+
+/* ==========================================================================
+   Скроллбары в цвет интерфейса */
 
 /* Chromium 121+ игнорирует ::-webkit-scrollbar, если задан scrollbar-width/color,
    поэтому стандартные свойства оставлены только для Firefox (там нет ::-webkit-scrollbar). */
@@ -4066,7 +4107,8 @@ body {
   box-sizing: border-box;
 }
 
-#life-code-editor {
+#life-code-editor,
+#pet-code-editor {
   position: relative;
   z-index: 1;
   flex: 1;
@@ -4088,7 +4130,8 @@ body {
   box-sizing: border-box;
 }
 
-#life-code-editor::selection {
+#life-code-editor::selection,
+#pet-code-editor::selection {
   background: rgba(38, 79, 120, 0.6);
   color: transparent;
 }

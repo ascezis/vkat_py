@@ -52,6 +52,7 @@
     dom.screenFinish = document.getElementById('screen-finish');
     dom.screenProjects = document.getElementById('screen-projects');
     dom.screenLife = document.getElementById('screen-life');
+    dom.screenPet = document.getElementById('screen-pet');
     dom.screenSandbox = document.getElementById('screen-sandbox');
     dom.btnModulesPrev = document.getElementById('btn-modules-prev');
     dom.btnModulesNext = document.getElementById('btn-modules-next');
@@ -468,6 +469,11 @@
     if (window.VkatLife && wasLife && screen !== 'life') {
       window.VkatLife.leave();
     }
+    // Экран терариума: перед уходом сохранить и остановить таймеры
+    const wasPet = dom.screenPet && dom.screenPet.classList.contains('active');
+    if (window.VkatPet && wasPet && screen !== 'pet') {
+      window.VkatPet.leave();
+    }
     // Экран песочницы: перед уходом остановить выполнение и сохранить
     const wasSandbox = dom.screenSandbox && dom.screenSandbox.classList.contains('active');
     if (window.VkatSandbox && wasSandbox && screen !== 'sandbox') {
@@ -483,6 +489,7 @@
     dom.screenFinish.classList.remove('active');
     if (dom.screenProjects) dom.screenProjects.classList.remove('active');
     if (dom.screenLife) dom.screenLife.classList.remove('active');
+    if (dom.screenPet) dom.screenPet.classList.remove('active');
     if (dom.screenSandbox) dom.screenSandbox.classList.remove('active');
 
     updateProfileBadges();
@@ -506,15 +513,21 @@
         dom.screenLesson.classList.add('active');
         dom.topbar.style.display = 'flex';
       } else if (screen === 'projects') {
-        // Витрина пет-проектов: hero-карточка рендерится заново ради свежего прогресса
+        // Витрина пет-проектов: карточки рендерятся заново ради свежего прогресса
         if (dom.screenProjects) dom.screenProjects.classList.add('active');
         dom.topbar.style.display = 'none';
+        if (window.VkatPet) window.VkatPet.renderCard();
         if (window.VkatLife) window.VkatLife.renderStartCard();
         if (wasStart) animateScreenSlide(dom.screenProjects, 'screen-slide-right');
       } else if (screen === 'life') {
         dom.screenLife.classList.add('active');
         dom.topbar.style.display = 'none';
         if (window.VkatLife) window.VkatLife.enter();
+      } else if (screen === 'pet') {
+        // Терариум: сцена питомца + редактор решения
+        if (dom.screenPet) dom.screenPet.classList.add('active');
+        dom.topbar.style.display = 'none';
+        if (window.VkatPet) window.VkatPet.enter();
       } else if (screen === 'sandbox') {
         if (dom.screenSandbox) dom.screenSandbox.classList.add('active');
         dom.topbar.style.display = 'none';
@@ -949,6 +962,7 @@
     setupEditor();
     setupEvents();
     if (window.VkatLife) window.VkatLife.init();
+    if (window.VkatPet) window.VkatPet.init();
 
     if (window.VkatGridWarp && dom.startGridCanvas) {
       state.gridWarp = window.VkatGridWarp.init(dom.startGridCanvas, dom.screenStart);
@@ -959,7 +973,7 @@
     if (activeProfile) {
       await loadStorage();
       const urlScreen = new URLSearchParams(window.location.search).get('screen') || (window.location.hash ? window.location.hash.slice(1) : null);
-      if (urlScreen && ['start', 'lesson', 'projects', 'life', 'sandbox', 'profiles', 'finish'].includes(urlScreen)) {
+      if (urlScreen && ['start', 'lesson', 'projects', 'pet', 'life', 'sandbox', 'profiles', 'finish'].includes(urlScreen)) {
         showScreen(urlScreen);
       } else {
         showScreen('start');

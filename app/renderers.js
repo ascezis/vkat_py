@@ -565,7 +565,26 @@
       });
     });
 
-    // Пет-проект: Alife-System
+    // Пет-проект №1: Тамагочи
+    if (window.PET_MODULE) {
+      const pm = window.PET_MODULE;
+      const petHeader = document.createElement('div');
+      petHeader.className = 'tree-stage-header';
+      petHeader.innerHTML = `
+        <div class="tree-stage-title" style="color: var(--brand-orange); cursor: pointer;">
+          <span>● ${pm.title}</span>
+          <span class="tree-stage-progress">${pm.steps.length} шага</span>
+        </div>
+      `;
+      petHeader.addEventListener('click', () => {
+        dom.treeDrawer.classList.remove('open');
+        dom.treeBackdrop.classList.remove('open');
+        window.VkatApp.showScreen('pet');
+      });
+      dom.treeBody.appendChild(petHeader);
+    }
+
+    // Пет-проект №2 (продвинутый): Alife-System
     if (window.LIFE_MODULE) {
       const lm = window.LIFE_MODULE;
       const lifeHeader = document.createElement('div');

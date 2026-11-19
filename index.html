@@ -7,6 +7,7 @@
   <title>вкат.py — интерактивный тренажёр по Python</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B0B0C'/%3E%3Cpath d='M8 7l7 9-7 9' stroke='%23FF6A00' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Crect x='17' y='22' width='8' height='3.5' rx='1.75' fill='%23FFFFFF'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="app/styles.css">
+  <link rel="stylesheet" href="app/pet-art.css">
 </head>
 
 <body>
@@ -581,7 +582,9 @@
     </header>
     <main class="projects-center">
       <div class="kicker">витрина пет-проектов</div>
-      <!-- Hero-карточка модуля; id нужен валидатору, рендерит life-renderer.js -->
+      <!-- Проект №1: Тамагочи; id нужен валидатору, рендерит pet-renderer.js -->
+      <div id="pet-start-card" class="stage-card project-hero"></div>
+      <!-- Проект №2 (продвинутый); id нужен валидатору, рендерит life-renderer.js -->
       <div id="life-start-card" class="stage-card project-hero"></div>
       <div class="projects-note">следующий пет-проект появится на этой полке</div>
     </main>
@@ -901,6 +904,128 @@ def simulate_step(grid):
 
 def get_grid_json(grid):
     return json.dumps(grid)
+  </script>
+
+  <!-- ЭКРАН 6: ТЕРАРИУМ (ПЕТ-ПРОЕКТ ТАМАГОЧИ) -->
+  <div id="screen-pet" class="screen">
+    <header class="life-header">
+      <div class="life-header-left">
+        <button type="button" id="btn-pet-back" class="btn-ghost-sm" title="Вернуться на витрину пет-проектов">← Пет-проекты</button>
+        <span class="life-header-title">Тамагочи</span>
+        <span class="life-step-badge" id="pet-step-indicator">шаг 1 из 4</span>
+        <span class="life-step-dots" id="pet-step-dots"></span>
+      </div>
+      <div class="life-header-right">
+        <button type="button" id="btn-pet-open-intro" class="btn-ghost-sm life-btn-theory" title="Как устроен терариум">Как играть</button>
+        <button type="button" id="btn-pet-skip-intro" class="btn-ghost-sm life-btn-skip" style="display: none;" title="Перейти к коду">В терариум</button>
+      </div>
+    </header>
+
+    <!-- ВВОДНЫЙ БРИФИНГ (2 СЛАЙДА) -->
+    <div id="pet-intro-view" class="life-intro-view" style="display: none;">
+      <div class="life-intro-container">
+        <nav class="life-intro-tabs" id="pet-intro-tabs">
+          <button type="button" class="intro-tab-btn active" data-slide="1">01 Знакомство</button>
+          <button type="button" class="intro-tab-btn" data-slide="2">02 Управление</button>
+        </nav>
+        <div id="pet-intro-slides">
+          <article class="intro-slide" data-slide="1">
+            <h2>Это Байт. Он пока в яйце.</h2>
+            <p>Тамагочи — пет-проект, где твой Python становится жизнью: пара строк — и питомец на сцене
+              меняет поведение. Никаких двумерных списков — питомец это <b>словарь</b>:
+              ключи <b>«имя»</b>, <b>«сытость»</b>, <b>«настроение»</b>, <b>«энергия»</b> (числа 0..100).</p>
+            <p>Яйцо трескается от каждой проверки — даже неудачной. Собери питомца в шаге 1 —
+              и скорлупа разломится у тебя на глазах.</p>
+            <p>Каждый шаг — несколько строк и мгновенный результат: Байт жуёт твоим <code>feed()</code>,
+              прыгает твоим <code>play()</code> и живёт по часам твоего <code>tick()</code>.</p>
+          </article>
+          <article class="intro-slide" data-slide="2">
+            <h2>Управление терариумом</h2>
+            <p>Кнопки сцены оживают по мере шагов: <b>«Кормить»</b> — после шага 2, <b>«Играть»</b> — после шага 3,
+              <b>«Спать»</b> — сразу после вылупления. После шага 4 заведутся суточные часы:
+              «+1 час» и «Автодень».</p>
+            <p><b>Клик по питомцу</b> — погладить (чуть-чуть настроения в подарок).</p>
+            <p>Кнопка <b>«Запустить»</b> — свободный запуск кода со строками ввода: там живёт испытание
+              <b>«Угадайка»</b> — Байт загадал число от 1 до 10, угадай его циклом <code>while</code> и <code>input()</code>.</p>
+            <p>Питомец «спит в капсуле», пока ты не в сети: между сессиями статы бережно замораживаются —
+              никакого мёртвого питомца после выходных.</p>
+            <button type="button" id="btn-pet-enter-lab" class="life-btn">Войти в терариум →</button>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <main class="life-body" id="pet-body">
+      <!-- Левая колонка: сцена питомца -->
+      <section class="life-canvas-panel" id="pet-stage-panel">
+        <div class="life-stage pet-terrarum">
+          <div class="life-hud pet-hud" aria-label="Часы терариума">
+            <div class="hud-left">
+              <span class="hud-item">час <strong id="pet-clock">14:00</strong></span>
+            </div>
+            <div class="pet-hud-actions">
+              <button type="button" id="btn-pet-hour" class="life-btn life-btn-sm life-btn-ghost" disabled title="Часы откроются после сдачи шага 4">+1 час</button>
+              <button type="button" id="btn-pet-auto" class="life-btn life-btn-sm life-btn-ghost" disabled title="Часы откроются после сдачи шага 4">Автодень: выкл</button>
+            </div>
+          </div>
+          <div id="pet-stage-host" class="pet-stage-host"><!-- PetArt.render() вставит сцену сюда --></div>
+          <div class="life-canvas-hint">
+            <span>клик по питомцу — погладить</span> · <span>кнопки оживают от решений</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Правая колонка: задание, глиф, редактор Python -->
+      <section class="life-editor-panel" id="pet-editor-panel">
+        <div class="life-task-card">
+          <h2 id="pet-task-title">Шаг 1: Искра жизни</h2>
+          <div id="pet-glyph-slot" class="life-glyph-slot"></div>
+          <div id="pet-task-desc" class="life-task-desc"></div>
+          <div class="life-hint-box">
+            <button type="button" id="btn-pet-hint" class="life-btn life-btn-sm life-btn-ghost" style="display: none;">Подсказка</button>
+            <div id="pet-hint-content" class="life-hint-content"></div>
+          </div>
+        </div>
+
+        <div class="life-code-wrapper">
+          <div class="life-editor-header">
+            <span>решение · python 3</span>
+            <span id="pet-editor-status" class="editor-status">Не проверено</span>
+          </div>
+          <div class="life-editor-container">
+            <div id="pet-line-numbers" class="life-line-numbers" aria-hidden="true">1</div>
+            <pre id="pet-editor-highlight" class="editor-highlight life-editor-highlight" aria-hidden="true"></pre>
+            <textarea id="pet-code-editor" class="life-code-area" spellcheck="false" placeholder="# Напиши решение здесь..."></textarea>
+            <div id="pet-autocomplete-popup" class="autocomplete-popup"></div>
+          </div>
+        </div>
+
+        <div class="life-action-bar">
+          <div id="pet-feedback" class="life-feedback-msg"></div>
+          <div class="life-action-buttons">
+            <button type="button" id="btn-pet-run" class="life-btn life-btn-ghost" title="Свободный запуск: строки ввода ниже питают input()">Запустить</button>
+            <button type="button" id="btn-pet-submit" class="life-btn" title="Ctrl + Enter">Проверить</button>
+          </div>
+          <div class="pet-stdin-row">
+            <label for="pet-stdin-input">строки ввода (по одной на строку):</label>
+            <textarea id="pet-stdin-input" class="pet-stdin-input" rows="3" spellcheck="false" placeholder="3&#10;7&#10;10"></textarea>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Эталонный Python-скаффолд терариума (инжекция кода ученика через __STUDENT_CODE__) -->
+  <script type="text/x-python" id="vkat-pet-scaffold">
+# === ДВИЖОК ТЕРАРИУМА (СКАФФОЛД) ===
+import json
+
+def pet_state_json(pet):
+    """Канал связи питомца с интерфейсом: словарь -> JSON-строка."""
+    return json.dumps(pet, ensure_ascii=False)
+
+# Сюда инжектируется код студента:
+__STUDENT_CODE__
   </script>
 
   <!-- ДЕРЕВО ОГЛАВЛЕНИЯ КУРСА (ВЫДВИЖНОЙ САЙДБАР) -->
@@ -1484,6 +1609,7 @@ def _match_output_proxy(actual_str, expected_str):
   <!-- База конструкций и подсказки по коду в теории -->
   <script src="content/cheatsheet.js"></script>
   <script src="content/projects/life/tasks.js"></script>
+  <script src="content/projects/pet/tasks.js"></script>
   <script src="app/code-hints.js"></script>
 
   <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
@@ -1508,6 +1634,8 @@ def _match_output_proxy(actual_str, expected_str):
   <!-- Интерактивная выпуклая сетка Antigravity (Grid Warp) -->
   <script src="app/grid-warp.js"></script>
   <script src="app/life-renderer.js"></script>
+  <script src="app/pet-art.js"></script>
+  <script src="app/pet-renderer.js"></script>
 
   <!-- Свободная песочница Python (Playground) -->
   <script src="app/sandbox.js"></script>

@@ -45,8 +45,8 @@
 .pet-actions button, .pet-preview select, .pet-preview button {
   font: 500 13px var(--font-mono); border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--text); min-height: 44px; cursor: pointer;
 }
-.pet-actions button { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; }
-.pet-actions svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.pet-actions button { display: flex; align-items: center; justify-content: center; gap: 7px; line-height: 1; white-space: nowrap; }
+.pet-actions svg { display: block; width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; }
 .pet-actions button:hover:enabled, .pet-preview button:hover:enabled { border-color: var(--brand-orange); }
 .pet-actions button:focus-visible, .pet-preview :is(select,button):focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 2px; }
 .pet-actions button:disabled, .pet-preview button:disabled { color: var(--text-dim); cursor: default; }
@@ -59,8 +59,9 @@
 .pet-state-hatch .pet-shell-top { animation: pet-lift 1.6s ease-in-out both; }
 .pet-state-hatch .pet-shell-base { animation: pet-split 1.6s ease-in-out both; }
 .pet-state-hatch .pet-actor { animation: pet-emerge 1.6s ease-out both; }
-.pet-state-idle .pet-body, .pet-state-full .pet-body { animation: pet-breathe 3.6s ease-in-out infinite; }
-.pet-state-idle .pet-actor { animation: pet-shuffle 17s ease-in-out infinite; }
+.pet-state-idle .pet-actor { animation: pet-breathe 3.6s ease-in-out infinite; will-change: transform; }
+.pet-state-idle .pet-body { animation: pet-shuffle 17s ease-in-out infinite; will-change: transform; }
+.pet-state-full .pet-body { animation: pet-breathe 3.6s ease-in-out infinite; }
 .pet-state-idle .pet-blink { animation: pet-blink 7.7s ease-in-out -2s infinite; }
 .pet-state-idle .pet-open > g:last-child .pet-blink { animation-delay: -1.96s; }
 .pet-state-eat .pet-actor { animation: pet-eat 1.45s ease-in-out both; }
@@ -97,8 +98,8 @@
 }
 @keyframes pet-split { 0%,40% { transform: none; } 76% { opacity: 1; } 100% { transform: translate(53px,4px) rotate(37deg); opacity: 0; } }
 @keyframes pet-emerge { 0%,40% { transform: scale(.3,.2); opacity: 0; } 70% { transform: translateY(-14px) scale(.94,1.07); opacity: 1; } 88% { transform: scale(1.07,.93); } 100% { transform: none; } }
-@keyframes pet-breathe { 50% { transform: scale(1.035,.955); } }
-@keyframes pet-shuffle { 78%,86% { transform: none; } 81% { transform: translateX(-3px) rotate(-3deg); } 84% { transform: rotate(2deg); } }
+@keyframes pet-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.018,.982); } }
+@keyframes pet-shuffle { 0%,78%,86%,100% { transform: translateX(0); } 81% { transform: translateX(-2px); } 84% { transform: translateX(1px); } }
 @keyframes pet-blink { 0%,43%,47%,77%,81%,100% { transform: none; } 45%,79% { transform: scaleY(.07); } }
 @keyframes pet-eat { 0%,100% { transform: none; } 24%,42%,61%,80% { transform: translateX(26px) rotate(20deg) scale(1,.87); } 33%,52%,71% { transform: translateX(25px) rotate(15deg) scale(.96,.94); } }
 @keyframes pet-chew { 50% { transform: scale(1.3,.3); } }

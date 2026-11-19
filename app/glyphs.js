@@ -816,6 +816,8 @@
     'l1_strings':  { draw: stringsMethods, cap: 'split режет строку в список, join склеивает обратно' },
     'l1_loops_adv':{ draw: whileLoop,  cap: 'while: условие перед кругом; break — выход, continue — дальше' },
     'l1_nested_structures': { draw: nested, cap: 'вложенность: к значению идём по шагам — индекс, затем ключ' },
+    'l1_exceptions': { draw: exceptions, cap: 'try/except: ошибка перехватывается — вместо краша выполняется except' },
+    'l1_code_style': { draw: codeStyle, cap: 'PEP 8: отступ 4 пробела, snake_case, пробелы вокруг операторов' },
     'l2_algorithms': { draw: algorithms, cap: 'практикум: ранний выход в поиске, слияние двумя указателями, максимум скользящего окна' },
     'l2_alg_t1':     { draw: algT1,      cap: 'аккумулятор, ранний выход и значение по умолчанию' },
     'l2_alg_q1':     { draw: algQ1,      cap: 'инвариант поиска: ранний выход против полного обхода' },
@@ -867,6 +869,51 @@
       tx(195, 125, 'поток stdin передаёт строки программе', 'gT', mid) +
       tx(195, 145, 'каждый вызов input() читает ровно одну строку до перевода строки', 'gt small', mid)
     , 165);
+  }
+
+  // try/except: ошибка перехватывается, программа не падает
+  function exceptions() {
+    n = 0;
+    return svg(
+      // try-блок: строка, которая падает
+      rect(90, 22, 180, 44, 'gm') +
+      tx(180, 40, 'try:', 'gT', mid) +
+      tx(180, 58, 'n = int("abc")', 'gt small', mid) +
+      // ошибка вылетает из try
+      path('M180 66 V84 M174 78 L180 84 L186 78', 'gm') +
+      tx(192, 80, 'ValueError', 'gT small') +
+      // except-блок: точка перехвата (инверсия)
+      rect(90, 90, 180, 44, 'gf') +
+      tx(180, 108, 'except ValueError:', 'gi small', mid) +
+      tx(180, 124, 'ловим и обрабатываем', 'gi small', mid) +
+      // после перехвата выполнение идёт дальше
+      path('M180 134 V150 M174 144 L180 150 L186 144', 'gm') +
+      tx(180, 168, 'программа продолжается', 'gT', mid) +
+      tx(180, 186, 'без try та же ошибка уронила бы программу', 'gt small', mid)
+    , 200);
+  }
+
+  // Стиль кода (PEP 8): контраст «как не надо» / «как надо» + чипы правил
+  function codeStyle() {
+    n = 0;
+    return svg(
+      tx(24, 24, 'как не надо', 'gt small') +
+      rect(24, 32, 150, 72, 'gl dash') +
+      tx(34, 52, 'def G(k):', 'gt') +
+      tx(44, 72, 'return k*2', 'gt') +
+      tx(34, 92, 'G(3)', 'gt') +
+      tx(99, 122, 'не проходит ревью', 'gt small', mid) +
+      tx(186, 24, 'как надо (PEP 8)', 'gt small') +
+      rect(186, 32, 150, 72, 'gm') +
+      tx(196, 52, 'def double(k):', 'gT') +
+      tx(216, 72, 'return k * 2', 'gT') +
+      tx(196, 92, 'double(3)', 'gt small') +
+      tx(261, 122, 'проходит ревью', 'gT small', mid) +
+      // чипы-правила
+      rect(24, 140, 96, 28, 'gm') + tx(72, 158, '4 пробела', 'gT small', mid) +
+      rect(130, 140, 106, 28, 'gm') + tx(183, 158, 'snake_case', 'gT small', mid) +
+      rect(246, 140, 90, 28, 'gm') + tx(291, 158, 'ясные имена', 'gT small', mid)
+    , 188);
   }
 
   function draw(topicId) {

@@ -73,6 +73,25 @@
       <div class="pet-actions">${actions.map(([key,label,path]) => `<button type="button" data-pet-action="${key}" disabled><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${path}"/></svg>${label}</button>`).join('')}</div></section>`;
   }
   const poseClass = name => name === 'egg' ? 'pet-egg' : 'pet-state-' + name;
+
+  // Реплика печатается посимвольно (typewriter, ~30мс/символ); мигающий курсор
+  // в бабле виден уже при наборе. Предыдущий набор отменяется новым вызовом.
+  // При prefers-reduced-motion текст ставится сразу (пер-символьная анимация —
+  // JS-тайминг, глобальный CSS kill-switch его не гасит).
+  let typeTimer = 0;
+  function typeMessage(el, text) {
+    if (typeTimer) { clearInterval(typeTimer); typeTimer = 0; }
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { el.textContent = text; return; }
+    el.textContent = '';
+    let i = 0;
+    typeTimer = setInterval(() => {
+      i += 1;
+      el.textContent = text.slice(0, i);
+      if (i >= text.length && typeTimer) { clearInterval(typeTimer); typeTimer = 0; }
+    }, 30);
+  }
+
   function pose(stage, name, message) {
     if (!Object.hasOwn(poses, name)) return;
     const current = poseClass(name);
@@ -82,7 +101,7 @@
     }
     for (const key of Object.keys(poses)) stage.classList.toggle(poseClass(key), key === name);
     stage.querySelector('#pet-status').textContent = poses[name][0];
-    stage.querySelector('#pet-message').textContent = message ?? poses[name][1];
+    typeMessage(stage.querySelector('#pet-message'), message ?? poses[name][1]);
     for (const button of stage.querySelectorAll('[data-pet-action]')) button.disabled = ['egg','hatch'].includes(name);
   }
   function cracks(stage, count) {

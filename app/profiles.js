@@ -48,7 +48,10 @@
   function notifyConnectSession() {
     if (!window.VkatConnect || !window.VkatStorage) return;
     const meta = window.VkatStorage.getActiveProfileSync();
-    if (meta) window.VkatConnect.sessionStart(meta.id, meta.name);
+    if (meta) {
+      window.VkatConnect.sessionStart(meta.id, meta.name);
+      if (window.VkatHelp) window.VkatHelp.startSession(meta.id);
+    }
   }
 
   async function renderProfilesScreen() {

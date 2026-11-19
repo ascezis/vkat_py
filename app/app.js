@@ -361,6 +361,7 @@
     }
     // Телеметрия CONNECT: завершаем сессию перед перезагрузкой
     if (window.VkatConnect) window.VkatConnect.sessionEnd();
+    if (window.VkatHelp) window.VkatHelp.stopSession();
     window.location.reload();
   }
 
@@ -478,6 +479,7 @@
       stopTypewriter();
       if (state.gridWarp) state.gridWarp.pause();
       if (screen === 'profiles') {
+        if (window.VkatHelp) window.VkatHelp.stopSession();
         if (dom.screenProfiles) dom.screenProfiles.classList.add('active');
         dom.topbar.style.display = 'none';
         window.VkatProfiles.renderProfilesScreen();
@@ -935,6 +937,7 @@
       }
       // Телеметрия CONNECT: сессия ученика (no-op без endpoint'а)
       if (window.VkatConnect) window.VkatConnect.sessionStart(activeProfile.id, activeProfile.name);
+      if (window.VkatHelp) window.VkatHelp.startSession(activeProfile.id);
     } else {
       showScreen('profiles');
     }

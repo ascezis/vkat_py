@@ -16,6 +16,8 @@
     SETTINGS: 'vkat_settings',
     // Очередь недоставленной телеметрии CONNECT (см. FEATURES/CONNECT-PROTOCOL.md)
     CONNECT_OUTBOX: 'vkat_outbox',
+    // Capability-токен удалённой помощи преподавателя (sessionStorage)
+    HELP_CAPABILITY: 'vkat_help_capability',
     // Устаревшие ключи (для миграции)
     LEGACY_COMPLETED: 'vkat_completed_tasks',
     LEGACY_DRAFTS: 'vkat_code_drafts',
@@ -827,6 +829,33 @@
     storageSet(KEYS.CONNECT_OUTBOX, JSON.stringify(Array.isArray(items) ? items : []));
   }
 
+  /**
+   * Чтение capability-токена удалённой помощи из sessionStorage
+   */
+  function readHelpCapability() {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        return window.sessionStorage.getItem(KEYS.HELP_CAPABILITY);
+      }
+    } catch (e) {
+      // sessionStorage может быть недоступен
+    }
+    return null;
+  }
+
+  /**
+   * Запись capability-токена удалённой помощи в sessionStorage
+   */
+  function writeHelpCapability(hex) {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.setItem(KEYS.HELP_CAPABILITY, hex);
+      }
+    } catch (e) {
+      // In-memory fallback
+    }
+  }
+
   // Экспорт публичного API
   window.VkatStorage = {
     KEYS,
@@ -851,7 +880,9 @@
     getSetting,
     setSetting,
     getOutbox,
-    setOutbox
+    setOutbox,
+    readHelpCapability,
+    writeHelpCapability
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

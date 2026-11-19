@@ -498,6 +498,7 @@
         updateCourseProgress();
       }
     }
+    if (window.VkatConnect) window.VkatConnect.trackScreen(screen);
   }
 
   // ─── Навигация по заданиям ────────────────────────────────────────────────────
@@ -537,6 +538,7 @@
 
     updateCourseProgress();
     saveStorage();
+    if (window.VkatConnect) window.VkatConnect.refreshLocation();
   }
 
   function nextTask() {

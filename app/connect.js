@@ -34,6 +34,7 @@
   //   items: Map<itemId, {...}> — статистика по шагам для снапшота
   // }
   let session = null;
+  let currentScreen = 'start';
   let heartbeatTimer = null;
   let flushTimer = null;
   let flushing = false;
@@ -200,6 +201,34 @@
 
   // ─── Пульс ────────────────────────────────────────────────────────────────
 
+  function currentLocation() {
+    const screens = { start: 'menu', lesson: 'task', finish: 'summary', sandbox: 'sandbox' };
+    const screen = screens[currentScreen] || 'other';
+    const location = { screen };
+    if (screen === 'task' || screen === 'summary') {
+      const topic = currentTopic();
+      const stage = topic && window.VkatApp.state.stages.find(s => s.id === topic.stageId);
+      if (stage) location.stageTitle = stage.title;
+      if (screen === 'task' && topic) {
+        location.topicTitle = topic.title;
+        const task = window.VkatApp.getCurrentTask();
+        if (task) location.itemTitle = task.title || ('Шаг ' + (window.VkatApp.state.currentTaskIndex + 1));
+      }
+    }
+    return location;
+  }
+
+  function trackScreen(screen) {
+    currentScreen = screen;
+    refreshLocation();
+  }
+
+  function refreshLocation() {
+    if (!session || session.lastLocation === JSON.stringify(currentLocation())) return;
+    touchActivity();
+    sendHeartbeat();
+  }
+
   function heartbeatPayload() {
     const topic = currentTopic();
     const st = window.VkatApp && window.VkatApp.state;
@@ -209,6 +238,7 @@
       ts: Date.now(),
       profileId: session.profileId,
       name: session.name,
+      location: currentLocation(),
       topicId: topic ? topic.id : null,
       topicTitle: topic ? topic.title : null,
       itemId: task ? task.id : null,
@@ -222,7 +252,9 @@
 
   function sendHeartbeat() {
     if (!session) return;
-    sendEvent(heartbeatPayload());
+    const payload = heartbeatPayload();
+    session.lastLocation = JSON.stringify(payload.location);
+    sendEvent(payload);
   }
 
   // ─── Расшифровка класса ошибки ────────────────────────────────────────────
@@ -405,6 +437,8 @@
   window.VkatConnect = {
     sessionStart,
     sessionEnd,
+    trackScreen,
+    refreshLocation,
     trackCheck,
     trackItemComplete,
     trackStageComplete,

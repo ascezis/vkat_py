@@ -130,6 +130,17 @@
     const highlighted = window.PythonHighlighter ? window.PythonHighlighter.highlightCode(task.code) : escapeHtml(task.code);
     dom.predictCodeView.innerHTML = highlighted;
 
+    // Входные данные stdin для predict (если есть)
+    if (dom.predictStdinBox && dom.predictStdinView) {
+      if (typeof task.stdin === 'string' && task.stdin.length > 0) {
+        dom.predictStdinBox.style.display = 'block';
+        dom.predictStdinView.textContent = task.stdin;
+      } else {
+        dom.predictStdinBox.style.display = 'none';
+        dom.predictStdinView.textContent = '';
+      }
+    }
+
     // Восстанавливаем сохраненный черновик ответа
     dom.predictInput.value = state.codeDrafts[task.id] || '';
     dom.predictResultBox.classList.remove('visible');
@@ -273,6 +284,21 @@
       dom.btnSkip.style.display = 'inline-block';
     } else {
       dom.btnSkip.style.display = 'none';
+    }
+
+    // Панель ввода stdin: показывается только если у задания объявлен stdin или tests с stdin
+    const hasStdin = task.stdin !== undefined || (Array.isArray(task.tests) && task.tests.some(t => t.stdin !== undefined));
+    if (dom.stdinPanel) {
+      if (hasStdin) {
+        dom.stdinPanel.style.display = 'block';
+        if (dom.stdinEditor) {
+          const savedStdin = state.codeDrafts[task.id + '_stdin'];
+          dom.stdinEditor.value = savedStdin !== undefined ? savedStdin : (task.stdin || '');
+        }
+      } else {
+        dom.stdinPanel.style.display = 'none';
+        if (dom.stdinEditor) dom.stdinEditor.value = '';
+      }
     }
 
     // Редактор: подстановка черновика или начального кода

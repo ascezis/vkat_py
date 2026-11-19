@@ -79,6 +79,7 @@ loadScript('content/core/07-nested-structures.js');
 loadScript('content/core/08-exceptions.js');
 loadScript('content/core/11-code-style.js');
 loadScript('content/practice/l2-algorithms.js');
+loadScript('content/practice/l2-io-input.js');
 loadScript('content/cheatsheet.js');
 loadScript('app/code-hints.js');
 loadScript('app/version.js');
@@ -416,6 +417,33 @@ if (l2alg) {
 check('[l2_algorithms] Обязательных проверяемых элементов 16', reqCountAlg === 16);
 check('[l2_algorithms] Необязательных (★) элементов 2', optCountAlg === 2);
 check('[l2_algorithms] Элементов теории 3', theoryCountAlg === 3);
+
+console.log('\n=== Валидация элементов темы l2_io_input (Практикум) ===');
+const l2io = topicMap.get('l2_io_input');
+check('Тема l2_io_input содержит items[]', l2io && Array.isArray(l2io.items));
+check('Тема l2_io_input содержит 10 элементов', l2io && l2io.items.length === 10);
+
+const expectedIoOrder = [
+  'l2_io_t1', 'l2_io_q1', 'l2_io_p1', 'l2_io_c1',
+  'l2_io_t2', 'l2_io_q2', 'l2_io_p2', 'l2_io_c2',
+  'l2_io_c3', 'l2_io_c4'
+];
+expectedIoOrder.forEach((id, idx) => {
+  check(`[l2_io_input] Элемент #${idx + 1} равен ${id}`, l2io && l2io.items[idx] && l2io.items[idx].id === id);
+});
+
+let reqCountIo = 0, optCountIo = 0, theoryCountIo = 0;
+if (l2io) {
+  l2io.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountIo++;
+    else if (it.optional || it.tier === 'star') optCountIo++;
+    else reqCountIo++;
+  });
+}
+check('[l2_io_input] Обязательных проверяемых элементов 7', reqCountIo === 7);
+check('[l2_io_input] Необязательных (★) элементов 1', optCountIo === 1);
+check('[l2_io_input] Элементов теории 2', theoryCountIo === 2);
 
 console.log('\n=== Валидация уникальности ID во всём курсе ===');
 const allIds = new Set();

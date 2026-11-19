@@ -64,6 +64,8 @@ interface TaskTest {
   returns?: unknown;
   /** Ожидаемый перехваченный stdout вызова. */
   stdout?: string;
+  /** Строки ввода stdin для изолированного прогона теста. */
+  stdin?: string;
   /** Скрытый тест: ученику показывается hint, а не diff вывода. */
   hidden?: boolean;
 }
@@ -96,6 +98,8 @@ interface TaskItem {
   optional?: boolean;
   /** Задание-починка: готовый код с ошибкой. */
   kind?: 'fix';
+  /** Имя глифа из реестра Glyphs (app/glyphs.js). */
+  glyph?: string;
 
   // theory
   blocks?: TheoryBlock[];
@@ -111,6 +115,8 @@ interface TaskItem {
 
   // quiz / predict / code
   code?: string;
+  /** Строки, которые «придут» в программу через input() (панель «Ввод программы» / stdin). */
+  stdin?: string;
   /** Стартовая заготовка кода для практического задания (fix-задания). */
   starterCode?: string;
   /**
@@ -270,7 +276,7 @@ interface PyodideWorkerBridgeLike {
   useFallback: boolean;
   ensureReady(): Promise<boolean>;
   checkSolution(code: string, task: TaskItem, timeoutMs?: number): Promise<CheckResult>;
-  runCode(code: string, timeoutMs?: number): Promise<{ stdout: string; error: string | null }>;
+  runCode(code: string, timeoutMs?: number, stdin?: string | null): Promise<{ stdout: string; error: string | null }>;
 }
 
 interface CodeCheckerApi {
@@ -279,7 +285,9 @@ interface CodeCheckerApi {
   initPyodide(onProgress?: (msg: string) => void): Promise<boolean>;
   fallbackInitPyodideInThread(onProgress?: (msg: string) => void): Promise<boolean | any>;
   checkSolution(userCode: string, task: TaskItem, timeoutMs?: number): Promise<CheckResult>;
-  runCode(code: string, timeoutMs?: number): Promise<{ stdout: string; error: string | null }>;
+  runCode(code: string, timeoutMs?: number, stdin?: string | null): Promise<{ stdout: string; error: string | null }>;
+  fallbackRunCode?: (code: string, stdin?: string | null) => Promise<{ stdout: string; error: string | null }>;
+  fallbackCheckSolution?: (userCode: string, task: TaskItem) => Promise<CheckResult>;
   fuzzyMatchOutputJS(actual: string, expected: string): { match: boolean; tip: string | null };
 }
 

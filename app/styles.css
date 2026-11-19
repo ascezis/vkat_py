@@ -592,6 +592,100 @@ body {
   gap: 12px;
 }
 
+/* ─── Панель «Ввод программы» (fed-stdin) ────────────────────────────────── */
+.stdin-panel {
+  margin-top: 12px;
+  background: var(--bg-panel-alt, #16181d);
+  border: 1px solid var(--border-color, #282c34);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.stdin-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.stdin-panel-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent, #61afef);
+  font-weight: 600;
+}
+
+.stdin-panel-hint {
+  font-size: 11px;
+  color: var(--text-dim, #6c7280);
+  font-family: var(--font-mono, monospace);
+}
+
+.stdin-editor {
+  width: 100%;
+  min-height: 52px;
+  max-height: 120px;
+  resize: vertical;
+  background: var(--bg-card, #0f1115);
+  border: 1px solid var(--border-dim, #21252b);
+  border-radius: 6px;
+  color: var(--text, #abb2bf);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.stdin-editor:focus {
+  border-color: var(--accent, #61afef);
+}
+
+/* Песочница: панель stdin */
+.sandbox-stdin-panel {
+  padding: 8px 16px;
+  background: var(--bg-panel-alt, #16181d);
+  border-top: 1px solid var(--border-color, #282c34);
+}
+
+.sandbox-stdin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.sandbox-stdin-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim, #888);
+}
+
+.sandbox-stdin-editor {
+  width: 100%;
+  height: 48px;
+  resize: vertical;
+  background: var(--bg-card, #0f1115);
+  border: 1px solid var(--border-dim, #21252b);
+  border-radius: 4px;
+  color: var(--text, #abb2bf);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.sandbox-stdin-editor:focus {
+  border-color: var(--accent, #61afef);
+}
+
 .hint-container {
   display: flex;
   flex-direction: column;
@@ -689,6 +783,50 @@ body {
 
 .btn-next:hover {
   background: var(--border);
+}
+
+.btn-actions .btn-ghost,
+.btn-actions #btn-exec {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  padding: 11px 18px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-actions .btn-ghost:hover,
+.btn-actions #btn-exec:hover {
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.05));
+  border-color: var(--text);
+}
+
+.btn-actions .btn-ghost:disabled,
+.btn-actions #btn-exec:disabled {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border-strong);
+  cursor: not-allowed;
+}
+
+.predict-stdin-box {
+  margin-top: 14px;
+}
+
+.predict-stdin-view {
+  border: 1px dashed var(--border-strong);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--brand-orange, #d97706);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: var(--bg-panel-alt);
+  border-radius: var(--radius-sm, 2px);
+  margin-top: 4px;
 }
 
 /* ЗОНА РЕЗУЛЬТАТА */

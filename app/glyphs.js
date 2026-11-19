@@ -841,8 +841,33 @@
     'lifeNeighbors': { draw: lifeNeighbors, cap: 'окрестность Мура: 8 направлений вокруг клетки (dx, dy)' },
     'lifeRules':     { draw: lifeRules,     cap: 'правило B3/S23: рождение ровно при 3, жизнь при 2 или 3' },
     'lifeConway':    { draw: lifeConway,    cap: 'Джон Х. Конвей (1937–2020): математик Кембриджа, придумал «Жизнь» в 1970 году' },
-    'lifePatterns':  { draw: lifePatterns,  cap: 'архетипы Alife-System: натюрморты, осцилляторы и космические корабли' }
+    'lifePatterns':  { draw: lifePatterns,  cap: 'архетипы Alife-System: натюрморты, осцилляторы и космические корабли' },
+    'l2_io_input':   { draw: ioStream,      cap: 'потоковый ввод: передача строк через stdin в input() и вывод через print()' },
+    'l2_io_t1':      { draw: ioStream,      cap: 'архитектура stdin: строки поступают из входного потока последовательно' },
+    'l2_io_q1':      { draw: ioStream,      cap: 'тип данных input(): всегда возвращает строку str' },
+    'l2_io_p1':      { draw: ioStream,      cap: 'последовательное чтение: первый вызов берёт строку 1, второй — строку 2' },
+    'l2_io_c1':      { draw: ioStream,      cap: 'эхо-логгер: чтение stdin и добавление префикса к выводу' },
+    'l2_io_t2':      { draw: ioStream,      cap: 'split(): разбиение одной строки ввода на список подстрок по разделителю' },
+    'l2_io_q2':      { draw: ioStream,      cap: 'конкатенация vs сложение: str + str склеивает, int + int складывает' },
+    'l2_io_p2':      { draw: ioStream,      cap: 'разбор параметров: считывание и преобразование списка элементов' },
+    'l2_io_c2':      { draw: ioStream,      cap: 'многострочный ввод: считывание нескольких чисел из разных строк' },
+    'l2_io_c3':      { draw: ioStream,      cap: 'парсер конфигурации: разделение по двоеточию через split(":")' },
+    'l2_io_c4':      { draw: ioStream,      cap: 'обработка EOFError: чтение до завершения потока данных в цикле' }
   };
+
+  // Схема потокового ввода (stdin -> input() -> программа -> stdout)
+  function ioStream() {
+    n = 0;
+    return svg(
+      rect(20, 40, 90, 48, 'gm') + tx(65, 62, 'stdin (ввод)', 'gT small', mid) + tx(65, 78, '"строка\\n"', 'gt small', mid) +
+      path('M110 64 H145 M139 58 L145 64 L139 70', 'gm') +
+      rect(145, 34, 100, 60, 'gf') + tx(195, 60, 'input()', 'gi small', mid) + tx(195, 76, '-> str', 'gi small', mid) +
+      path('M245 64 H280 M274 58 L280 64 L274 70', 'gm') +
+      rect(280, 40, 90, 48, 'gm') + tx(325, 62, 'stdout (вывод)', 'gT small', mid) + tx(325, 78, 'print(...)', 'gt small', mid) +
+      tx(195, 125, 'поток stdin передаёт строки программе', 'gT', mid) +
+      tx(195, 145, 'каждый вызов input() читает ровно одну строку до перевода строки', 'gt small', mid)
+    , 165);
+  }
 
   function draw(topicId) {
     const g = REGISTRY[topicId];

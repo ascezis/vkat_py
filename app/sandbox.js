@@ -17,6 +17,7 @@
   const document = window.document || (typeof globalThis !== 'undefined' && globalThis.document) || null;
 
   const SANDBOX_DRAFT_KEY = '__sandbox__';
+  const SANDBOX_STDIN_DRAFT_KEY = '__sandbox_stdin__';
 
   // ─── Заготовки кода (Пресеты) ────────────────────────────────────────────────
 
@@ -34,6 +35,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+`
+    },
+    input_io: {
+      title: 'Ввод данных: input()',
+      stdin: 'Алексей\n25',
+      code:
+`# Чтение данных из входного потока через input()
+name = input("Как тебя зовут? ")
+age = int(input("Сколько тебе лет? "))
+
+print(f"Привет, {name}!")
+print(f"В следующем году тебе будет {age + 1}.")
 `
     },
     benchmark: {
@@ -241,7 +254,9 @@ for t in tests:
       termLines: d('sandbox-term-lines'),
       termWelcome: d('sandbox-terminal-welcome'),
       termOutput: d('sandbox-terminal-output'),
-      termContainer: d('sandbox-terminal-body')
+      termContainer: d('sandbox-terminal-body'),
+      stdinPanel: d('sandbox-stdin-panel'),
+      stdinEditor: d('sandbox-stdin-editor')
     };
   }
 
@@ -312,12 +327,13 @@ for t in tests:
     setTerminalStatus('running', 'Выполняется...');
 
     const t0 = performance.now();
+    const stdinVal = S.dom.stdinEditor ? S.dom.stdinEditor.value : null;
     let res = null;
 
     try {
       if (window.CodeChecker && typeof window.CodeChecker.runCode === 'function') {
         // Запуск через изолированный воркер с таймаутом 15 секунд
-        res = await window.CodeChecker.runCode(code, 15000);
+        res = await window.CodeChecker.runCode(code, 15000, stdinVal);
       } else {
         res = { stdout: '', error: 'CodeChecker не инициализирован.' };
       }
@@ -520,6 +536,12 @@ for t in tests:
       if (!silent && prev.trim() && prev !== p.code) showUndo(prev);
       else hideUndo();
     }
+    if (S.dom.stdinEditor && p.stdin !== undefined) {
+      S.dom.stdinEditor.value = p.stdin;
+      if (window.VkatStorage) {
+        window.VkatStorage.saveDraftDebounced(SANDBOX_STDIN_DRAFT_KEY, p.stdin);
+      }
+    }
     clearOutput();
     if (S.dom.editor) {
       S.dom.editor.focus();
@@ -652,6 +674,14 @@ for t in tests:
         }
       });
     }
+
+    if (S.dom.stdinEditor) {
+      S.dom.stdinEditor.addEventListener('input', () => {
+        if (window.VkatStorage) {
+          window.VkatStorage.saveDraftDebounced(SANDBOX_STDIN_DRAFT_KEY, S.dom.stdinEditor.value);
+        }
+      });
+    }
   }
 
   // ─── Вход и выход с экрана ───────────────────────────────────────────────────
@@ -666,7 +696,8 @@ for t in tests:
     // затем подгружаем черновик активного профиля (или шаблон по умолчанию).
     hideUndo();
     if (S.dom.editor) S.dom.editor.value = '';
-    const applyDraft = (saved) => {
+    if (S.dom.stdinEditor) S.dom.stdinEditor.value = '';
+    const applyDraft = (saved, savedStdin) => {
       if (!S.active) return;
       if (typeof saved === 'string' && saved.trim()) {
         if (S.dom.editor) S.dom.editor.value = saved;
@@ -675,16 +706,26 @@ for t in tests:
         if (S.syncPresetMenu) S.syncPresetMenu();
         selectPreset('empty', { silent: true });
       }
+      if (S.dom.stdinEditor) {
+        if (typeof savedStdin === 'string') {
+          S.dom.stdinEditor.value = savedStdin;
+        } else if (!saved || !saved.trim()) {
+          S.dom.stdinEditor.value = PRESETS.empty.stdin || '';
+        }
+      }
       updateLineNumbers();
       if (S.highlighter) S.highlighter.update();
     };
     if (window.VkatStorage) {
       window.VkatStorage.flushSync();
       window.VkatStorage.load()
-        .then(data => applyDraft(data && data.drafts ? data.drafts[SANDBOX_DRAFT_KEY] : null))
-        .catch(() => applyDraft(null));
+        .then(data => applyDraft(
+          data && data.drafts ? data.drafts[SANDBOX_DRAFT_KEY] : null,
+          data && data.drafts ? data.drafts[SANDBOX_STDIN_DRAFT_KEY] : null
+        ))
+        .catch(() => applyDraft(null, null));
     } else {
-      applyDraft(null);
+      applyDraft(null, null);
     }
 
     updateLineNumbers();

@@ -89,8 +89,11 @@
     dom.hintToggle = document.getElementById('hint-toggle');
     dom.hintContent = document.getElementById('hint-content');
     dom.btnSkip = document.getElementById('btn-skip');
+    dom.btnExec = document.getElementById('btn-exec');
     dom.btnRun = document.getElementById('btn-run');
     dom.btnNext = document.getElementById('btn-next');
+    dom.stdinPanel = document.getElementById('stdin-panel');
+    dom.stdinEditor = document.getElementById('stdin-editor');
 
     // Результат кода
     dom.resultBox = document.getElementById('result-box');
@@ -106,6 +109,8 @@
     // Predict
     dom.panePredict = document.getElementById('pane-predict');
     dom.predictCodeView = document.getElementById('predict-code-view');
+    dom.predictStdinBox = document.getElementById('predict-stdin-box');
+    dom.predictStdinView = document.getElementById('predict-stdin-view');
     dom.predictInput = document.getElementById('predict-input');
     dom.btnPredictCheck = document.getElementById('btn-predict-check');
     dom.btnPredictNext = document.getElementById('btn-predict-next');
@@ -849,8 +854,21 @@
     });
 
     // Кнопки урока
+    if (dom.btnExec) dom.btnExec.addEventListener('click', window.VkatCheckers.runStudentCode);
     dom.btnRun.addEventListener('click', window.VkatCheckers.runCheck);
     dom.btnNext.addEventListener('click', nextTask);
+
+    if (dom.stdinEditor) {
+      dom.stdinEditor.addEventListener('input', () => {
+        const task = getCurrentTask();
+        if (task) {
+          state.codeDrafts[task.id + '_stdin'] = dom.stdinEditor.value;
+          if (window.VkatStorage) {
+            window.VkatStorage.saveDraftDebounced(task.id + '_stdin', dom.stdinEditor.value);
+          }
+        }
+      });
+    }
     dom.btnSkip.addEventListener('click', nextTask);
 
     // Теория

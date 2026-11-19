@@ -62,7 +62,7 @@ _match_output = _checker_ns['_match_output']
 _exec_user_code = _checker_ns['_exec_user_code']
 _run_task_tests = _checker_ns['_run_task_tests']
 
-def check_solution(user_code, task):
+def check_solution(user_code, task, stdin=None):
     """Тот же трёхслойный путь, что и в браузере, поверх боевого бутстрапа."""
     reqs = task.get("astRequirements", {})
     ast_res = json.loads(analyze_ast(user_code, json.dumps(reqs)))
@@ -71,8 +71,14 @@ def check_solution(user_code, task):
     if ast_res.get("errors"):
         return {"passed": False, "title": "ASTError", "sub": ast_res["errors"][0]}
 
+    # Ввод для первичного запуска
+    first_test_stdin = None
+    if task.get("tests") and isinstance(task["tests"], list) and len(task["tests"]) > 0:
+        first_test_stdin = task["tests"][0].get("stdin")
+    actual_stdin = stdin if stdin is not None else task.get("stdin", first_test_stdin)
+
     # Слой 1: исполнение с loop-guard и _SAFE_BUILTINS, namespace сохраняется
-    _exec_user_code(user_code, save_user_ns=True)
+    _exec_user_code(user_code, save_user_ns=True, stdin=actual_stdin)
     runtime_err = _checker_mod._runtime_err
     out = _checker_mod._captured_output
     if runtime_err:
@@ -89,7 +95,7 @@ def check_solution(user_code, task):
             return {"passed": False, "title": "OutputMismatch", "sub": f"Expected: {norm_exp}, got: {norm_out}"}
 
     if task.get("tests"):
-        test_res = json.loads(_run_task_tests(json.dumps(task["tests"])))
+        test_res = json.loads(_run_task_tests(json.dumps(task["tests"]), user_code=user_code))
         if not test_res.get("passed"):
             return {"passed": False, "title": "TestFailed", "sub": str(test_res)}
 
@@ -883,6 +889,76 @@ tasks_data = {
         "tests": [{'call': 'pairs_with_sum([1, 2, 3], 4)', 'returns': True}, {'call': 'pairs_with_sum([1, 2], 5)', 'returns': False}, {'call': 'pairs_with_sum([5, 5], 10)', 'returns': True, 'hidden': True}, {'call': 'pairs_with_sum([5], 10)', 'returns': False, 'hidden': True}, {'call': 'pairs_with_sum([], 3)', 'returns': False, 'hidden': True}],
         "ref": 'def pairs_with_sum(nums, s):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == s:\n                return True\n    return False\n\nprint(pairs_with_sum([1, 2, 3], 4))',
         "wrong": [('использует один элемент дважды', 'def pairs_with_sum(nums, s):\n    for i in range(len(nums)):\n        for j in range(len(nums)):\n            if nums[i] + nums[j] == s:\n                return True\n    return False\n\nprint(pairs_with_sum([1, 2, 3], 4))'), ('перепутаны True и False', 'def pairs_with_sum(nums, s):\n    for i in range(len(nums)):\n        for j in range(i + 1, len(nums)):\n            if nums[i] + nums[j] == s:\n                return False\n    return True\n\nprint(pairs_with_sum([1, 2, 3], 4))')]
+    },
+    'var_5': {
+        "astRequirements": {},
+        "stdin": "Алекс",
+        "tests": [
+            {'stdin': "Алекс", 'stdout': "Привет, Алекс!"},
+            {'stdin': "Мария", 'stdout': "Привет, Мария!"},
+            {'stdin': "Иван", 'stdout': "Привет, Иван!"}
+        ],
+        "ref": 'name = input()\nprint(f"Привет, {name}!")',
+        "wrong": [
+            ('без input', 'print("Привет, Алекс!")'),
+            ('неверное имя', 'name = input()\nprint("Привет, мир!")')
+        ]
+    },
+    'l2_io_c1': {
+        "astRequirements": {},
+        "stdin": "ping",
+        "tests": [
+            {'stdin': "ping", 'stdout': ">>> ping"},
+            {'stdin': "status ok", 'stdout': ">>> status ok"},
+            {'stdin': "\n", 'stdout': ">>> "}
+        ],
+        "ref": 'line = input()\nprint(f">>> {line}")',
+        "wrong": [
+            ('без префикса', 'line = input()\nprint(line)'),
+            ('неверный префикс', 'line = input()\nprint(f">> {line}")')
+        ]
+    },
+    'l2_io_c2': {
+        "astRequirements": {},
+        "stdin": "15\n27",
+        "tests": [
+            {'stdin': "15\n27", 'stdout': "42"},
+            {'stdin': "-5\n10", 'stdout': "5"},
+            {'stdin': "0\n0", 'stdout': "0"}
+        ],
+        "ref": 'a = int(input())\nb = int(input())\nprint(a + b)',
+        "wrong": [
+            ('склеивает строки без int', 'a = input()\nb = input()\nprint(a + b)'),
+            ('читает только одну строку', 'a = int(input())\nprint(a)')
+        ]
+    },
+    'l2_io_c3': {
+        "astRequirements": {},
+        "stdin": "db.internal:5432:online",
+        "tests": [
+            {'stdin': "db.internal:5432:online", 'stdout': "Хост: db.internal\nПорт: 5432\nСтатус: online"},
+            {'stdin': "auth.service:443:standby", 'stdout': "Хост: auth.service\nПорт: 443\nСтатус: standby"},
+            {'stdin': "gateway:80:ready", 'stdout': "Хост: gateway\nПорт: 80\nСтатус: ready"}
+        ],
+        "ref": "host, port, status = input().split(':')\nprint(f'Хост: {host}\\nПорт: {port}\\nСтатус: {status}')",
+        "wrong": [
+            ('деление по пробелу вместо двоеточия', 'parts = input().split()\nprint(parts)'),
+            ('в одну строку', "h, p, s = input().split(':')\nprint(f'{h} {p} {s}')")
+        ]
+    },
+    'l2_io_c4': {
+        "astRequirements": {},
+        "stdin": "10\n20\n30",
+        "tests": [
+            {'stdin': "10\n20\n30", 'stdout': "60"},
+            {'stdin': "5\n-5\n100", 'stdout': "100"},
+            {'stdin': "", 'stdout': "0"}
+        ],
+        "ref": 'total = 0\nwhile True:\n    try:\n        line = input()\n    except EOFError:\n        break\n    total += int(line)\nprint(total)',
+        "wrong": [
+            ('не перехватывает EOFError', 'total = 0\nwhile True:\n    total += int(input())\nprint(total)'),
+            ('склеивает строки', 'total = ""\nwhile True:\n    try:\n        total += input()\n    except EOFError:\n        break\nprint(total)')
+        ]
     }
 }
 
@@ -947,16 +1023,28 @@ predict_tests = [
     ('l2_alg_p1', 'total = 0\nfor n in [4, -1, 5]:\n    total += n\n    print(total)', '4\n3\n8'),
     ('l2_alg_p2', 'def find_first(nums, x):\n    for i in range(len(nums)):\n        if nums[i] == x:\n            return i\n    return -1\n\nprint(find_first([10, 20, 30, 40], 30))\nprint(find_first([10, 20], 99))', '2\n-1'),
     ('l2_alg_p3', 'result = []\nfor i in range(3):\n    row = []\n    for j in range(i + 1):\n        row.append(j)\n    result.append(row)\nprint(result)', '[[0], [0, 1], [0, 1, 2]]'),
-    ('l2_alg_p4', 'def merge_sorted(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    while i < len(a):\n        result.append(a[i])\n        i += 1\n    while j < len(b):\n        result.append(b[j])\n        j += 1\n    return result\n\nprint(merge_sorted([1, 4], [2, 3, 5]))', '[1, 2, 3, 4, 5]')
+    ('l2_alg_p4', 'def merge_sorted(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    while i < len(a):\n        result.append(a[i])\n        i += 1\n    while j < len(b):\n        result.append(b[j])\n        j += 1\n    return result\n\nprint(merge_sorted([1, 4], [2, 3, 5]))', '[1, 2, 3, 4, 5]'),
+    ('l2_io_p1', 'name = input()\nage = int(input())\nprint(f"{name}:{age + 1}")', 'Анна:20', 'Анна\n19'),
+    ('l2_io_p2', 'words = input().split()\nprint(len(words), words[0].upper())', '3 ALPHA', 'alpha beta gamma')
 ]
 
-for pid, pcode, pexp in predict_tests:
-    buf = io.StringIO()
-    old_out = sys.stdout
-    sys.stdout = buf
-    exec(pcode, {})
-    sys.stdout = old_out
-    actual = buf.getvalue().strip()
+for item in predict_tests:
+    pid = item[0]
+    pcode = item[1]
+    pexp = item[2]
+    pstdin = item[3] if len(item) > 3 else None
+
+    if pstdin is not None:
+        _exec_user_code(pcode, stdin=pstdin)
+        actual = (_checker_mod._captured_output or "").strip()
+    else:
+        buf = io.StringIO()
+        old_out = sys.stdout
+        sys.stdout = buf
+        exec(pcode, {})
+        sys.stdout = old_out
+        actual = buf.getvalue().strip()
+
     if actual == pexp:
         print(f"  ✓ [{pid}] Predict вывод совпадает ({actual})")
         passed_tests += 1
@@ -1120,6 +1208,77 @@ if not strict_res["passed"]:
     passed_tests += 1
 else:
     print(f"  × [regression_strict_default] ОШИБКА: вывод принят без флага: {strict_res}")
+    failed_tests += 1
+
+# Регрессия 9: fed-stdin — чтение строк по порядку, prompt, пустые строки, EOFError
+t_stdin_seq = {"stdin": "hello\nworld", "expectedOutput": "hello world"}
+res_stdin_seq = check_solution("a = input()\nb = input()\nprint(a, b)", t_stdin_seq)
+if res_stdin_seq["passed"]:
+    print("  ✓ [regression_stdin_sequential] input() последовательно считывает строки из fed-stdin")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_sequential] ОШИБКА: {res_stdin_seq}")
+    failed_tests += 1
+
+t_stdin_prompt = {"stdin": "Alice", "expectedOutput": "Name: Hi Alice"}
+res_stdin_prompt = check_solution('n = input("Name: ")\nprint("Hi", n)', t_stdin_prompt)
+if res_stdin_prompt["passed"]:
+    print("  ✓ [regression_stdin_prompt] input(prompt) направляет prompt в stdout")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_prompt] ОШИБКА: {res_stdin_prompt}")
+    failed_tests += 1
+
+t_stdin_none = {"stdin": "val", "expectedOutput": "None"}
+res_stdin_none = check_solution('input(None)', t_stdin_none)
+if res_stdin_none["passed"]:
+    print("  ✓ [regression_stdin_none] input(None) корректно печатает 'None'")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_none] ОШИБКА: {res_stdin_none}")
+    failed_tests += 1
+
+t_stdin_empty = {"stdin": "first\n\nthird", "expectedOutput": "'first' '' 'third'"}
+res_stdin_empty = check_solution("x = input()\ny = input()\nz = input()\nprint(repr(x), repr(y), repr(z))", t_stdin_empty)
+if res_stdin_empty["passed"]:
+    print("  ✓ [regression_stdin_empty_lines] Пустые строки корректно возвращаются как ''")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_empty_lines] ОШИБКА: {res_stdin_empty}")
+    failed_tests += 1
+
+t_stdin_eof = {"stdin": "only_one"}
+res_stdin_eof = check_solution("input()\ninput()", t_stdin_eof)
+if (not res_stdin_eof["passed"] and
+    "EOFError" in res_stdin_eof.get("sub", "") and
+    "панели «Ввод»" in res_stdin_eof.get("sub", "")):
+    print("  ✓ [regression_stdin_eof] Исчерпание ввода вызывает понятный EOFError")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_eof] ОШИБКА: {res_stdin_eof}")
+    failed_tests += 1
+
+t_stdin_multi = {
+    "tests": [
+        {"stdin": "5\n3", "stdout": "8"},
+        {"stdin": "10\n20", "stdout": "30"},
+        {"stdin": "-5\n5", "stdout": "0"}
+    ]
+}
+res_stdin_ok = check_solution("a = int(input())\nb = int(input())\nprint(a + b)", t_stdin_multi)
+if res_stdin_ok["passed"]:
+    print("  ✓ [regression_stdin_clean_runs_ok] Зачёт на нескольких фиксированных входах с чистыми запусками принят")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_clean_runs_ok] ОШИБКА: {res_stdin_ok}")
+    failed_tests += 1
+
+res_stdin_fail = check_solution("a = int(input())\nb = int(input())\nprint(a * b)", t_stdin_multi)
+if not res_stdin_fail["passed"]:
+    print("  ✓ [regression_stdin_clean_runs_fail] Неверное решение корректно отклонено на фиксированных тестах")
+    passed_tests += 1
+else:
+    print(f"  × [regression_stdin_clean_runs_fail] ОШИБКА: неверное решение принято: {res_stdin_fail}")
     failed_tests += 1
 
 print(f"\nИТОГ: {passed_tests} пройдено, {failed_tests} ошибок.")

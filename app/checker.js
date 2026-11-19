@@ -272,17 +272,18 @@
   /**
    * Публичный запуск кода с перехватом stdout и защитой от бесконечных циклов
    */
-  async function fallbackRunCode(code) {
+  async function fallbackRunCode(code, stdin = null) {
     if (!pyodideInstance) {
-      await initPyodide();
+      await initPyodideInThread();
     }
     const pyodide = pyodideInstance;
     let stdout = '';
     let error = null;
 
+    const stdinJson = JSON.stringify(stdin !== undefined && stdin !== null ? stdin : null);
     try {
       await pyodide.runPythonAsync(
-        `_exec_user_code_proxy(${JSON.stringify(code)}, save_user_ns=False)`
+        `_exec_user_code_proxy(${JSON.stringify(code)}, save_user_ns=False, stdin_json=${JSON.stringify(stdinJson)})`
       );
       stdout = await pyodide.runPythonAsync(`getattr(_checker_mod, '_captured_output', '')`) || '';
       const rawErr = await pyodide.runPythonAsync(`getattr(_checker_mod, '_runtime_err', None)`);
@@ -345,12 +346,20 @@
     }
 
     // Слой 1: Выполнение кода и сохранение пространства имён
+    let initialStdin = null;
+    if (task && task.stdin !== undefined) {
+      initialStdin = task.stdin;
+    } else if (task && Array.isArray(task.tests) && task.tests.length > 0 && task.tests[0].stdin !== undefined) {
+      initialStdin = task.tests[0].stdin;
+    }
+
+    const stdinJson = JSON.stringify(initialStdin !== undefined && initialStdin !== null ? initialStdin : null);
     let stdout = '';
     let runtimeError = null;
 
     try {
       await pyodide.runPythonAsync(
-        `_exec_user_code_proxy(${JSON.stringify(userCode)}, save_user_ns=True)`
+        `_exec_user_code_proxy(${JSON.stringify(userCode)}, save_user_ns=True, stdin_json=${JSON.stringify(stdinJson)})`
       );
       stdout = await pyodide.runPythonAsync(`getattr(_checker_mod, '_captured_output', '')`) || '';
       runtimeError = await pyodide.runPythonAsync(`getattr(_checker_mod, '_runtime_err', None)`);
@@ -422,7 +431,7 @@
     if (Array.isArray(task.tests) && task.tests.length > 0) {
       const testsJson = JSON.stringify(task.tests);
       const testResultJson = await pyodide.runPythonAsync(
-        `_run_task_tests_proxy(${JSON.stringify(testsJson)})`
+        `_run_task_tests_proxy(${JSON.stringify(testsJson)}, user_code=${JSON.stringify(userCode)})`
       );
       const testResult = JSON.parse(testResultJson);
 
@@ -437,7 +446,7 @@
           titleMsg = 'Функция не найдена';
           subMsg = `Функция \`${testResult.func}\` не найдена. Проверь, что она объявлена через def и имя совпадает с условием.`;
         } else if (testResult.type === 'error') {
-          titleMsg = 'Ошибка при вызове функции';
+          titleMsg = 'Ошибка при выполнении теста';
           const cleanCallErr = (testResult.error || '')
             .split('\n')
             .filter(l => !l.includes('pyodide') && !l.includes('_run_task_tests'))
@@ -446,7 +455,9 @@
           friendlyExplain = window.FriendlyErrors ? window.FriendlyErrors.explain(cleanCallErr) : null;
           const errLines = cleanCallErr.split('\n').filter(Boolean);
           const lastLine = errLines[errLines.length - 1] || 'Ошибка выполнения';
-          subMsg = `При вызове \`${testResult.call}\` произошла ошибка: ${lastLine}`;
+          const inputNote = testResult.stdin !== undefined ? ` при вводе "${testResult.stdin.replace(/\n/g, '↵')}"` : '';
+          const callNote = testResult.call ? `вызове \`${testResult.call}\`` : 'выполнении';
+          subMsg = `При ${callNote}${inputNote} произошла ошибка: ${lastLine}`;
         } else if (testResult.type === 'returns_mismatch') {
           let expVal = testResult.expected;
           if (expVal === true) expVal = 'True';
@@ -456,7 +467,9 @@
 
           subMsg = `Вызов \`${testResult.call}\` вернул ${testResult.actual}, ожидалось ${expVal}`;
         } else if (testResult.type === 'stdout_mismatch') {
-          subMsg = `Вызов \`${testResult.call}\` вывел "${(testResult.actual || '').replace(/\n/g, '\\n')}", ожидалось "${(testResult.expected || '').replace(/\n/g, '\\n')}"`;
+          const inputNote = testResult.stdin !== undefined ? ` при вводе "${testResult.stdin.replace(/\n/g, '↵')}"` : '';
+          const callNote = testResult.call ? `Вызов \`${testResult.call}\`` : 'Код программы';
+          subMsg = `${callNote}${inputNote} вывел "${(testResult.actual || '').replace(/\n/g, '\\n')}", ожидалось "${(testResult.expected || '').replace(/\n/g, '\\n')}"`;
         }
 
         return {
@@ -785,10 +798,10 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
       }
     }
 
-    async runCode(code, timeoutMs = 7000) {
+    async runCode(code, timeoutMs = 7000, stdin = null) {
       const ready = await this.ensureReady();
       if (!ready || this.useFallback || !this.worker) {
-        return fallbackRunCode(code);
+        return fallbackRunCode(code, stdin);
       }
 
       const id = ++this.reqId;
@@ -810,13 +823,13 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
             this.worker.postMessage({
               type: 'RUN',
               id,
-              payload: { code }
+              payload: { code, stdin }
             });
           } catch (err) {
             clearTimeout(timer);
             this.pending.delete(id);
             this.useFallback = true;
-            resolve(fallbackRunCode(code));
+            resolve(fallbackRunCode(code, stdin));
           }
         });
       } catch (err) {
@@ -862,16 +875,16 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
     return res;
   }
 
-  async function runCode(code, timeoutMs = 7000) {
+  async function runCode(code, timeoutMs = 7000, stdin = null) {
     if (!bridge.useFallback && bridge.workerSupported) {
       try {
-        return await bridge.runCode(code, timeoutMs);
+        return await bridge.runCode(code, timeoutMs, stdin);
       } catch (err) {
         console.warn('[CodeChecker] Сбой моста песочницы (runCode):', err);
         return { stdout: '', error: 'SandboxError: ' + (err && err.message ? err.message : String(err)) };
       }
     }
-    return fallbackRunCode(code);
+    return fallbackRunCode(code, stdin);
   }
 
   const fallbackInitPyodideInThread = initPyodideInThread;
@@ -881,6 +894,8 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
     PyodideWorkerBridge,
     initPyodide,
     fallbackInitPyodideInThread,
+    fallbackRunCode,
+    fallbackCheckSolution,
     checkSolution,
     runCode,
     fuzzyMatchOutputJS

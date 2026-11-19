@@ -315,9 +315,19 @@
           </div>
           <div class="btn-actions">
             <button id="btn-skip" class="btn-skip" style="display: none;">Пропустить</button>
+            <button id="btn-exec" class="btn-ghost" title="Выполнить код (без зачёта)">▶ Запустить</button>
             <button id="btn-run" class="btn-run">Проверить</button>
             <button id="btn-next" class="btn-next">Следующее задание</button>
           </div>
+        </div>
+
+        <!-- Панель fed-stdin (показывается только для заданий с input) -->
+        <div id="stdin-panel" class="stdin-panel" style="display: none;">
+          <div class="stdin-panel-header">
+            <span class="stdin-panel-title">Ввод программы (stdin)</span>
+            <span class="stdin-panel-hint">Каждая строка — отдельный вызов input()</span>
+          </div>
+          <textarea id="stdin-editor" class="stdin-editor" spellcheck="false" placeholder="Введи строки для input()..."></textarea>
         </div>
 
         <!-- Зона результата code -->
@@ -354,6 +364,11 @@
       <div id="pane-predict" class="pane pane-predict" style="display: none;">
         <div class="pane-label">код программы (только для чтения)</div>
         <pre id="predict-code-view" class="predict-code"></pre>
+
+        <div id="predict-stdin-box" class="predict-stdin-box" style="display: none;">
+          <div class="pane-label">входные данные программы (stdin)</div>
+          <pre id="predict-stdin-view" class="predict-stdin-view"></pre>
+        </div>
 
         <div class="task-label" style="margin-top: 20px;">что выведет программа?</div>
         <textarea id="predict-input" class="predict-input"
@@ -454,6 +469,7 @@
               <ul id="sandbox-preset-list" class="sandbox-menu-list" role="listbox" tabindex="-1" hidden></ul>
               <select id="sandbox-preset-select" class="sandbox-select-native" tabindex="-1" aria-hidden="true">
                 <option value="empty" data-tag="основа">Чистый скрипт</option>
+                <option value="input_io" data-tag="ввод">Ввод данных: input()</option>
                 <option value="benchmark" data-tag="замер">Замер скорости</option>
                 <option value="binary_search" data-tag="алгоритм">Бинарный поиск</option>
                 <option value="freq_dict" data-tag="алгоритм">Частотный словарь</option>
@@ -475,6 +491,14 @@
             <textarea id="sandbox-code-editor" class="editor" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="# Пиши любой код на Python 3..."></textarea>
             <div id="sandbox-autocomplete-popup" class="autocomplete-popup" style="display: none;"></div>
           </div>
+        </div>
+
+        <!-- Панель ввода stdin в песочнице -->
+        <div id="sandbox-stdin-panel" class="sandbox-stdin-panel">
+          <div class="sandbox-stdin-header">
+            <span class="sandbox-stdin-title">// ВВОД ПРОГРАММЫ (STDIN ДЛЯ INPUT):</span>
+          </div>
+          <textarea id="sandbox-stdin-editor" class="sandbox-stdin-editor" spellcheck="false" placeholder="Введи строки для input()..."></textarea>
         </div>
 
         <div class="sandbox-editor-footer">
@@ -943,6 +967,19 @@ _SAFE_BUILTINS['__import__'] = _student_import
 _SAFE_BUILTINS['__name__'] = '__student__'
 _SAFE_BUILTINS['__doc__'] = None
 
+# ── Контролируемый fed-stdin для студенческого кода ───────────────────────
+_checker_mod._VKAT_STDIN_LINES = []
+
+def _student_input(*args):
+    if len(args) > 0:
+        _sys.stdout.write(str(args[0]))
+    lines = getattr(_checker_mod, '_VKAT_STDIN_LINES', None)
+    if lines is not None and len(lines) > 0:
+        return str(lines.pop(0))
+    raise EOFError('Программа просит больше ввода, чем задано в панели «Ввод»')
+
+_SAFE_BUILTINS['input'] = _student_input
+
 # ── Функции анализа / проверки кода (размещаются в _checker_mod) ──────────
 
 def _analyze_ast(code_str, requirements_json):
@@ -1184,7 +1221,7 @@ def _clean_tb(tb):
 
 _checker_mod._clean_tb = _clean_tb
 
-def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000):
+def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000, stdin=None):
     """Выполняет код студента в изолированном пространстве имён."""
     import sys as _sys_
     import io as _io_
@@ -1197,6 +1234,13 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000):
     _sys_.stdout = buf
 
     _checker_mod._runtime_err = None
+    if isinstance(stdin, list):
+        _checker_mod._VKAT_STDIN_LINES = [str(x) for x in stdin]
+    elif isinstance(stdin, str):
+        _checker_mod._VKAT_STDIN_LINES = stdin.splitlines()
+    else:
+        _checker_mod._VKAT_STDIN_LINES = []
+
     # Изолированный namespace — только безопасные builtins, без sys/js
     target_ns = {'__builtins__': dict(_SAFE_BUILTINS), '__name__': '__main__'}
     try:
@@ -1226,8 +1270,8 @@ def _exec_user_code(code_str, save_user_ns=False, max_iters=1000000):
 
 _checker_mod._exec_user_code = _exec_user_code
 
-def _run_task_tests(tests_json):
-    """Запускает тесты из JSON в namespace студента."""
+def _run_task_tests(tests_json, user_code=None):
+    """Запускает тесты из JSON в namespace студента или перезапускает код на разных stdin."""
     import sys as _sys_
     import io as _io_
     import traceback as _tb_
@@ -1241,91 +1285,119 @@ def _run_task_tests(tests_json):
     user_ns['__builtins__'] = _SAFE_BUILTINS
 
     for t in tests:
-        call_expr = t["call"]
+        call_expr = t.get("call")
         expected_ret = t.get("returns")
         has_expected_ret = "returns" in t
         expected_stdout = t.get("stdout")
         has_expected_stdout = "stdout" in t
         is_hidden = bool(t.get("hidden"))
+        test_stdin = t.get("stdin")
 
-        buf = _io_.StringIO()
-        old_out = _sys_.stdout
-        _sys_.stdout = buf
-        call_err = None
-        func_not_found = None
-        ret_val = None
+        if call_expr:
+            buf = _io_.StringIO()
+            old_out = _sys_.stdout
+            _sys_.stdout = buf
+            call_err = None
+            func_not_found = None
+            ret_val = None
 
-        try:
-            ret_val = eval(call_expr, user_ns)
-        except NameError as ne:
-            m = _re_.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", call_expr.strip())
-            fn = m.group(1) if m else None
-            if fn and f"name '{fn}' is not defined" in str(ne):
-                func_not_found = fn
-            else:
-                call_err = _clean_tb(_tb_.format_exc())
-        except BaseException:
-            # BaseException: SystemExit из функции ученика не должен ронять
-            # весь вызов _run_task_tests.
-            call_err = _clean_tb(_tb_.format_exc())
-        finally:
-            _sys_.stdout = old_out
-            captured_stdout = buf.getvalue()
-
-        if func_not_found:
-            return _json.dumps({"passed": False, "type": "not_found",
-                                "func": func_not_found, "call": call_expr, "hidden": is_hidden})
-        if call_err:
-            return _json.dumps({"passed": False, "type": "error",
-                                "call": call_expr, "error": call_err, "hidden": is_hidden})
-
-        if has_expected_ret:
-            ret_mismatch = False
-            if isinstance(expected_ret, bool):
-                if not (isinstance(ret_val, bool) and ret_val == expected_ret):
-                    ret_mismatch = True
-            elif expected_ret is None:
-                if ret_val is not None:
-                    ret_mismatch = True
-            elif isinstance(expected_ret, (int, float)):
-                if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)):
-                    ret_mismatch = True
+            if test_stdin is not None:
+                if isinstance(test_stdin, list):
+                    _checker_mod._VKAT_STDIN_LINES = [str(x) for x in test_stdin]
                 else:
-                    if isinstance(expected_ret, float) or isinstance(ret_val, float):
-                        if not _math.isclose(ret_val, expected_ret, rel_tol=1e-5, abs_tol=1e-5):
-                            ret_mismatch = True
-                    else:
-                        if ret_val != expected_ret:
-                            ret_mismatch = True
-            elif isinstance(expected_ret, str):
-                if not isinstance(ret_val, str):
-                    ret_mismatch = True
-                elif ret_val != expected_ret:
-                    r_clean = ret_val.replace('\r\n', '\n').strip()
-                    e_clean = expected_ret.replace('\r\n', '\n').strip()
-                    if r_clean == e_clean:
-                        pass
-                    elif r_clean.replace('ё', 'е').replace('Ё', 'Е') == e_clean.replace('ё', 'е').replace('Ё', 'Е'):
-                        pass
-                    elif r_clean.rstrip('.') == e_clean.rstrip('.'):
-                        pass
-                    else:
-                        ret_mismatch = True
+                    _checker_mod._VKAT_STDIN_LINES = str(test_stdin).splitlines()
             else:
-                if ret_val != expected_ret:
-                    ret_mismatch = True
+                _checker_mod._VKAT_STDIN_LINES = []
 
-            if ret_mismatch:
-                return _json.dumps({"passed": False, "type": "returns_mismatch",
-                                    "call": call_expr, "expected": expected_ret,
-                                    "actual": repr(ret_val), "hidden": is_hidden})
+            try:
+                ret_val = eval(call_expr, user_ns)
+            except NameError as ne:
+                m = _re_.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", call_expr.strip())
+                fn = m.group(1) if m else None
+                if fn and f"name '{fn}' is not defined" in str(ne):
+                    func_not_found = fn
+                else:
+                    call_err = _clean_tb(_tb_.format_exc())
+            except BaseException:
+                # BaseException: SystemExit из функции ученика не должен ронять
+                # весь вызов _run_task_tests.
+                call_err = _clean_tb(_tb_.format_exc())
+            finally:
+                _sys_.stdout = old_out
+                captured_stdout = buf.getvalue()
 
-        if has_expected_stdout:
-            is_match, _ = _match_output(captured_stdout, expected_stdout)
-            if not is_match:
-                return _json.dumps({"passed": False, "type": "stdout_mismatch",
-                                    "call": call_expr, "expected": expected_stdout,
-                                    "actual": captured_stdout.strip(), "hidden": is_hidden})
+            if func_not_found:
+                return _json.dumps({"passed": False, "type": "not_found",
+                                    "func": func_not_found, "call": call_expr, "hidden": is_hidden})
+            if call_err:
+                return _json.dumps({"passed": False, "type": "error",
+                                    "call": call_expr, "error": call_err, "hidden": is_hidden})
+
+            if has_expected_ret:
+                ret_mismatch = False
+                if isinstance(expected_ret, bool):
+                    if not (isinstance(ret_val, bool) and ret_val == expected_ret):
+                        ret_mismatch = True
+                elif expected_ret is None:
+                    if ret_val is not None:
+                        ret_mismatch = True
+                elif isinstance(expected_ret, (int, float)):
+                    if isinstance(ret_val, bool) or not isinstance(ret_val, (int, float)):
+                        ret_mismatch = True
+                    else:
+                        if isinstance(expected_ret, float) or isinstance(ret_val, float):
+                            if not _math.isclose(ret_val, expected_ret, rel_tol=1e-5, abs_tol=1e-5):
+                                ret_mismatch = True
+                        else:
+                            if ret_val != expected_ret:
+                                ret_mismatch = True
+                elif isinstance(expected_ret, str):
+                    if not isinstance(ret_val, str):
+                        ret_mismatch = True
+                    elif ret_val != expected_ret:
+                        r_clean = ret_val.replace('\r\n', '\n').strip()
+                        e_clean = expected_ret.replace('\r\n', '\n').strip()
+                        if r_clean == e_clean:
+                            pass
+                        elif r_clean.replace('ё', 'е').replace('Ё', 'Е') == e_clean.replace('ё', 'е').replace('Ё', 'Е'):
+                            pass
+                        elif r_clean.rstrip('.') == e_clean.rstrip('.'):
+                            pass
+                        else:
+                            ret_mismatch = True
+                else:
+                    if ret_val != expected_ret:
+                        ret_mismatch = True
+
+                if ret_mismatch:
+                    return _json.dumps({"passed": False, "type": "returns_mismatch",
+                                        "call": call_expr, "expected": expected_ret,
+                                        "actual": repr(ret_val), "hidden": is_hidden})
+
+            if has_expected_stdout:
+                is_match, _ = _match_output(captured_stdout, expected_stdout)
+                if not is_match:
+                    return _json.dumps({"passed": False, "type": "stdout_mismatch",
+                                        "call": call_expr, "expected": expected_stdout,
+                                        "actual": captured_stdout.strip(), "hidden": is_hidden})
+        elif user_code is not None and (test_stdin is not None or has_expected_stdout):
+            # Чистый запуск скрипта студента на отдельном тестовом наборе stdin
+            _exec_user_code(user_code, save_user_ns=False, stdin=test_stdin)
+            run_err = getattr(_checker_mod, '_runtime_err', None)
+            captured_stdout = getattr(_checker_mod, '_captured_output', '')
+            if run_err:
+                return _json.dumps({
+                    "passed": False, "type": "error",
+                    "stdin": test_stdin, "error": run_err, "hidden": is_hidden
+                })
+            if has_expected_stdout:
+                is_match, _ = _match_output(captured_stdout, expected_stdout)
+                if not is_match:
+                    return _json.dumps({
+                        "passed": False, "type": "stdout_mismatch",
+                        "stdin": test_stdin, "expected": expected_stdout,
+                        "actual": captured_stdout.strip(), "hidden": is_hidden
+                    })
 
     return _json.dumps({"passed": True})
 
@@ -1337,11 +1409,12 @@ _checker_mod._run_task_tests = _run_task_tests
 def analyze_ast(code_str, requirements_json):
     return _checker_mod.analyze_ast(code_str, requirements_json)
 
-def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=1000000):
-    _checker_mod._exec_user_code(code_str, save_user_ns, max_iters)
+def _exec_user_code_proxy(code_str, save_user_ns=False, max_iters=1000000, stdin_json=None):
+    stdin_val = _json.loads(stdin_json) if stdin_json is not None else None
+    _checker_mod._exec_user_code(code_str, save_user_ns, max_iters, stdin=stdin_val)
 
-def _run_task_tests_proxy(tests_json):
-    return _checker_mod._run_task_tests(tests_json)
+def _run_task_tests_proxy(tests_json, user_code=None):
+    return _checker_mod._run_task_tests(tests_json, user_code=user_code)
 
 def _match_output_proxy(actual_str, expected_str):
     return _json.dumps(_checker_mod._match_output(actual_str, expected_str))
@@ -1372,6 +1445,7 @@ def _match_output_proxy(actual_str, expected_str):
   <script src="content/core/08-exceptions.js"></script>
   <script src="content/core/11-code-style.js"></script>
   <script src="content/practice/l2-algorithms.js"></script>
+  <script src="content/practice/l2-io-input.js"></script>
 
   <!-- База конструкций и подсказки по коду в теории -->
   <script src="content/cheatsheet.js"></script>

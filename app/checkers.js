@@ -151,6 +151,62 @@
   // ─── Проверка Code ────────────────────────────────────────────────────────────
 
   /**
+   * Запускает код ученика без зачёта (ручной запуск с экспериментальным stdin).
+   * Выводит результат или ошибку в консоль.
+   * Не засчитывает задачу, не отправляет телеметрию успешного решения, не открывает кнопку «Дальше».
+   */
+  async function runStudentCode() {
+    const dom = window.VkatApp.dom;
+    const state = window.VkatApp.state;
+    const task = window.VkatApp.getCurrentTask();
+    if (!task || state.isChecking) return;
+
+    state.isChecking = true;
+    if (dom.btnExec) {
+      dom.btnExec.disabled = true;
+      dom.btnExec.textContent = 'Запуск...';
+    }
+    if (dom.btnRun) dom.btnRun.disabled = true;
+
+    try {
+      const code = dom.editor.value;
+      const customStdin = dom.stdinEditor && dom.stdinPanel && dom.stdinPanel.style.display !== 'none'
+        ? dom.stdinEditor.value
+        : (task.stdin || null);
+
+      const result = await window.CodeChecker.runCode(code, 7000, customStdin);
+
+      // Скрываем плашки зачёта/ошибок проверки, показываем консоль вывода
+      dom.resultBox.classList.remove('visible');
+      dom.improveBox.classList.remove('visible');
+      dom.errorExplain.style.display = 'none';
+
+      dom.consoleOut.style.display = 'block';
+      if (result.error) {
+        dom.consoleOut.className = 'console err';
+        dom.consoleOut.textContent = result.stdout ? (result.stdout + '\n' + result.error) : result.error;
+      } else {
+        dom.consoleOut.className = 'console';
+        dom.consoleOut.textContent = result.stdout || '(программа ничего не вывела)';
+      }
+    } catch (err) {
+      dom.consoleOut.style.display = 'block';
+      dom.consoleOut.className = 'console err';
+      dom.consoleOut.textContent = String(err);
+    } finally {
+      state.isChecking = false;
+      if (dom.btnExec) {
+        dom.btnExec.disabled = false;
+        dom.btnExec.textContent = '▶ Запустить';
+      }
+      if (dom.btnRun) {
+        dom.btnRun.disabled = false;
+        dom.btnRun.textContent = 'Проверить';
+      }
+    }
+  }
+
+  /**
    * Запускает решение ученика через CodeChecker.checkSolution().
    * При успехе — отмечает задание пройденным и показывает кнопку «Дальше».
    * При ошибке — показывает трассировку и дружелюбное объяснение (FriendlyErrors).
@@ -167,7 +223,7 @@
 
     try {
       const code = dom.editor.value;
-      const result = await window.CodeChecker.checkSolution(code, task);
+      const result = await window.CodeChecker.checkSolution(code, task, 7000);
 
       // Телеметрия CONNECT: попытка решения
       if (window.VkatConnect) {
@@ -284,7 +340,7 @@
       if (typeof task.expectedOutput === 'string') {
         actualVal = normalize(task.expectedOutput);
       } else if (window.CodeChecker && typeof window.CodeChecker.runCode === 'function') {
-        const runRes = await window.CodeChecker.runCode(task.code);
+        const runRes = await window.CodeChecker.runCode(task.code, 7000, task.stdin || null);
         actualVal = normalize(runRes.stdout);
       }
 
@@ -429,6 +485,7 @@
 
   window.VkatCheckers = {
     runCheck,
+    runStudentCode,
     runPredictCheck,
     runQuizCheck,
     fuzzyPredictMatch

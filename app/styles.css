@@ -3921,8 +3921,9 @@ body {
 .life-glyph-slot {
   margin: 14px 0 20px 0;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 .life-glyph-slot svg.glyph {

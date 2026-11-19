@@ -903,6 +903,13 @@
     buildStage();
     renderStats();
     updateControlsForMode();
+    // Глифы вводных слайдов (слоты .intro-visual[data-glyph])
+    if (window.Glyphs && S.dom.introView) {
+      S.dom.introView.querySelectorAll('.intro-visual').forEach(box => {
+        const key = box.getAttribute('data-glyph');
+        if (key && window.Glyphs.draw) box.innerHTML = window.Glyphs.draw(key);
+      });
+    }
     setupEvents();
   }
 

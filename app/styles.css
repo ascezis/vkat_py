@@ -2641,6 +2641,18 @@ body {
   padding: 10px clamp(8px, 2%, 20px);
 }
 
+/* Глифы во вводных слайдах терариума */
+.intro-visual {
+  display: grid;
+  place-items: center;
+  padding: 4px 0 14px;
+}
+
+.intro-visual .glyph {
+  width: min(100%, 300px);
+  height: auto;
+}
+
 .pet-stdin-row {
   display: flex;
   flex-direction: column;

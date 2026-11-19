@@ -1110,11 +1110,12 @@ async function runStorageValidation() {
   check('Projects: index.html содержит витрину <div id="screen-projects">', lifeIndexHtml.includes('id="screen-projects"'));
   check('Projects: стартовая карусель содержит стрелки btn-modules-prev/next',
     lifeIndexHtml.includes('id="btn-modules-prev"') && lifeIndexHtml.includes('id="btn-modules-next"'));
-  check('Projects: hero-карточка life-start-card живёт на витрине между start и life',
-    lifeIndexHtml.indexOf('id="screen-start"') < lifeIndexHtml.indexOf('id="life-start-card"') &&
+  check('Projects: hero-карточки life-start-card и pet-start-card живут на витрине между start и life',
+    lifeIndexHtml.indexOf('id="screen-start"') < lifeIndexHtml.indexOf('id="pet-start-card"') &&
+    lifeIndexHtml.indexOf('id="pet-start-card"') < lifeIndexHtml.indexOf('id="life-start-card"') &&
     lifeIndexHtml.indexOf('id="life-start-card"') < lifeIndexHtml.indexOf('id="screen-life"'));
-  check('Projects: экран витрины в allowlist deep-link app.js',
-    /'start', 'lesson', 'projects', 'life'/.test(projectsAppJs));
+  check('Projects: экраны витрины и терариума в allowlist deep-link app.js',
+    /'start', 'lesson', 'projects', 'pet', 'life'/.test(projectsAppJs));
 
   const lifeStylesCss = fs.readFileSync(path.join(__dirname, '..', 'app', 'styles.css'), 'utf8');
   check('Life: styles.css содержит селекторы .life-canvas-container и .life-hud',
@@ -1132,6 +1133,145 @@ async function runStorageValidation() {
     !lifeRendererCode.includes('require(') && !lifeRendererCode.includes('import '));
   check('Life: модуль Life не обращается к localStorage/sessionStorage напрямую',
     !lifeRendererCode.includes('localStorage') && !lifeRendererCode.includes('sessionStorage'));
+
+  // ── 23. Модуль пет-проекта «Тамагочи» (терариум Байта) ──────────────────────
+  console.log('\n=== Валидация модуля пет-проекта Pet ===');
+
+  const petPath = path.join(__dirname, '..', 'content', 'projects', 'pet', 'tasks.js');
+  check('Pet: файл content/projects/pet/tasks.js существует на диске', fs.existsSync(petPath));
+
+  let PM = null;
+  if (fs.existsSync(petPath)) {
+    try {
+      loadScript('content/projects/pet/tasks.js');
+      PM = context.PET_MODULE;
+    } catch (e) {
+      console.error('  Pet: tasks.js выбросил исключение при загрузке:', e.message);
+    }
+  }
+  check('Pet: window.PET_MODULE успешно экспортирован', Boolean(PM) && typeof PM === 'object');
+
+  const petSteps = PM && Array.isArray(PM.steps) ? PM.steps : [];
+  check('Pet: корректный ID, экран и заголовок модуля', Boolean(PM && PM.id === 'pet' && PM.title && PM.description && PM.screen === 'pet'));
+  check('Pet: модуль содержит ровно 4 шага', petSteps.length === 4);
+
+  const petStepShape = petSteps.every(s =>
+    s.id && s.title && s.narrative && s.taskHtml && s.glyph && s.worldMode &&
+    s.initialCode && Array.isArray(s.tests) && s.tests.length > 0
+  );
+  check('Pet: каждый шаг содержит id/title/narrative/taskHtml/glyph/worldMode/initialCode и непустой tests', petStepShape);
+
+  check('Pet: id шагов уникальны', new Set(petSteps.map(s => s.id)).size === petSteps.length);
+
+  const petWorldModesOk = petSteps.length === 4 &&
+    petSteps[0].worldMode === 'egg' && petSteps[1].worldMode === 'born' &&
+    petSteps[2].worldMode === 'playful' && petSteps[3].worldMode === 'autonomous';
+  check('Pet: worldMode шагов образуют прогрессию терариума (egg→born→playful→autonomous)', petWorldModesOk);
+
+  const petTestsFormat = petSteps.every(s => s.tests.every(t =>
+    typeof t.call === 'string' && t.call.length > 0 && 'returns' in t && !/assert/.test(t.call)
+  ));
+  check('Pet: все тесты в контракте TaskTest (call + returns, без assert-кода)', petTestsFormat);
+
+  if (petTestsFormat) {
+    try {
+      vm.runInContext(`
+        var True = true; var False = false;
+        function len(x) { return (x && x.length !== undefined) ? x.length : Object.keys(x).length; }
+        function new_pet(name) {
+          return {'имя': name, 'сытость': 50, 'настроение': 50, 'энергия': 50};
+        }
+        function feed(p) {
+          p['сытость'] = Math.min(p['сытость'] + 25, 100);
+          return p;
+        }
+        function play(p) {
+          if (p['энергия'] < 10) return p;
+          p['настроение'] = Math.min(p['настроение'] + 20, 100);
+          p['энергия'] = Math.max(p['энергия'] - 15, 0);
+          p['сытость'] = Math.max(p['сытость'] - 10, 0);
+          return p;
+        }
+        function tick(p, hour) {
+          if (hour < 7 || hour >= 23) {
+            p['энергия'] = Math.min(p['энергия'] + 15, 100);
+          } else {
+            p['сытость'] = Math.max(p['сытость'] - 5, 0);
+            if (p['сытость'] < 30) {
+              p['настроение'] = Math.max(p['настроение'] - 3, 0);
+            }
+          }
+          return p;
+        }
+      `, context);
+
+      let petBehaviorOk = true;
+      let petBehaviorDetail = '';
+      let petTestCount = 0;
+      for (const s of petSteps) {
+        for (const t of s.tests) {
+          petTestCount++;
+          try {
+            const actual = vm.runInContext('(' + t.call + ')', context);
+            if (actual !== t.returns) {
+              petBehaviorOk = false;
+              petBehaviorDetail = s.id + ': ' + t.call + ' → ' + actual + ' (ожидалось ' + t.returns + ')';
+            }
+          } catch (e) {
+            petBehaviorOk = false;
+            petBehaviorDetail = s.id + ': ' + t.call + ' → ' + e.message;
+          }
+        }
+      }
+      check(`Pet: эталонное решение проходит все ${petTestCount} тестов шагов (поведение = ожиданиям)`, petBehaviorOk, petBehaviorDetail);
+    } catch (e) {
+      check('Pet: поведенческая проверка эталона выполнима', false, e.message);
+    }
+  }
+
+  check('Pet: index.html содержит контейнер <div id="screen-pet">', lifeIndexHtml.includes('id="screen-pet"'));
+  check('Pet: index.html содержит карточку пет-проекта pet-start-card', lifeIndexHtml.includes('id="pet-start-card"'));
+  check('Pet: index.html содержит Python-скаффолд <script id="vkat-pet-scaffold">',
+    lifeIndexHtml.includes('id="vkat-pet-scaffold"'));
+  check('Pet: скаффолд содержит __STUDENT_CODE__ и pet_state_json',
+    lifeIndexHtml.includes('def pet_state_json(pet)') &&
+    lifeIndexHtml.indexOf('__STUDENT_CODE__', lifeIndexHtml.indexOf('id="vkat-pet-scaffold"')) !== -1);
+  check('Pet: index.html подключает tasks.js, pet-art.css/js и pet-renderer.js',
+    lifeIndexHtml.includes('content/projects/pet/tasks.js') &&
+    lifeIndexHtml.includes('app/pet-art.css') &&
+    lifeIndexHtml.includes('app/pet-art.js') &&
+    lifeIndexHtml.includes('app/pet-renderer.js'));
+  check('Pet: в index.html есть редактор терариума и строки ввода (pet-code-editor, pet-stdin-input)',
+    lifeIndexHtml.includes('id="pet-code-editor"') && lifeIndexHtml.includes('id="pet-stdin-input"'));
+  check('Pet: в app.js есть ветка showScreen(pet) и проводка VkatPet',
+    projectsAppJs.includes("screen === 'pet'") && projectsAppJs.includes('window.VkatPet'));
+
+  const petStylesCss = fs.readFileSync(path.join(__dirname, '..', 'app', 'styles.css'), 'utf8');
+  check('Pet: styles.css содержит селекторы .pet-stage-host и .pet-stdin-input',
+    petStylesCss.includes('.pet-stage-host') && petStylesCss.includes('.pet-stdin-input'));
+
+  const petGlyphsCode = fs.readFileSync(path.join(__dirname, '..', 'app', 'glyphs.js'), 'utf8');
+  check('Pet: glyphs.js содержит регистрацию схем petHatch, petCare, petDay',
+    petGlyphsCode.includes('petHatch') && petGlyphsCode.includes('petCare') && petGlyphsCode.includes('petDay'));
+
+  const petArtPath = path.join(__dirname, '..', 'app', 'pet-art.js');
+  check('Pet: файл app/pet-art.js существует на диске', fs.existsSync(petArtPath));
+  const petArtCode = fs.existsSync(petArtPath) ? fs.readFileSync(petArtPath, 'utf8') : '';
+  check('Pet: pet-art.js экспортирует PetArt (render/pose/cracks/setStats/expression)',
+    petArtCode.includes('window.PetArt') && petArtCode.includes('pose') &&
+    petArtCode.includes('cracks') && petArtCode.includes('setStats') && petArtCode.includes('expression'));
+  check('Pet: pet-art.js не содержит запрещённых npm/require импортов и localStorage',
+    !petArtCode.includes('require(') && !petArtCode.includes('import ') &&
+    !petArtCode.includes('localStorage') && !petArtCode.includes('sessionStorage'));
+
+  const petRendererPath = path.join(__dirname, '..', 'app', 'pet-renderer.js');
+  check('Pet: файл app/pet-renderer.js существует на диске', fs.existsSync(petRendererPath));
+  const petRendererCode = fs.existsSync(petRendererPath) ? fs.readFileSync(petRendererPath, 'utf8') : '';
+  check('Pet: pet-renderer.js экспортирует VkatPet (init/enter/leave/renderCard)',
+    petRendererCode.includes('window.VkatPet') && petRendererCode.includes('renderCard'));
+  check('Pet: pet-renderer.js не содержит запрещённых npm/require импортов и localStorage',
+    !petRendererCode.includes('require(') && !petRendererCode.includes('import ') &&
+    !petRendererCode.includes('localStorage') && !petRendererCode.includes('sessionStorage'));
 
   console.log(`\nИТОГ: ${passed} пройдено, ${failed} ошибок.`);
   if (failed > 0) process.exit(1);

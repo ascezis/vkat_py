@@ -173,8 +173,8 @@ interface SelftestEntry {
 
 // ─── Пет-проект «Игра «Жизнь» (content/projects/life/tasks.js) ──────────────
 
-/** Режим JS-зеркала симуляции (app/life-renderer.js). */
-type LifeWorldMode = 'frozen' | 'chaos' | 'conway' | 'sandbox';
+/** Режим JS-зеркала симуляции (app/life-renderer.js) и терариума (app/pet-renderer.js). */
+type LifeWorldMode = 'frozen' | 'chaos' | 'conway' | 'sandbox' | 'egg' | 'born' | 'playful' | 'autonomous';
 
 /**
  * Шаг пет-проекта. Тесты — тот же контракт TaskTest, что и у обычных
@@ -333,6 +333,12 @@ interface Window {
   VkatGridWarp?: Record<string, any>;
   /** Экран пет-проекта «Игра «Жизнь» (app/life-renderer.js). */
   VkatLife?: Record<string, any>;
+  /** Экран терариума пет-проекта «Тамагочи» (app/pet-renderer.js). */
+  VkatPet?: Record<string, any>;
+  /** Арт-компонент питомца (app/pet-art.js): render/pose/cracks/setStats/expression. */
+  PetArt?: Record<string, any>;
+  /** Модуль пет-проекта «Тамагочи» (content/projects/pet/tasks.js). */
+  PET_MODULE?: LifeModule;
 
   VkatStorage?: VkatStorageApi;
   CodeChecker?: CodeCheckerApi;

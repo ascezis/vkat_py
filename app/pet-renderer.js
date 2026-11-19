@@ -756,6 +756,13 @@
 
     host.className = 'stage-card project-hero';
     host.innerHTML =
+      '<div class="project-hero-art project-hero-art-pet" aria-hidden="true">' +
+        '<svg viewBox="0 0 320 180" focusable="false"><path class="project-art-ground" d="M28 151h264m-247 5h26m7 0h118"/>' +
+        '<path class="project-art-body" d="M103 119q0-25 17-43 12-12 31-14 7-2 11-17 2-6 6 2 3 7 0 13 12-4 19-12 4-4 4 3l-4 14q21 7 29 30 4 13 11 25 7 14-5 20-7 3-15 1-8 9-20 6-11 5-25 1-12 4-24 0-13 4-23-4-13 3-19-6-5-7 7-19z"/>' +
+        '<ellipse class="project-art-eye" cx="140" cy="104" rx="9" ry="13"/><ellipse class="project-art-eye" cx="179" cy="104" rx="9" ry="13"/>' +
+        '<circle class="project-art-glint" cx="138" cy="99" r="3"/><circle class="project-art-glint" cx="177" cy="99" r="3"/>' +
+        '<path class="project-art-mouth" d="M153 117q6 7 12 0"/><ellipse class="project-art-cheek" cx="119" cy="116" rx="6" ry="3"/><ellipse class="project-art-cheek" cx="199" cy="116" rx="6" ry="3"/></svg>' +
+      '</div>' +
       '<div class="stage-card-header">' +
         '<div class="stage-card-title">Тамагочи</div>' +
         '<div class="stage-card-progress-label">' + (done ? '✓ пройдено' : n + ' из ' + total) + '</div>' +

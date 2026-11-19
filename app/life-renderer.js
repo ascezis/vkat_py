@@ -1421,7 +1421,7 @@
 
     host.className = 'stage-card project-hero';
     host.innerHTML =
-      glyph +
+      '<figure class="visual">' + glyph + '</figure>' +
       '<div class="stage-card-header">' +
         '<div class="stage-card-title">Alife-System</div>' +
         '<div class="stage-card-progress-label">' + (done ? '✓ пройдено' : n + ' из ' + total) + '</div>' +

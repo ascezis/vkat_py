@@ -4922,3 +4922,78 @@ body {
     max-width: 100%;
   }
 }
+
+/* Витрина проектов: две компактные сцены с общей сеткой и ясной иерархией. */
+#screen-projects .projects-center {
+  width: min(1160px, 100%);
+  margin-inline: auto;
+  padding: clamp(24px, 5vh, 48px) 24px;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 16px;
+  text-align: left;
+}
+#screen-projects .projects-center > .kicker { margin: 0 0 4px; }
+#screen-projects .project-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 38%) minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto 1fr;
+  column-gap: clamp(22px, 3vw, 48px);
+  width: 100%;
+  max-width: none;
+  min-height: 264px;
+  margin: 0;
+  padding: 0 clamp(20px, 2.4vw, 32px) 0 0;
+  overflow: hidden;
+}
+#screen-projects .project-hero > :not(.project-hero-art):not(.visual) { grid-column: 2; min-width: 0; }
+#screen-projects .project-hero .stage-card-header { margin: 28px 0 12px; align-items: center; }
+#screen-projects .project-hero .stage-card-title { font-size: 24px; line-height: 1.2; }
+#screen-projects .project-hero .stage-card-progress-label { color: var(--brand-orange); white-space: nowrap; }
+#screen-projects .project-hero .stage-card-desc { font-size: 14px; line-height: 1.55; margin: 0 0 12px; flex: initial; }
+#screen-projects .project-hero .stage-card-meta { margin-bottom: 10px; }
+#screen-projects .project-hero .stage-card-note { margin: 0 0 14px; padding-top: 9px; }
+#screen-projects .project-hero .stage-card-actions { margin: 0 0 22px; }
+#screen-projects .project-hero .stage-card-btn { padding: 9px 18px; }
+#screen-projects .project-hero-art,
+#screen-projects .project-hero > .visual {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background-color: var(--bg-panel-alt);
+  background-image: radial-gradient(var(--border) .8px, transparent 1px);
+  background-size: 16px 16px;
+}
+#screen-projects .project-hero-art svg { display: block; width: min(90%, 340px); }
+#screen-projects .project-art-ground { fill: none; stroke: var(--border-strong); stroke-width: 1; }
+#screen-projects .project-art-body { fill: var(--fill); }
+#screen-projects .project-art-eye { fill: var(--bg); }
+#screen-projects .project-art-glint { fill: var(--fill); }
+#screen-projects .project-art-mouth { fill: none; stroke: var(--bg); stroke-width: 3; stroke-linecap: round; }
+#screen-projects .project-art-cheek { fill: var(--brand-orange); }
+#screen-projects .project-hero > .visual { display: flex; flex-direction: column; justify-content: center; }
+#screen-projects .project-hero .visual-canvas { width: 100%; padding: 10px; }
+#screen-projects .project-hero .glyph { width: 100%; height: auto; max-height: 175px; }
+#screen-projects .project-hero .visual-cap { padding: 0 20px 16px; border: 0; font-size: 10px; }
+#screen-projects .projects-note { margin: 0; text-align: center; }
+
+@media (max-width: 700px) {
+  #screen-projects .projects-center { padding: 24px 16px; gap: 14px; }
+  #screen-projects .project-hero { display: flex; flex-direction: column; padding: 0 18px; }
+  #screen-projects .project-hero-art,
+  #screen-projects .project-hero > .visual { width: calc(100% + 36px); height: 174px; min-height: 174px; margin: 0 -18px; border: 0; border-bottom: 1px solid var(--border); }
+  #screen-projects .project-hero .stage-card-header { margin: 18px 0 10px; }
+  #screen-projects .project-hero .stage-card-title { font-size: 21px; }
+  #screen-projects .project-hero .stage-card-actions { margin-bottom: 18px; }
+  #screen-projects .project-hero .visual-canvas { max-height: 130px; }
+  #screen-projects .project-hero .glyph { max-height: 115px; }
+  #screen-projects .project-hero .visual-cap { padding-bottom: 9px; }
+}

@@ -117,3 +117,48 @@
   .pet-state-hatch .pet-shell-top { transform: translate(-58px,29px) rotate(-58deg) scale(.62); }
   .pet-state-hatch .pet-shell-base { transform: translate(69px,1px) rotate(30deg) scale(.65); }
 }
+
+/* Экран терариума. Общие стили Alife задают основу, здесь выровнена сетка питомца. */
+#screen-pet .life-canvas-panel {
+  width: clamp(520px, 44vw, 620px);
+  max-width: calc(100% - 420px);
+  padding: 24px clamp(20px, 3vw, 40px);
+}
+#screen-pet .life-stage { width: 100%; max-width: 540px; }
+#screen-pet .pet-stage-host { width: 100%; padding: 0; }
+#screen-pet .pet-terrarum { gap: 14px; }
+#screen-pet .pet-hud { height: auto; min-height: 36px; gap: 8px; }
+#screen-pet .pet-hud-actions { min-width: 0; }
+#screen-pet .pet-hud-actions .life-btn { white-space: nowrap; }
+#screen-pet .life-editor-panel { padding: 24px clamp(20px, 3vw, 40px); gap: 16px; }
+#screen-pet .life-action-bar { display: grid; grid-template-columns: 1fr auto; gap: 12px 16px; }
+#screen-pet .life-feedback-msg { min-width: 0; }
+#screen-pet .life-action-buttons { grid-column: 2; grid-row: 1; }
+#screen-pet .pet-stdin-row { grid-column: 1 / -1; padding-inline: 0; }
+#screen-pet .pet-stdin-input { width: 100%; max-width: 100%; }
+
+@media (max-width: 900px) {
+  #screen-pet .life-canvas-panel { width: 100%; max-width: none; padding: 20px 24px; }
+  #screen-pet .life-stage { max-width: 540px; }
+  #screen-pet .life-editor-panel { width: 100%; min-width: 0; padding: 20px 24px; }
+}
+@media (max-width: 520px) {
+  #screen-pet .life-header { height: auto; min-height: 56px; padding: 10px 16px; gap: 8px; }
+  #screen-pet .life-header-left { gap: 8px; flex-wrap: wrap; }
+  #screen-pet .life-header-title { font-size: 14px; }
+  #screen-pet .life-step-badge { font-size: 11px; }
+  #screen-pet .life-step-dots { display: none; }
+  #screen-pet .life-header-right { margin-left: auto; }
+  #screen-pet .life-header-right .btn-ghost-sm { white-space: nowrap; }
+  #screen-pet .life-canvas-panel { padding: 16px; }
+  #screen-pet .life-editor-panel { padding: 16px; gap: 14px; }
+  #screen-pet .life-task-card { padding: 18px; }
+  #screen-pet .pet-hud { flex-wrap: wrap; }
+  #screen-pet .pet-hud-actions { margin-left: auto; gap: 6px; }
+  #screen-pet .pet-hud-actions .life-btn { padding-inline: 8px; font-size: 11px; }
+  #screen-pet .life-canvas-hint { line-height: 1.5; }
+  #screen-pet .life-action-bar { grid-template-columns: 1fr; }
+  #screen-pet .life-action-buttons { grid-column: 1; grid-row: auto; width: 100%; }
+  #screen-pet .life-action-buttons .life-btn { flex: 1; min-width: 0; }
+  #screen-pet .pet-stdin-row { grid-column: 1; }
+}

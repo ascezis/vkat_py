@@ -36,9 +36,9 @@
     ['play','Играть','M2 7q0-2 3-2h6q3 0 3 2l1 5q0 2-2 1l-3-2H6l-3 2q-2 1-2-1z M4 8h4m-2-2v4m4-2h1'],
     ['sleep','Спать','M12 12A6 6 0 0 1 5 3a6 6 0 1 0 8 9z']
   ];
-  const eye = x => `<g transform="translate(${x} 110)"><g class="pet-gaze"><g class="pet-blink">
-    <ellipse rx="10" ry="15"/><circle class="pet-light" cx="-2" cy="-6" r="3.4"/>
-    <path class="pet-accent pet-eye-star" d="M2 0l1.5 3L7 4.5 3.5 6 2 9 .5 6-3 4.5.5 3z"/></g></g></g>`;
+  const eye = x => `<g transform="translate(${x} 110)"><g class="pet-blink">
+    <ellipse rx="10" ry="15"/><g class="pet-gaze"><circle class="pet-light" cx="-2" cy="-6" r="3.4"/></g>
+    <path class="pet-accent pet-eye-star" d="M2 0l1.5 3L7 4.5 3.5 6 2 9 .5 6-3 4.5.5 3z"/></g></g>`;
   const sprite = `<svg class="pet-sprite" viewBox="0 0 320 200" aria-hidden="true" focusable="false">
     <path class="pet-platform" d="M47 162h239m-227 4h12m5 0h77m68 0h42"/>
     <ellipse class="pet-shadow" cx="158" cy="159" rx="49" ry="3"/>

@@ -229,7 +229,7 @@
   font: 14px/1.75 var(--font-mono); resize: none; outline: none;
   tab-size: 4; white-space: pre-wrap; word-break: break-word;
 }
-#pet-dictionary-code::selection { background: var(--border-strong); color: transparent; }
+#pet-dictionary-code::selection { background: color-mix(in srgb, var(--text) 22%, transparent); color: transparent; }
 .pet-dictionary-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .pet-dictionary-feedback { min-height: 24px; color: var(--text-muted); font: 12px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .pet-dictionary-feedback.error { color: var(--error); }

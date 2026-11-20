@@ -531,6 +531,7 @@
 
     renderSceneForProgress();
     renderStepDots();
+    if (window.PetDictionaryLab) window.PetDictionaryLab.refresh();
     // Кульминация: первый сданный шаг — вылупление (яйцо → такт hatch → idle)
     if (wasMode === 'egg' && S.worldMode !== 'egg' && window.PetArt && S.dom.stage) {
       S.eggCracks = 3;
@@ -835,6 +836,7 @@
     loadProgress();
     renderSceneForProgress();
     renderStepPanel();
+    if (window.PetDictionaryLab) window.PetDictionaryLab.refresh();
 
     const introDone = window.VkatStorage ? window.VkatStorage.getSetting('pet_intro_completed', false) : false;
     if (!introDone && completedStepsCount() === 0) {
@@ -998,6 +1000,24 @@
       });
     }
     setupEvents();
+    if (window.PetDictionaryLab) {
+      window.PetDictionaryLab.init({
+        isBorn: () => completedStepsCount() >= 1,
+        onOpen: stopAutoDay,
+        getModel: () => structuredClone(S.petModel),
+        applyModel: (model, message) => {
+          const before = S.petModel;
+          S.petModel = model;
+          renderStats();
+          const expression = window.PetArt.expression(modelToArt(model));
+          const action = model['сытость'] > before['сытость'] ? 'eat'
+            : model['энергия'] > before['энергия'] ? 'sleep'
+            : model['настроение'] > before['настроение'] ? 'play' : expression;
+          pose(action, message);
+          if (['eat', 'sleep', 'play'].includes(action)) schedulePose(action === 'play' ? 1000 : 1450);
+        }
+      });
+    }
   }
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом

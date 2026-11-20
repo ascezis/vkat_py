@@ -948,6 +948,7 @@ def get_grid_json(grid):
               После шага 4 заведутся суточные часы: «+1 час» и «Автодень».</p>
             <div class="intro-visual" data-glyph="petDay"></div>
             <p><b>Клик по питомцу</b> — погладить (чуть-чуть настроения в подарок).</p>
+            <p>После вылупления откроется «Словарь Байта»: три опыта с ключами и значениями и свободная песочница на живом питомце.</p>
             <p>Кнопка <b>«Запустить»</b> — свободная песочница: управляй питомцем кодом прямо из редактора!
               Вызывай <code>feed(pet)</code>, <code>play(pet)</code> или меняй словарь <code>pet</code> руками —
               Байт на сцене тут же применит твои изменения.</p>
@@ -981,6 +982,11 @@ def get_grid_json(grid):
 
       <!-- Правая колонка: задание, глиф, редактор Python -->
       <section class="life-editor-panel" id="pet-editor-panel">
+        <nav class="pet-workspace-tabs" aria-label="Разделы Тамагочи">
+          <button type="button" id="pet-tab-lesson" class="pet-workspace-tab active" aria-selected="true">Задания</button>
+          <button type="button" id="pet-tab-dictionary" class="pet-workspace-tab" aria-selected="false" disabled title="Откроется после вылупления Байта">Словарь Байта</button>
+        </nav>
+        <div id="pet-lesson-view" class="pet-lesson-view">
         <div class="life-task-card">
           <h2 id="pet-task-title">Шаг 1: Искра жизни</h2>
           <div id="pet-glyph-slot" class="life-glyph-slot"></div>
@@ -1015,6 +1021,22 @@ def get_grid_json(grid):
             <textarea id="pet-stdin-input" class="pet-stdin-input" rows="3" spellcheck="false" placeholder="3&#10;7&#10;10"></textarea>
           </div>
         </div>
+        </div>
+        <section id="pet-dictionary-view" class="pet-dictionary-view" hidden aria-label="Лаборатория словаря Байта">
+          <div class="pet-dictionary-head">
+            <div><h2>Словарь Байта</h2><p>Меняй ключи и значения. Байт покажет результат на сцене.</p></div>
+            <span id="pet-dictionary-progress"></span>
+          </div>
+          <div class="pet-dictionary-options" id="pet-dictionary-options" role="group" aria-label="Опыты со словарём"></div>
+          <div class="pet-dictionary-task"><h3 id="pet-dictionary-title"></h3><p id="pet-dictionary-description"></p></div>
+          <label class="pet-dictionary-code-label" for="pet-dictionary-code">Python</label>
+          <textarea id="pet-dictionary-code" class="pet-dictionary-code" spellcheck="false"></textarea>
+          <div class="pet-dictionary-actions">
+            <button type="button" id="pet-dictionary-run" class="life-btn">Проверить опыт</button>
+            <button type="button" id="pet-dictionary-reset" class="life-btn life-btn-ghost" hidden>Вернуть как было</button>
+          </div>
+          <div id="pet-dictionary-feedback" class="pet-dictionary-feedback" role="status" aria-live="polite"></div>
+        </section>
       </section>
     </main>
   </div>
@@ -1639,6 +1661,7 @@ def _match_output_proxy(actual_str, expected_str):
   <script src="app/grid-warp.js"></script>
   <script src="app/life-renderer.js"></script>
   <script src="app/pet-art.js"></script>
+  <script src="app/pet-dictionary-lab.js"></script>
   <script src="app/pet-renderer.js"></script>
 
   <!-- Свободная песочница Python (Playground) -->

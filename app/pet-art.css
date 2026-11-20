@@ -37,7 +37,7 @@
 .pet-shell, .pet-crack, .pet-eye-star, .pet-zzz, .pet-bowl, .pet-sparks, .pet-crumb,
 .pet-chew, .pet-egg .pet-actor { display: none; }
 .pet-bubble { display: flex; align-items: baseline; gap: .55em; border-bottom: 1px solid var(--border); font-size: 14px; }
-.pet-bubble i { width: .5em; height: .9em; background: var(--brand-orange); margin-left: -.35em; align-self: center; animation: pet-cursor 1.3s steps(1,end) infinite; }
+.pet-bubble i { width: .5em; height: .6em; height: 1cap; background: var(--brand-orange); margin-left: -.35em; align-self: baseline; animation: pet-cursor 1.3s steps(1,end) infinite; }
 .pet-stats { display: grid; gap: 12px; padding-block: 20px 16px; }
 .pet-stat { position: relative; display: grid; align-items: center; grid-template-columns: 8em minmax(12px,1fr) 4ch; gap: 14px; font-size: 12px; }
 .pet-stat > span:last-child { text-align: right; font-variant-numeric: tabular-nums; }

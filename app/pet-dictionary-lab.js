@@ -8,6 +8,11 @@
       title: '1. Прочитай значение',
       description: 'Напиши get_stat(pet, key). Верни значение ключа. Если ключа нет, верни 0 через .get().',
       code: 'def get_stat(pet, key):\n    return pet.get(key, ...)\n',
+      hints: [
+        { title: 'Найди ключ', text: 'Метод get ищет ключ в словаре и не вызывает ошибку, если ключа нет.' },
+        { title: 'Значение по умолчанию', text: 'Второй аргумент get — то, что вернётся для отсутствующего ключа.', code: 'pet.get(key, 0)' },
+        { title: 'Решение', code: 'def get_stat(pet, key):\n    return pet.get(key, 0)' }
+      ],
       call: 'get_stat(pet, "настроение")',
       tests: [
         { call: 'get_stat({"настроение": 42}, "настроение")', returns: 42 },
@@ -20,6 +25,11 @@
       title: '2. Измени значение',
       description: 'Напиши boost(pet, key, amount). Прибавь amount к выбранному стату, удержи его в пределах 0–100 и верни новое значение.',
       code: 'def boost(pet, key, amount):\n    pet[key] = ...\n    return pet[key]\n',
+      hints: [
+        { title: 'Выбери стат', text: 'Название стата приходит в key. Используй pet[key], а не фиксированный ключ вроде pet["настроение"].' },
+        { title: 'Границы 0–100', text: 'Сначала прибавь amount, затем ограничь результат снизу и сверху.', code: 'max(0, min(100, pet[key] + amount))' },
+        { title: 'Решение', code: 'def boost(pet, key, amount):\n    pet[key] = max(0, min(100, pet[key] + amount))\n    return pet[key]' }
+      ],
       call: 'boost(pet, "настроение", 10)',
       tests: [
         { call: '(lambda pet: [boost(pet, "настроение", 10), pet["настроение"]])({"настроение": 40})', returns: [50, 50] },
@@ -32,6 +42,11 @@
       title: '3. Добавь ключ',
       description: 'Напиши remember(pet, food). Добавь ключ "любимая_еда" со значением food и верни food.',
       code: 'def remember(pet, food):\n    pet["любимая_еда"] = ...\n    return food\n',
+      hints: [
+        { title: 'Новый ключ', text: 'Чтобы добавить запись в словарь, присвой значение по новому ключу: pet["ключ"] = значение.' },
+        { title: 'Что сохранить', text: 'В food уже лежит название еды. Запиши его в pet["любимая_еда"], затем верни food.' },
+        { title: 'Решение', code: 'def remember(pet, food):\n    pet["любимая_еда"] = food\n    return food' }
+      ],
       call: 'remember(pet, "ягоды")',
       tests: [
         { call: '(lambda pet: [remember(pet, "ягоды"), pet.get("любимая_еда")])({"имя": "Байт"})', returns: ['ягоды', 'ягоды'] },
@@ -42,7 +57,11 @@
   const free = {
     id: 'pet_dict_free', title: 'Свободный опыт',
     description: 'Здесь pet — живой словарь Байта. Меняй его ключи и значения, затем запускай код. Статы должны оставаться числами от 0 до 100.',
-    code: 'pet["настроение"] = min(100, pet["настроение"] + 10)\n'
+    code: 'pet["настроение"] = min(100, pet["настроение"] + 10)\n',
+    hints: [
+      { title: 'Попробуй новый ключ', text: 'К словарю можно добавить воспоминание, не меняя статы.', code: 'pet["любимая_еда"] = "ягоды"' },
+      { title: 'Попробуй восстановить силы', text: 'Для энергии оставь верхнюю границу 100.', code: 'pet["энергия"] = min(100, pet["энергия"] + 15)' }
+    ]
   };
 
   let api;
@@ -51,6 +70,53 @@
   let snapshot = null;
   let busy = false;
   let highlighter = null;
+  const revealedHints = {};
+  let hintsVisible = true;
+
+  function renderHints() {
+    const hints = current.hints || [];
+    const count = revealedHints[current.id] || 0;
+    dom.hintArea.hidden = hints.length === 0;
+    dom.hintList.replaceChildren();
+    for (let i = 0; i < count; i++) {
+      const hint = hints[i];
+      const item = document.createElement('div');
+      item.className = 'pet-dictionary-hint-item';
+      const meta = document.createElement('div');
+      meta.className = 'pet-dictionary-hint-meta';
+      meta.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(hints.length).padStart(2, '0') + '  ' + hint.title;
+      item.append(meta);
+      if (hint.text) {
+        const paragraph = document.createElement('p');
+        paragraph.textContent = hint.text;
+        item.append(paragraph);
+      }
+      if (hint.code) {
+        const code = document.createElement('pre');
+        code.innerHTML = window.PythonHighlighter
+          ? window.PythonHighlighter.highlightCode(hint.code)
+          : hint.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        item.append(code);
+      }
+      dom.hintList.append(item);
+    }
+    dom.hintList.hidden = count === 0 || !hintsVisible;
+    dom.hintToggle.setAttribute('aria-expanded', String(!dom.hintList.hidden));
+    dom.hintToggle.textContent = count === hints.length
+      ? (hintsVisible ? 'Скрыть подсказки ↑' : 'Показать подсказки ↓')
+      : 'Показать подсказку ' + (count + 1) + '/' + hints.length + ' →';
+  }
+
+  function revealHint() {
+    const count = revealedHints[current.id] || 0;
+    if (count < current.hints.length) {
+      revealedHints[current.id] = count + 1;
+      hintsVisible = true;
+    } else {
+      hintsVisible = !hintsVisible;
+    }
+    renderHints();
+  }
 
   function updateEditor() {
     dom.lineNumbers.textContent = Array.from({ length: dom.code.value.split('\n').length }, (_, i) => (i + 1) + '\n').join('');
@@ -82,6 +148,8 @@
     current = task;
     dom.title.textContent = task.title;
     dom.description.textContent = task.description;
+    hintsVisible = true;
+    renderHints();
     dom.code.value = drafts()[task.id] ?? task.code;
     updateEditor();
     dom.run.textContent = task === free ? 'Запустить на Байта' : 'Проверить опыт';
@@ -177,6 +245,8 @@
       lessonTab: d('pet-tab-lesson'), labTab: d('pet-tab-dictionary'),
       options: d('pet-dictionary-options'), progress: d('pet-dictionary-progress'),
       title: d('pet-dictionary-title'), description: d('pet-dictionary-description'),
+      hintArea: d('pet-dictionary-hints'), hintToggle: d('pet-dictionary-hint-toggle'),
+      hintList: d('pet-dictionary-hint-list'),
       code: d('pet-dictionary-code'), lineNumbers: d('pet-dictionary-line-numbers'),
       highlight: d('pet-dictionary-highlight'), autocomplete: d('pet-dictionary-autocomplete'),
       run: d('pet-dictionary-run'),
@@ -193,6 +263,7 @@
     }
     dom.lessonTab.addEventListener('click', () => show(false));
     dom.labTab.addEventListener('click', () => show(true));
+    dom.hintToggle.addEventListener('click', revealHint);
     dom.code.addEventListener('input', () => { saveDraft(); updateEditor(); });
     dom.code.addEventListener('keydown', event => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {

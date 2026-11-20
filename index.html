@@ -1028,7 +1028,16 @@ def get_grid_json(grid):
             <span id="pet-dictionary-progress"></span>
           </div>
           <div class="pet-dictionary-options" id="pet-dictionary-options" role="group" aria-label="Опыты со словарём"></div>
-          <div class="pet-dictionary-task"><h3 id="pet-dictionary-title"></h3><p id="pet-dictionary-description"></p></div>
+          <div class="pet-dictionary-task">
+            <h3 id="pet-dictionary-title"></h3><p id="pet-dictionary-description"></p>
+            <div id="pet-dictionary-hints" class="pet-dictionary-hints">
+              <div class="pet-dictionary-hint-head">
+                <span>НУЖНА ПОМОЩЬ?</span>
+                <button type="button" id="pet-dictionary-hint-toggle" aria-controls="pet-dictionary-hint-list" aria-expanded="false">Показать подсказку 1/3 →</button>
+              </div>
+              <div id="pet-dictionary-hint-list" class="pet-dictionary-hint-list" hidden></div>
+            </div>
+          </div>
           <div class="life-code-wrapper pet-dictionary-editor">
             <div class="life-editor-header"><span>словарь · python 3</span><span>Ctrl + Enter — запуск</span></div>
             <div class="life-editor-container">

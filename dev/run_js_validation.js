@@ -1183,25 +1183,22 @@ async function runStorageValidation() {
         }
         function feed(p) {
           p['сытость'] = Math.min(p['сытость'] + 25, 100);
-          return p;
+          return p['сытость'];
         }
         function play(p) {
-          if (p['энергия'] < 10) return p;
+          if (p['энергия'] < 15) return false;
           p['настроение'] = Math.min(p['настроение'] + 20, 100);
           p['энергия'] = Math.max(p['энергия'] - 15, 0);
-          p['сытость'] = Math.max(p['сытость'] - 10, 0);
-          return p;
+          return true;
         }
         function tick(p, hour) {
           if (hour < 7 || hour >= 23) {
             p['энергия'] = Math.min(p['энергия'] + 15, 100);
+            return 'ночь';
           } else {
             p['сытость'] = Math.max(p['сытость'] - 5, 0);
-            if (p['сытость'] < 30) {
-              p['настроение'] = Math.max(p['настроение'] - 3, 0);
-            }
+            return 'день';
           }
-          return p;
         }
       `, context);
 

@@ -598,6 +598,12 @@
       return;
     }
 
+    if (kind === 'play' && S.petModel && S.petModel['энергия'] < 15) {
+      pose('sad', 'устал, нет сил играть…');
+      schedulePose(1400);
+      return;
+    }
+
     const funcName = kind === 'eat' ? 'feed' : 'play';
     S.isChecking = true;
     try {
@@ -645,7 +651,7 @@
     if (!window.CodeChecker || S.isChecking || completedStepsCount() < 4) return;
     S.isChecking = true;
     try {
-      const result = await window.CodeChecker.runCode(buildActionScript('pet = tick(pet, ' + S.hour + ')'));
+      const result = await window.CodeChecker.runCode(buildActionScript('tick(pet, ' + S.hour + ')'));
       if (!result.error) {
         const state = parseStateJson(result.stdout);
         if (state) {

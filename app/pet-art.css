@@ -51,7 +51,7 @@
   font: 500 13px var(--font-mono); border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--text); min-height: 46px; cursor: pointer;
 }
 .pet-actions button { display: flex; align-items: center; justify-content: center; gap: 7px; line-height: 1; white-space: nowrap; }
-.pet-actions svg { display: block; width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.pet-actions svg { display: block; width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; transform: translateY(-1.5px); }
 .pet-actions button:hover:enabled, .pet-preview button:hover:enabled { border-color: var(--brand-orange); }
 .pet-actions button:focus-visible, .pet-preview :is(select,button):focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 2px; }
 .pet-actions button:disabled, .pet-preview button:disabled { color: var(--text-dim); cursor: default; }

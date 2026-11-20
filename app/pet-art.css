@@ -197,6 +197,8 @@
 }
 
 .pet-workspace-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.pet-card-lab-btn { background: var(--bg-panel); color: var(--text); border: 1px solid var(--border-strong); }
+.pet-card-lab-btn:disabled { opacity: .5; cursor: default; }
 .pet-workspace-tab {
   min-height: 40px; padding: 8px 16px; border: 0; border-bottom: 2px solid transparent;
   background: transparent; color: var(--text-muted); font: 12px var(--font-mono); cursor: pointer;

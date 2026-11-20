@@ -191,5 +191,5 @@
     select(exercises[0]);
     refresh();
   }
-  window.PetDictionaryLab = { init, refresh, exercises };
+  window.PetDictionaryLab = { init, refresh, open: () => show(true), exercises };
 })(window, document);

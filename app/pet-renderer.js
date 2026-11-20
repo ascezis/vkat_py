@@ -859,6 +859,9 @@
 
     const n = completedStepsCount();
     const total = S.module.steps.length;
+    const dictionaryTotal = window.PetDictionaryLab ? window.PetDictionaryLab.exercises.length : 0;
+    const dictionaryDone = window.PetDictionaryLab
+      ? window.PetDictionaryLab.exercises.filter(task => window.VkatApp.state.completedTasks.has(task.id)).length : 0;
     const done = n >= total;
     const btnText = n === 0 ? 'Начать' : (done ? 'Повторить' : 'Продолжить');
     const percent = total > 0 ? Math.round((n / total) * 100) : 0;
@@ -874,16 +877,20 @@
       '</div>' +
       '<div class="stage-card-header">' +
         '<div class="stage-card-title">Тамагочи</div>' +
-        '<div class="stage-card-progress-label">' + (done ? '✓ пройдено' : n + ' из ' + total) + '</div>' +
+        '<div class="stage-card-progress-label">сюжет ' + n + '/' + total + ' · словарь ' + dictionaryDone + '/' + dictionaryTotal + '</div>' +
       '</div>' +
       '<p class="stage-card-desc">' + escapeHtml(S.module.description) + '</p>' +
       '<div class="stage-card-meta">' +
         '<span>1 тема</span>' +
-        '<span>' + total + ' задания</span>' +
+        '<span>' + total + ' сюжетных задания</span>' +
+        '<span>' + dictionaryTotal + ' опыта со словарём</span>' +
       '</div>' +
-      '<div class="stage-card-note">Живой питомец Байт: словарь, функции и суточный цикл без единой матрицы.</div>' +
+      '<div class="stage-card-note">' + (n
+        ? 'Словарь Байта открыт: три задания на ключи и значения и свободная песочница.'
+        : 'Пройди первый сюжетный шаг, чтобы вылупить Байта и открыть словарные задания и песочницу.') + '</div>' +
       '<div class="stage-card-actions">' +
         '<button type="button" class="stage-card-btn" id="btn-pet-open">' + btnText + '</button>' +
+        '<button type="button" class="stage-card-btn pet-card-lab-btn" id="btn-pet-open-dictionary"' + (n ? '' : ' disabled title="Откроется после первого сюжетного задания"') + '>Словарь Байта →</button>' +
         '<span style="font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);">' + percent + '%</span>' +
       '</div>';
 
@@ -893,6 +900,13 @@
         window.VkatApp.showScreen('pet');
       });
     }
+    const dictionaryBtn = document.getElementById('btn-pet-open-dictionary');
+    if (dictionaryBtn) dictionaryBtn.addEventListener('click', () => {
+      window.VkatApp.showScreen('pet');
+      showWorkbenchView();
+      if (window.PetDictionaryLab) window.PetDictionaryLab.open();
+      if (S.dom.editorPanel) S.dom.editorPanel.scrollIntoView({ block: 'start' });
+    });
   }
 
   // ─── Инициализация ───────────────────────────────────────────────────────────

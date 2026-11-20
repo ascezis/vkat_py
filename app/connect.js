@@ -180,13 +180,12 @@
 
   function ensureItem(task) {
     const topic = currentTopic();
-    const st = window.VkatApp && window.VkatApp.state;
     let item = session.items.get(task.id);
     if (!item) {
       item = {
         type: task.type || 'code',
-        topicId: topic ? topic.id : null,
-        topicTitle: topic ? topic.title : null,
+        topicId: task.topicId || (topic ? topic.id : null),
+        topicTitle: task.topicTitle || (topic ? topic.title : null),
         title: task.title || null,
         attempts: 0,
         passed: false,
@@ -202,7 +201,15 @@
   // ─── Пульс ────────────────────────────────────────────────────────────────
 
   function currentLocation() {
-    const screens = { start: 'menu', lesson: 'task', finish: 'summary', sandbox: 'sandbox' };
+    const screens = {
+      start: 'menu',
+      lesson: 'task',
+      finish: 'summary',
+      sandbox: 'sandbox',
+      projects: 'projects',
+      pet: 'pet',
+      life: 'life'
+    };
     const screen = screens[currentScreen] || 'other';
     const location = { screen };
     if (screen === 'task' || screen === 'summary') {
@@ -210,9 +217,58 @@
       const stage = topic && window.VkatApp.state.stages.find(s => s.id === topic.stageId);
       if (stage) location.stageTitle = stage.title;
       if (screen === 'task' && topic) {
+        location.topicId = topic.id;
         location.topicTitle = topic.title;
         const task = window.VkatApp.getCurrentTask();
-        if (task) location.itemTitle = task.title || ('Шаг ' + (window.VkatApp.state.currentTaskIndex + 1));
+        if (task) {
+          location.itemId = task.id;
+          location.itemTitle = task.title || ('Шаг ' + (window.VkatApp.state.currentTaskIndex + 1));
+        }
+      }
+    } else if (screen === 'projects') {
+      location.stageTitle = 'Пет-проекты';
+      location.topicTitle = 'Витрина';
+      location.itemTitle = 'Выбор проекта';
+    } else if (screen === 'pet') {
+      location.stageTitle = 'Пет-проекты';
+      const petState = window.VkatPet && window.VkatPet._state;
+      const dictView = document.getElementById('pet-dictionary-view');
+      const isDictActive = dictView && !dictView.hidden;
+      if (isDictActive && window.PetDictionaryLab) {
+        location.topicId = 'pet_dict';
+        location.topicTitle = 'Словарь Байта';
+        const titleEl = document.getElementById('pet-dictionary-title');
+        location.itemTitle = (titleEl && titleEl.textContent) ? titleEl.textContent : 'Лаборатория словаря';
+      } else if (petState && petState.module && petState.module.steps) {
+        location.topicId = 'pet';
+        location.topicTitle = 'Тамагочи (Байт)';
+        const step = petState.module.steps[petState.currentStepIndex];
+        if (step) {
+          location.itemId = step.id;
+          location.itemTitle = step.title;
+        } else {
+          location.itemTitle = 'Терариум';
+        }
+      } else {
+        location.topicId = 'pet';
+        location.topicTitle = 'Тамагочи (Байт)';
+      }
+    } else if (screen === 'life') {
+      location.stageTitle = 'Пет-проекты';
+      const lifeState = window.VkatLife && window.VkatLife._state;
+      if (lifeState && lifeState.module && lifeState.module.steps) {
+        location.topicId = 'life';
+        location.topicTitle = 'Alife-System';
+        const step = lifeState.module.steps[lifeState.currentStepIndex];
+        if (step) {
+          location.itemId = step.id;
+          location.itemTitle = step.title;
+        } else {
+          location.itemTitle = 'Симуляция';
+        }
+      } else {
+        location.topicId = 'life';
+        location.topicTitle = 'Alife-System';
       }
     }
     return location;
@@ -230,6 +286,7 @@
   }
 
   function heartbeatPayload() {
+    const loc = currentLocation();
     const topic = currentTopic();
     const st = window.VkatApp && window.VkatApp.state;
     const task = window.VkatApp && window.VkatApp.getCurrentTask ? window.VkatApp.getCurrentTask() : null;
@@ -238,11 +295,11 @@
       ts: Date.now(),
       profileId: session.profileId,
       name: session.name,
-      location: currentLocation(),
-      topicId: topic ? topic.id : null,
-      topicTitle: topic ? topic.title : null,
-      itemId: task ? task.id : null,
-      itemTitle: task ? (task.title || null) : null,
+      location: loc,
+      topicId: loc.topicId || (topic ? topic.id : null),
+      topicTitle: loc.topicTitle || (topic ? topic.title : null),
+      itemId: loc.itemId || (task ? task.id : null),
+      itemTitle: loc.itemTitle || (task ? (task.title || null) : null),
       completed: st && st.completedTasks ? st.completedTasks.size : null,
       total: topic && topic.items ? topic.items.length : null,
       lastActivityTs: session.lastActivityTs,

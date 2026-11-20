@@ -155,6 +155,7 @@
     dom.run.textContent = task === free ? 'Запустить на Байта' : 'Проверить опыт';
     message('');
     updateOptions();
+    if (window.VkatConnect) window.VkatConnect.refreshLocation();
   }
   function show(dictionary) {
     if (dictionary && !api.isBorn()) return;
@@ -171,6 +172,7 @@
       select(current);
     }
     dom.panel.scrollTop = 0;
+    if (window.VkatConnect) window.VkatConnect.refreshLocation();
   }
   function refresh() {
     const born = api.isBorn();
@@ -200,6 +202,20 @@
         const result = await window.CodeChecker.checkSolution(source, {
           id: current.id, type: 'code', title: current.title, tests: current.tests, astRequirements: {}
         });
+        if (window.VkatConnect) {
+          window.VkatConnect.trackCheck({
+            id: current.id,
+            title: current.title,
+            type: 'code',
+            topicId: 'pet_dict',
+            topicTitle: 'Словарь Байта',
+            stageTitle: 'Пет-проекты'
+          }, {
+            passed: result.passed,
+            errorText: result.stdout || (result.sub ? result.title + ': ' + result.sub : ''),
+            code: source
+          });
+        }
         if (!result.passed) {
           message(result.sub || result.title || 'Проверь ключи и значения словаря.', true);
           return;
@@ -227,6 +243,16 @@
       if (current !== free) {
         window.VkatApp.state.completedTasks.add(current.id);
         window.VkatApp.saveStorage();
+        if (window.VkatConnect) {
+          window.VkatConnect.trackItemComplete({
+            id: current.id,
+            title: current.title,
+            type: 'code',
+            topicId: 'pet_dict',
+            topicTitle: 'Словарь Байта',
+            stageTitle: 'Пет-проекты'
+          });
+        }
         updateOptions();
       }
       message(current === free ? 'Словарь применён к Байту.' : 'Опыт пройден. Байт отреагировал на код.');

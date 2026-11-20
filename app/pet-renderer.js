@@ -341,6 +341,7 @@
     if (i > n) return;
     S.currentStepIndex = i;
     renderStepPanel();
+    if (window.VkatConnect) window.VkatConnect.refreshLocation();
   }
 
   function escapeHtml(s) {
@@ -442,6 +443,21 @@
       const code = accepted ? accepted + '\n\n' + S.dom.editor.value : S.dom.editor.value;
       const result = await window.CodeChecker.checkSolution(code, buildCheckTask(step));
 
+      if (window.VkatConnect) {
+        window.VkatConnect.trackCheck({
+          id: step.id,
+          title: step.title,
+          type: 'code',
+          topicId: 'pet',
+          topicTitle: 'Тамагочи (Байт)',
+          stageTitle: 'Пет-проекты'
+        }, {
+          passed: result.passed,
+          errorText: result.stdout || (result.sub ? result.title + ': ' + result.sub : ''),
+          code: S.dom.editor.value
+        });
+      }
+
       if (result.passed) {
         onStepPassed(step, code, result);
       } else {
@@ -507,6 +523,17 @@
     const wasMode = S.worldMode;
     appState.completedTasks.add(step.id);
     window.VkatApp.saveStorage();
+
+    if (window.VkatConnect) {
+      window.VkatConnect.trackItemComplete({
+        id: step.id,
+        title: step.title,
+        type: 'code',
+        topicId: 'pet',
+        topicTitle: 'Тамагочи (Байт)',
+        stageTitle: 'Пет-проекты'
+      });
+    }
 
     S.dom.editorStatus.textContent = 'Сдано ✓';
     S.dom.editorStatus.className = 'editor-status ok';
@@ -823,6 +850,7 @@
     if (S.dom.editor) {
       S.dom.editor.focus({ preventScroll: true });
     }
+    if (window.VkatConnect) window.VkatConnect.refreshLocation();
   }
 
   // ─── Вход/выход и карточка на витрине ────────────────────────────────────────
@@ -847,6 +875,7 @@
     } else {
       showWorkbenchView();
     }
+    if (window.VkatConnect) window.VkatConnect.refreshLocation();
   }
 
   function leave() {

@@ -144,6 +144,13 @@
     dom.progress.textContent = exercises.filter(item => window.VkatApp.state.completedTasks.has(item.id)).length + ' / 3 опыта';
   }
   function select(task) {
+    if (typeof task === 'string') {
+      const all = [...exercises, free];
+      const found = all.find(item => item.id === task);
+      if (found) task = found;
+      else return;
+    }
+    if (!task) return;
     if (current && !dom.view.hidden) saveDraft();
     current = task;
     dom.title.textContent = task.title;
@@ -311,5 +318,14 @@
     select(exercises[0]);
     refresh();
   }
-  window.PetDictionaryLab = { init, refresh, open: () => show(true), exercises };
+  window.PetDictionaryLab = {
+    init,
+    refresh,
+    open: () => show(true),
+    close: () => show(false),
+    select,
+    getCurrent: () => current,
+    exercises,
+    free
+  };
 })(window, document);

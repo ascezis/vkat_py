@@ -335,10 +335,10 @@
     });
   }
 
-  function setStep(i) {
+  function setStep(i, force) {
     if (i < 0 || i >= S.module.steps.length) return;
     const n = completedStepsCount();
-    if (i > n) return;
+    if (!force && i > n) return;
     S.currentStepIndex = i;
     renderStepPanel();
     if (window.VkatConnect) window.VkatConnect.refreshLocation();
@@ -1068,5 +1068,5 @@
   }
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
-  window.VkatPet = { init, enter, leave, renderCard, showIntroView, showWorkbenchView, _state: S };
+  window.VkatPet = { init, enter, leave, renderCard, showIntroView, showWorkbenchView, setStep, _state: S };
 })(window, document);

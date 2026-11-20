@@ -1006,11 +1006,11 @@
     });
   }
 
-  function setStep(i) {
+  function setStep(i, force) {
     if (i < 0 || i >= S.module.steps.length) return;
-    // Нельзя перескочить дальше первого несданного шага
+    // Нельзя перескочить дальше первого несданного шага без явного указания (force)
     const n = completedStepsCount();
-    if (i > n) return;
+    if (!force && i > n) return;
     S.currentStepIndex = i;
     renderStepPanel();
     if (window.VkatConnect) window.VkatConnect.refreshLocation();
@@ -2102,5 +2102,5 @@
   }
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
-  window.VkatLife = { init, enter, leave, showIntroView, showWorkbenchView, renderStartCard, _state: S };
+  window.VkatLife = { init, enter, leave, showIntroView, showWorkbenchView, renderStartCard, setStep, _state: S };
 })(window, document);

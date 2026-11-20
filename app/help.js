@@ -163,30 +163,123 @@
     }
 
     const dom = app.dom || {};
+
+    // 1. Обычный урок курса (экран #screen-lesson)
     const lessonActive = dom.screenLesson && dom.screenLesson.classList.contains('active');
-    const task = app.getCurrentTask ? app.getCurrentTask() : null;
-    const topic = app.state.topics ? app.state.topics[app.state.currentTopicIndex] : null;
+    if (lessonActive) {
+      const task = app.getCurrentTask ? app.getCurrentTask() : null;
+      const topic = app.state.topics ? app.state.topics[app.state.currentTopicIndex] : null;
+      const isCodeTask = task && (!task.type || task.type === 'code');
 
-    const isCodeTask = task && (!task.type || task.type === 'code');
-
-    if (!lessonActive || !task || !isCodeTask || !dom.editor) {
-      return {
-        requestId: req.requestId,
-        status: 'unavailable',
-        error: 'no editor'
-      };
+      if (task && isCodeTask && dom.editor) {
+        const currentCode = typeof dom.editor.value === 'string' ? dom.editor.value : '';
+        return {
+          requestId: req.requestId,
+          status: 'completed',
+          draft: {
+            topicId: topic ? topic.id : (req.topicId || ''),
+            topicTitle: topic ? topic.title : '',
+            itemId: task.id || (req.itemId || ''),
+            itemTitle: task.title || '',
+            code: currentCode
+          }
+        };
+      }
     }
 
-    const currentCode = typeof dom.editor.value === 'string' ? dom.editor.value : '';
+    // 2. Пет-проект: Тамагочи (экран #screen-pet)
+    const petActive = dom.screenPet && dom.screenPet.classList.contains('active');
+    if (petActive) {
+      const dictView = document.getElementById('pet-dictionary-view');
+      const isDictActive = dictView && !dictView.hidden;
+
+      if (isDictActive) {
+        const dictEditor = document.getElementById('pet-dictionary-code');
+        if (dictEditor) {
+          const curTask = (window.PetDictionaryLab && typeof window.PetDictionaryLab.getCurrent === 'function')
+            ? window.PetDictionaryLab.getCurrent() : null;
+          const currentCode = typeof dictEditor.value === 'string' ? dictEditor.value : '';
+          return {
+            requestId: req.requestId,
+            status: 'completed',
+            draft: {
+              topicId: 'pet_dict',
+              topicTitle: 'Словарь Байта',
+              itemId: curTask ? curTask.id : 'pet_dict',
+              itemTitle: curTask ? curTask.title : 'Лаборатория словаря',
+              code: currentCode
+            }
+          };
+        }
+      } else {
+        const petEditor = document.getElementById('pet-code-editor');
+        if (petEditor) {
+          const petState = window.VkatPet && window.VkatPet._state;
+          const step = petState && petState.module && petState.module.steps
+            ? petState.module.steps[petState.currentStepIndex] : null;
+          const currentCode = typeof petEditor.value === 'string' ? petEditor.value : '';
+          return {
+            requestId: req.requestId,
+            status: 'completed',
+            draft: {
+              topicId: 'pet',
+              topicTitle: 'Тамагочи (Байт)',
+              itemId: step ? step.id : (req.itemId || 'pet'),
+              itemTitle: step ? step.title : 'Терариум',
+              code: currentCode
+            }
+          };
+        }
+      }
+    }
+
+    // 3. Пет-проект: Жизнь Конвея / Alife-System (экран #screen-life)
+    const lifeActive = dom.screenLife && dom.screenLife.classList.contains('active');
+    if (lifeActive) {
+      const lifeEditor = document.getElementById('life-code-editor');
+      if (lifeEditor) {
+        const lifeState = window.VkatLife && window.VkatLife._state;
+        const step = lifeState && lifeState.module && lifeState.module.steps
+          ? lifeState.module.steps[lifeState.currentStepIndex] : null;
+        const currentCode = typeof lifeEditor.value === 'string' ? lifeEditor.value : '';
+        return {
+          requestId: req.requestId,
+          status: 'completed',
+          draft: {
+            topicId: 'life',
+            topicTitle: 'Alife-System',
+            itemId: step ? step.id : (req.itemId || 'life'),
+            itemTitle: step ? step.title : 'Симуляция',
+            code: currentCode
+          }
+        };
+      }
+    }
+
+    // 4. Песочница (экран #screen-sandbox)
+    const sandboxActive = dom.screenSandbox && dom.screenSandbox.classList.contains('active');
+    if (sandboxActive) {
+      const sandboxEditor = document.getElementById('sandbox-code-editor');
+      if (sandboxEditor) {
+        const currentCode = typeof sandboxEditor.value === 'string' ? sandboxEditor.value : '';
+        return {
+          requestId: req.requestId,
+          status: 'completed',
+          draft: {
+            topicId: 'sandbox',
+            topicTitle: 'Песочница',
+            itemId: 'sandbox_free',
+            itemTitle: 'Свободный код',
+            code: currentCode
+          }
+        };
+      }
+    }
 
     return {
       requestId: req.requestId,
-      status: 'completed',
-      draft: {
-        topicId: topic ? topic.id : (req.topicId || ''),
-        itemId: task.id || (req.itemId || ''),
-        code: currentCode
-      }
+      status: 'unavailable',
+      error: 'no editor'
     };
   }
 
@@ -217,13 +310,181 @@
 
   function handleNavigateRequest(req, sessionToken) {
     const app = window.VkatApp;
-    if (!app || !app.state || !Array.isArray(app.state.topics)) {
+    if (!app || !app.state) {
       enqueueResult({ requestId: req.requestId, status: 'declined' }, sessionToken);
       return;
     }
 
     const targetTopicId = req.topicId;
     const targetItemId = req.itemId;
+
+    function saveActiveCodeDraft() {
+      if (app.dom && app.dom.editor && app.getCurrentTask) {
+        const cur = app.getCurrentTask();
+        const isCode = cur && (!cur.type || cur.type === 'code');
+        if (isCode) {
+          app.state.codeDrafts[cur.id] = app.dom.editor.value;
+        }
+      }
+      if (typeof app.saveStorage === 'function') {
+        app.saveStorage();
+      }
+      if (window.VkatStorage && typeof window.VkatStorage.flushSync === 'function') {
+        window.VkatStorage.flushSync();
+      }
+    }
+
+    // Ветка 1: Навигация в пет-проект Тамагочи
+    if (targetTopicId === 'pet' || targetTopicId === 'pet_dict') {
+      let navLabel = targetTopicId === 'pet_dict' ? 'Словарь Байта' : 'Тамагочи (Байт)';
+      let targetStep = null;
+      if (targetTopicId === 'pet' && window.PET_MODULE && Array.isArray(window.PET_MODULE.steps)) {
+        targetStep = window.PET_MODULE.steps.find(s => s.id === targetItemId);
+        if (targetStep) {
+          navLabel += ' — ' + targetStep.title;
+        }
+      } else if (targetTopicId === 'pet_dict' && window.PetDictionaryLab && Array.isArray(window.PetDictionaryLab.exercises)) {
+        const dictTasks = [...window.PetDictionaryLab.exercises, window.PetDictionaryLab.free];
+        const dictTask = dictTasks.find(t => t && t.id === targetItemId);
+        if (dictTask) {
+          navLabel += ' — ' + dictTask.title;
+        }
+      }
+
+      const msg = req.text
+        ? `${req.text}\nПерейти к: ${navLabel}?`
+        : `Преподаватель предлагает перейти к заданию: ${navLabel}.`;
+
+      const ui = createNotificationCard(req.requestId, 'Предложение перехода', msg, req.expiresAt);
+      if (!ui) {
+        enqueueResult({ requestId: req.requestId, status: 'declined' }, sessionToken);
+        return;
+      }
+
+      const btnDecline = document.createElement('button');
+      btnDecline.type = 'button';
+      btnDecline.textContent = 'Отклонить';
+      btnDecline.style.cssText = 'cursor:pointer;padding:4px 10px;background:transparent;color:#a3a3a3;border:1px solid #454545;border-radius:2px;font-size:12px;';
+      btnDecline.onclick = () => {
+        ui.close();
+        if (sessionToken !== currentSessionToken) return;
+        enqueueResult({ requestId: req.requestId, status: 'declined' }, sessionToken);
+      };
+
+      const btnAccept = document.createElement('button');
+      btnAccept.type = 'button';
+      btnAccept.textContent = 'Перейти';
+      btnAccept.style.cssText = 'cursor:pointer;padding:4px 10px;background:#ececec;color:#0a0a0a;border:none;border-radius:2px;font-size:12px;font-weight:500;';
+      btnAccept.onclick = () => {
+        ui.close();
+        if (sessionToken !== currentSessionToken) return;
+        if (isExpired(req.expiresAt)) {
+          enqueueResult({ requestId: req.requestId, status: 'expired' }, sessionToken);
+          return;
+        }
+
+        saveActiveCodeDraft();
+
+        if (typeof app.showScreen === 'function') {
+          app.showScreen('pet');
+        }
+        if (window.VkatPet && typeof window.VkatPet.showWorkbenchView === 'function') {
+          window.VkatPet.showWorkbenchView();
+        }
+
+        if (targetTopicId === 'pet_dict') {
+          if (window.PetDictionaryLab) {
+            window.PetDictionaryLab.open();
+            if (targetItemId && typeof window.PetDictionaryLab.select === 'function') {
+              window.PetDictionaryLab.select(targetItemId);
+            }
+          }
+        } else if (targetStep && window.PET_MODULE && Array.isArray(window.PET_MODULE.steps) && window.VkatPet && typeof window.VkatPet.setStep === 'function') {
+          const sIdx = window.PET_MODULE.steps.findIndex(s => s.id === targetStep.id);
+          if (sIdx !== -1) {
+            window.VkatPet.setStep(sIdx, true);
+          }
+        }
+
+        enqueueResult({ requestId: req.requestId, status: 'accepted' }, sessionToken);
+      };
+
+      ui.actions.appendChild(btnDecline);
+      ui.actions.appendChild(btnAccept);
+      return;
+    }
+
+    // Ветка 2: Навигация в пет-проект Жизнь Конвея
+    if (targetTopicId === 'life') {
+      let navLabel = 'Alife-System';
+      let targetStep = null;
+      if (window.LIFE_MODULE && Array.isArray(window.LIFE_MODULE.steps)) {
+        targetStep = window.LIFE_MODULE.steps.find(s => s.id === targetItemId);
+        if (targetStep) {
+          navLabel += ' — ' + targetStep.title;
+        }
+      }
+
+      const msg = req.text
+        ? `${req.text}\nПерейти к: ${navLabel}?`
+        : `Преподаватель предлагает перейти к заданию: ${navLabel}.`;
+
+      const ui = createNotificationCard(req.requestId, 'Предложение перехода', msg, req.expiresAt);
+      if (!ui) {
+        enqueueResult({ requestId: req.requestId, status: 'declined' }, sessionToken);
+        return;
+      }
+
+      const btnDecline = document.createElement('button');
+      btnDecline.type = 'button';
+      btnDecline.textContent = 'Отклонить';
+      btnDecline.style.cssText = 'cursor:pointer;padding:4px 10px;background:transparent;color:#a3a3a3;border:1px solid #454545;border-radius:2px;font-size:12px;';
+      btnDecline.onclick = () => {
+        ui.close();
+        if (sessionToken !== currentSessionToken) return;
+        enqueueResult({ requestId: req.requestId, status: 'declined' }, sessionToken);
+      };
+
+      const btnAccept = document.createElement('button');
+      btnAccept.type = 'button';
+      btnAccept.textContent = 'Перейти';
+      btnAccept.style.cssText = 'cursor:pointer;padding:4px 10px;background:#ececec;color:#0a0a0a;border:none;border-radius:2px;font-size:12px;font-weight:500;';
+      btnAccept.onclick = () => {
+        ui.close();
+        if (sessionToken !== currentSessionToken) return;
+        if (isExpired(req.expiresAt)) {
+          enqueueResult({ requestId: req.requestId, status: 'expired' }, sessionToken);
+          return;
+        }
+
+        saveActiveCodeDraft();
+
+        if (typeof app.showScreen === 'function') {
+          app.showScreen('life');
+        }
+        if (window.VkatLife && typeof window.VkatLife.showWorkbenchView === 'function') {
+          window.VkatLife.showWorkbenchView();
+        }
+        if (targetStep && window.LIFE_MODULE && Array.isArray(window.LIFE_MODULE.steps) && window.VkatLife && typeof window.VkatLife.setStep === 'function') {
+          const sIdx = window.LIFE_MODULE.steps.findIndex(s => s.id === targetStep.id);
+          if (sIdx !== -1) {
+            window.VkatLife.setStep(sIdx, true);
+          }
+        }
+
+        enqueueResult({ requestId: req.requestId, status: 'accepted' }, sessionToken);
+      };
+
+      ui.actions.appendChild(btnDecline);
+      ui.actions.appendChild(btnAccept);
+      return;
+    }
+
+    // Ветка 3: Обычная тема курса из app.state.topics
+    if (!Array.isArray(app.state.topics)) {
+      enqueueResult({ requestId: req.requestId, status: 'declined' }, sessionToken);
+      return;
+    }
 
     let topicIdx = -1;
     let taskIdx = -1;
@@ -287,20 +548,7 @@
         return;
       }
 
-      // Сохраняем текущий черновик видимой кодовой задачи перед навигацией
-      if (app.dom && app.dom.editor && app.getCurrentTask) {
-        const cur = app.getCurrentTask();
-        const isCode = cur && (!cur.type || cur.type === 'code');
-        if (isCode) {
-          app.state.codeDrafts[cur.id] = app.dom.editor.value;
-          if (typeof app.saveStorage === 'function') {
-            app.saveStorage();
-          }
-          if (window.VkatStorage && typeof window.VkatStorage.flushSync === 'function') {
-            window.VkatStorage.flushSync();
-          }
-        }
-      }
+      saveActiveCodeDraft();
 
       if (typeof app.selectTask === 'function') {
         app.selectTask(topicIdx, taskIdx);

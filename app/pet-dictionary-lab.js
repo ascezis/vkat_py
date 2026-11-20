@@ -50,6 +50,12 @@
   let current = exercises[0];
   let snapshot = null;
   let busy = false;
+  let highlighter = null;
+
+  function updateEditor() {
+    dom.lineNumbers.textContent = Array.from({ length: dom.code.value.split('\n').length }, (_, i) => (i + 1) + '\n').join('');
+    if (highlighter) highlighter.update();
+  }
 
   function drafts() { return window.VkatApp.state.codeDrafts; }
   function saveDraft() {
@@ -77,6 +83,7 @@
     dom.title.textContent = task.title;
     dom.description.textContent = task.description;
     dom.code.value = drafts()[task.id] ?? task.code;
+    updateEditor();
     dom.run.textContent = task === free ? 'Запустить на Байта' : 'Проверить опыт';
     message('');
     updateOptions();
@@ -170,9 +177,13 @@
       lessonTab: d('pet-tab-lesson'), labTab: d('pet-tab-dictionary'),
       options: d('pet-dictionary-options'), progress: d('pet-dictionary-progress'),
       title: d('pet-dictionary-title'), description: d('pet-dictionary-description'),
-      code: d('pet-dictionary-code'), run: d('pet-dictionary-run'),
+      code: d('pet-dictionary-code'), lineNumbers: d('pet-dictionary-line-numbers'),
+      highlight: d('pet-dictionary-highlight'), autocomplete: d('pet-dictionary-autocomplete'),
+      run: d('pet-dictionary-run'),
       reset: d('pet-dictionary-reset'), feedback: d('pet-dictionary-feedback')
     };
+    if (window.PythonHighlighter) highlighter = new window.PythonHighlighter(dom.code, dom.highlight);
+    if (window.CodeIntelliSense) new window.CodeIntelliSense(dom.code, dom.autocomplete);
     for (const task of [...exercises, free]) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -182,7 +193,19 @@
     }
     dom.lessonTab.addEventListener('click', () => show(false));
     dom.labTab.addEventListener('click', () => show(true));
-    dom.code.addEventListener('input', saveDraft);
+    dom.code.addEventListener('input', () => { saveDraft(); updateEditor(); });
+    dom.code.addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        run();
+        return;
+      }
+      if (event.key !== 'Tab' || dom.autocomplete.style.display === 'block') return;
+      event.preventDefault();
+      const start = dom.code.selectionStart;
+      dom.code.setRangeText('    ', start, dom.code.selectionEnd, 'end');
+      dom.code.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     dom.run.addEventListener('click', run);
     dom.reset.addEventListener('click', () => {
       if (snapshot) api.applyModel(structuredClone(snapshot), 'Словарь восстановлен');

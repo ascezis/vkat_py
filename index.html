@@ -1029,8 +1029,15 @@ def get_grid_json(grid):
           </div>
           <div class="pet-dictionary-options" id="pet-dictionary-options" role="group" aria-label="Опыты со словарём"></div>
           <div class="pet-dictionary-task"><h3 id="pet-dictionary-title"></h3><p id="pet-dictionary-description"></p></div>
-          <label class="pet-dictionary-code-label" for="pet-dictionary-code">Python</label>
-          <textarea id="pet-dictionary-code" class="pet-dictionary-code" spellcheck="false"></textarea>
+          <div class="life-code-wrapper pet-dictionary-editor">
+            <div class="life-editor-header"><span>словарь · python 3</span><span>Ctrl + Enter — запуск</span></div>
+            <div class="life-editor-container">
+              <div id="pet-dictionary-line-numbers" class="life-line-numbers" aria-hidden="true">1</div>
+              <pre id="pet-dictionary-highlight" class="editor-highlight life-editor-highlight" aria-hidden="true"></pre>
+              <textarea id="pet-dictionary-code" class="life-code-area" spellcheck="false" aria-label="Код словарного опыта"></textarea>
+              <div id="pet-dictionary-autocomplete" class="autocomplete-popup"></div>
+            </div>
+          </div>
           <div class="pet-dictionary-actions">
             <button type="button" id="pet-dictionary-run" class="life-btn">Проверить опыт</button>
             <button type="button" id="pet-dictionary-reset" class="life-btn life-btn-ghost" hidden>Вернуть как было</button>

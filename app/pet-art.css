@@ -222,12 +222,14 @@
 .pet-dictionary-options button.active { border-color: var(--brand-orange); color: var(--text); }
 .pet-dictionary-task { border: 1px solid var(--border); background: var(--bg-panel); padding: 20px; }
 .pet-dictionary-task h3 { font-size: 17px; }
-.pet-dictionary-code-label { color: var(--text-muted); font: 12px var(--font-mono); margin-bottom: -10px; }
-.pet-dictionary-code {
-  width: 100%; min-height: 220px; resize: vertical; padding: 16px; border: 1px solid var(--border-strong);
-  background: var(--bg); color: var(--text); font: 13px/1.7 var(--font-mono); tab-size: 4;
+.pet-dictionary-editor { height: clamp(260px, 39vh, 430px); }
+#pet-dictionary-code {
+  position: relative; z-index: 1; flex: 1; width: 100%; height: 100%; padding: 16px;
+  background: transparent; color: transparent; caret-color: var(--text); border: 0;
+  font: 14px/1.75 var(--font-mono); resize: none; outline: none;
+  tab-size: 4; white-space: pre-wrap; word-break: break-word;
 }
-.pet-dictionary-code:focus { outline: 1px solid var(--brand-orange); }
+#pet-dictionary-code::selection { background: var(--border-strong); color: transparent; }
 .pet-dictionary-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .pet-dictionary-feedback { min-height: 24px; color: var(--text-muted); font: 12px/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .pet-dictionary-feedback.error { color: var(--error); }
@@ -235,5 +237,5 @@
   .pet-workspace-tab { padding-inline: 12px; }
   .pet-dictionary-head { flex-wrap: wrap; }
   .pet-dictionary-options { grid-template-columns: 1fr; }
-  .pet-dictionary-code { min-height: 190px; }
+  .pet-dictionary-editor { min-height: 210px; }
 }

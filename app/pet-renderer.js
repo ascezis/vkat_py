@@ -701,7 +701,7 @@
     if (S.dom.btnHour && completedStepsCount() >= 4) S.dom.btnHour.disabled = false;
   }
 
-  // ─── Свободный запуск (Угадайка: input() + строки ввода) ─────────────────────
+  // ─── Свободный запуск (Песочница питомца) ───────────────────────────────────
 
   async function runFree() {
     if (!window.CodeChecker || S.isChecking) return;
@@ -712,7 +712,7 @@
       const scaffold = scaffoldEl ? scaffoldEl.textContent : '';
       const accepted = acceptedCodeBefore(S.module.steps.length);
       const draft = S.dom.editor.value;
-      const prefix = (accepted ? accepted + '\n\n' : '') + 'PET_SECRET = ' + (1 + Math.floor(Math.random() * 10)) + '\n\n';
+      const prefix = (accepted ? accepted + '\n\n' : '');
       // Песочница: код ученика получает ЖИВОЙ словарь питомца; после выполнения
       // финальное состояние печатается и применяется к сцене — правки кода
       // («Запустить») реально меняют Байта. Черновик исполняется РОВНО ОДИН раз —
@@ -742,15 +742,12 @@
           applyExpressionPose();
         }
         fb.className = 'life-feedback-msg ok';
-        const secretHint = (completedStepsCount() >= 3)
-          ? 'Угадайка: Байт загадал число от 1 до 10. PET_SECRET запечатан — угадай циклом!'
-          : 'Свободный запуск: печатай и пробуй. Испытание «Угадайка» откроется после шага 3.';
         const sandboxHint = (born && state)
-          ? ' Сцена обновлена: словарь pet из твоего кода применён к Байту.'
-          : (born ? ' Управляй Байтом кодом: feed(pet) — покормить, play(pet) — поиграть, или меняй словарь pet руками.' : '');
+          ? 'Сцена обновлена: словарь pet из твоего кода применён к Байту.'
+          : (born ? 'Свободный запуск: вызывай feed(pet), play(pet) или меняй словарь pet руками.' : 'Свободный запуск: пробуй любые конструкции Python.');
         fb.innerHTML = '<div class="life-fb-row"><span class="life-fb-mark ok">▶</span>' +
           '<div><div class="life-fb-title">Запуск завершён</div>' +
-          '<div class="life-fb-sub">' + escapeHtml(secretHint + sandboxHint) + '</div></div></div>' +
+          '<div class="life-fb-sub">' + escapeHtml(sandboxHint) + '</div></div></div>' +
           '<pre class="life-fb-console">' + escapeHtml(result.stdout || '(пустой вывод)') + '</pre>';
       }
       showFeedback();

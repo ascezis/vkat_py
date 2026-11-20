@@ -17,6 +17,8 @@
  * все >= 75 → happy-full, иначе idle. Явные действия и яйцо приоритетнее.
  * Уровни полос: < 20 критичный, < 35 низкий, остальные нормальные.
  * PetArt.cracks(stage, 0..3), PetArt.setStats(stage, {food,mood,energy}).
+ * PetArt.watchGaze(stage) подключает взгляд за курсором и возвращает cleanup.
+ * Взгляд работает только при открытых глазах и отключается при reduced-motion.
  * Модуль только отображает переданные значения, не хранит состояние игры.
  */
 (() => {
@@ -34,9 +36,9 @@
     ['play','Играть','M2 7q0-2 3-2h6q3 0 3 2l1 5q0 2-2 1l-3-2H6l-3 2q-2 1-2-1z M4 8h4m-2-2v4m4-2h1'],
     ['sleep','Спать','M12 12A6 6 0 0 1 5 3a6 6 0 1 0 8 9z']
   ];
-  const eye = x => `<g transform="translate(${x} 110)"><g class="pet-blink">
+  const eye = x => `<g transform="translate(${x} 110)"><g class="pet-gaze"><g class="pet-blink">
     <ellipse rx="10" ry="15"/><circle class="pet-light" cx="-2" cy="-6" r="3.4"/>
-    <path class="pet-accent pet-eye-star" d="M2 0l1.5 3L7 4.5 3.5 6 2 9 .5 6-3 4.5.5 3z"/></g></g>`;
+    <path class="pet-accent pet-eye-star" d="M2 0l1.5 3L7 4.5 3.5 6 2 9 .5 6-3 4.5.5 3z"/></g></g></g>`;
   const sprite = `<svg class="pet-sprite" viewBox="0 0 320 200" aria-hidden="true" focusable="false">
     <path class="pet-platform" d="M47 162h239m-227 4h12m5 0h77m68 0h42"/>
     <ellipse class="pet-shadow" cx="158" cy="159" rx="49" ry="3"/>
@@ -100,6 +102,9 @@
       void stage.offsetWidth;
     }
     for (const key of Object.keys(poses)) stage.classList.toggle(poseClass(key), key === name);
+    if (!['idle', 'hungry', 'happy-full'].includes(name)) {
+      for (const eye of stage.querySelectorAll('.pet-gaze')) eye.style.transform = '';
+    }
     stage.querySelector('#pet-status').textContent = poses[name][0];
     typeMessage(stage.querySelector('#pet-message'), message ?? poses[name][1]);
     for (const button of stage.querySelectorAll('[data-pet-action]')) button.disabled = ['egg','hatch'].includes(name);
@@ -123,5 +128,46 @@
     if (mood < 35) return 'sad';
     return Math.min(food, mood, energy) >= 75 ? 'happy-full' : 'idle';
   }
-  window.PetArt = { render, pose, cracks, setStats, expression };
+  function watchGaze(stage) {
+    const sprite = stage.querySelector('.pet-sprite');
+    const eyes = [...stage.querySelectorAll('.pet-gaze')];
+    if (!sprite || eyes.length !== 2) return () => {};
+    let lastMove = -Infinity;
+    let lastTransform = '';
+    const reset = () => {
+      if (!lastTransform) return;
+      for (const eye of eyes) eye.style.transform = '';
+      lastTransform = '';
+    };
+    const onMove = event => {
+      if (event.pointerType === 'touch') return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        reset();
+        return;
+      }
+      if (!['pet-state-idle', 'pet-state-hungry', 'pet-state-happy-full'].some(name => stage.classList.contains(name))) {
+        reset();
+        return;
+      }
+      if (event.timeStamp - lastMove < 32) return;
+      lastMove = event.timeStamp;
+      const rect = sprite.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const centerX = rect.left + rect.width * (158 / 320);
+      const centerY = rect.top + rect.height * (110 / 200);
+      const x = Math.max(-1, Math.min(1, (event.clientX - centerX) / (rect.width * .32)));
+      const y = Math.max(-1, Math.min(1, (event.clientY - centerY) / (rect.height * .4)));
+      const transform = `translate(${(x * 3.2).toFixed(2)}px, ${(y * 2.5).toFixed(2)}px)`;
+      for (const eye of eyes) eye.style.transform = transform;
+      lastTransform = transform;
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('blur', reset);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('blur', reset);
+      reset();
+    };
+  }
+  window.PetArt = { render, pose, cracks, setStats, expression, watchGaze };
 })();

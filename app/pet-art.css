@@ -34,6 +34,7 @@
 .pet-open, .pet-lids, .pet-dots, .pet-smile { transition: opacity .22s ease; }
 .pet-lids, .pet-dots { opacity: 0; }
 .pet-blink, .pet-chew, .pet-zzz text { transform-box: fill-box; transform-origin: center; }
+.pet-gaze { transition: transform .14s ease-out; }
 .pet-shell, .pet-crack, .pet-eye-star, .pet-zzz, .pet-bowl, .pet-sparks, .pet-crumb,
 .pet-chew, .pet-egg .pet-actor { display: none; }
 .pet-bubble { display: flex; align-items: baseline; gap: .55em; border-bottom: 1px solid var(--border); font-size: 14px; }

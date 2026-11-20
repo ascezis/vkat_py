@@ -27,6 +27,7 @@
     poseTimer: 0,            // отложенный возврат позы (hatch/eat/play такт)
     autoTimer: 0,            // автодень (шаг 4)
     autoOn: false,
+    stopGaze: null,
     highlighter: null
   };
 
@@ -829,6 +830,8 @@
   function enter() {
     if (!S.module) return;
     S.active = true;
+    if (S.stopGaze) S.stopGaze();
+    S.stopGaze = window.PetArt && S.dom.stage ? window.PetArt.watchGaze(S.dom.stage) : null;
     S.eggCracks = 0;
     S.hour = 14;
     S.petModel = null;
@@ -848,6 +851,7 @@
 
   function leave() {
     S.active = false;
+    if (S.stopGaze) { S.stopGaze(); S.stopGaze = null; }
     cancelPoseTimer();
     stopAutoDay();
     if (window.VkatStorage) window.VkatStorage.flushSync();

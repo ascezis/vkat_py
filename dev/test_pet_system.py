@@ -114,17 +114,20 @@ WRONG_SOLUTIONS = {
     'pet_step_2': [
         ('нет капа: сытость улетает за 100', 'def feed(pet):\n    pet["сытость"] = pet["сытость"] + 25\n    return pet["сытость"]'),
         ('уменьшает сытость вместо увеличения', 'def feed(pet):\n    pet["сытость"] = max(pet["сытость"] - 25, 0)\n    return pet["сытость"]'),
-        ('возвращает старую сытость', 'def feed(pet):\n    old = pet["сытость"]\n    pet["сытость"] = min(pet["сытость"] + 25, 100)\n    return old')
+        ('возвращает старую сытость', 'def feed(pet):\n    old = pet["сытость"]\n    pet["сытость"] = min(pet["сытость"] + 25, 100)\n    return old'),
+        ('возвращает правильное число без изменения питомца', 'def feed(pet):\n    return min(pet["сытость"] + 25, 100)')
     ],
     'pet_step_3': [
         ('нет отказа при энергии < 15', 'def play(pet):\n    pet["настроение"] = min(pet["настроение"] + 20, 100)\n    pet["энергия"] = max(pet["энергия"] - 15, 0)\n    return True'),
         ('всегда False', 'def play(pet):\n    return False'),
-        ('всегда True', 'def play(pet):\n    return True')
+        ('всегда True', 'def play(pet):\n    return True'),
+        ('возвращает правильный флаг без изменения питомца', 'def play(pet):\n    return pet["энергия"] >= 15')
     ],
     'pet_step_4': [
         ('день и ночь перепутаны', 'def tick(pet, hour):\n    if hour >= 7 and hour < 23:\n        pet["энергия"] = min(pet["энергия"] + 15, 100)\n        return "ночь"\n    else:\n        pet["сытость"] = max(pet["сытость"] - 5, 0)\n        return "день"'),
         ('границы ночи не те (hour <= 7 считается ночью)', 'def tick(pet, hour):\n    if hour <= 7 or hour >= 23:\n        pet["энергия"] = min(pet["энергия"] + 15, 100)\n        return "ночь"\n    else:\n        pet["сытость"] = max(pet["сытость"] - 5, 0)\n        return "день"'),
-        ('возвращает True вместо "день"/"ночь"', 'def tick(pet, hour):\n    return True')
+        ('возвращает True вместо "день"/"ночь"', 'def tick(pet, hour):\n    return True'),
+        ('возвращает период без изменения питомца', 'def tick(pet, hour):\n    return "ночь" if hour >= 23 or hour < 7 else "день"')
     ]
 }
 

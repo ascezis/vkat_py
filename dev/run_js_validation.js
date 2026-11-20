@@ -1209,8 +1209,16 @@ async function runStorageValidation() {
         for (const t of s.tests) {
           petTestCount++;
           try {
-            const actual = vm.runInContext('(' + t.call + ')', context);
-            if (actual !== t.returns) {
+            // Python-only lambda checks the return value and the mutated dictionary.
+            const mutationCall = t.call.match(/^\(lambda pet: \[(\w+)\(pet(?:, (\d+))?\), pet\]\)\((\{.*\})\)$/);
+            const jsCall = mutationCall
+              ? `((pet) => [${mutationCall[1]}(pet${mutationCall[2] ? ', ' + mutationCall[2] : ''}), pet])(${mutationCall[3]})`
+              : '(' + t.call + ')';
+            const actual = vm.runInContext(jsCall, context);
+            const matches = Array.isArray(t.returns)
+              ? JSON.stringify(actual) === JSON.stringify(t.returns)
+              : actual === t.returns;
+            if (!matches) {
               petBehaviorOk = false;
               petBehaviorDetail = s.id + ': ' + t.call + ' → ' + actual + ' (ожидалось ' + t.returns + ')';
             }

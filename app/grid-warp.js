@@ -275,4 +275,6 @@
   window.VkatGridWarp = {
     init: initGridWarp
   };
+
+  window.Vkat.define('gridWarp', window.VkatGridWarp);
 })(typeof window !== 'undefined' ? window : global);

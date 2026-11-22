@@ -1000,4 +1000,6 @@
   }
 
   window.Glyphs = { render, draw, caption };
+
+  window.Vkat.define('glyphs', window.Glyphs);
 })();

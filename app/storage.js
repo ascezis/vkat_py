@@ -885,4 +885,5 @@
     writeHelpCapability
   };
 
+  window.Vkat.define('storage', window.VkatStorage);
 })(typeof window !== 'undefined' ? window : globalThis);

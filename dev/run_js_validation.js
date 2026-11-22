@@ -62,32 +62,31 @@ function loadScript(relPath) {
 }
 
 console.log('=== Загрузка JS скриптов ===');
-loadScript('content/stages.js');
-loadScript('content/start/01-variables.js');
-loadScript('content/start/02-conditions.js');
-loadScript('content/start/03-loops.js');
-loadScript('content/start/04-functions.js');
-loadScript('content/start/05-lists-dicts.js');
-loadScript('content/start/06-strings.js');
-loadScript('content/core/01-functions.js');
-loadScript('content/core/02-dicts.js');
-loadScript('content/core/03-lists.js');
-loadScript('content/core/04-tuples.js');
-loadScript('content/core/05-strings-adv.js');
-loadScript('content/core/06-loops-adv.js');
-loadScript('content/core/07-nested-structures.js');
-loadScript('content/core/08-exceptions.js');
-loadScript('content/core/11-code-style.js');
-loadScript('content/practice/l2-algorithms.js');
-loadScript('content/practice/l2-io-input.js');
-loadScript('content/cheatsheet.js');
-loadScript('app/code-hints.js');
-loadScript('app/version.js');
-loadScript('app/storage.js');
-loadScript('app/errors.js');
-loadScript('app/checkers.js');
-// Телеметрия CONNECT (секция 17 валидации)
-loadScript('app/connect.js');
+// Единый источник истины — content/manifest.js (issue #12): браузер
+// (document.write), selftest.html и этот валидатор грузят одни и те же
+// списки в одном порядке.
+// Минимальные DOM-стабы: часть app-модулей касается DOM при загрузке
+// (renderers.js — #visual/fonts, checker.js — document.currentScript).
+context.document = {
+  currentScript: null,
+  querySelector: () => null,
+  getElementById: () => null,
+  fonts: null,
+  // Событийные подписки документа — на общую шину событий контекста
+  // (нужно connect.js: sessionStart вешает visibilitychange)
+  addEventListener: (type, fn) => context.addEventListener(type, fn),
+  removeEventListener: (type, fn) => context.removeEventListener(type, fn)
+};
+loadScript('app/kernel.js');
+loadScript('content/manifest.js');
+const vkatManifest = context.window.VKAT_MANIFEST;
+if (!vkatManifest || !Array.isArray(vkatManifest.content) || !Array.isArray(vkatManifest.app)) {
+  console.error('  × FAIL: content/manifest.js не определил window.VKAT_MANIFEST { content, app }');
+  process.exit(1);
+}
+vkatManifest.content.forEach(loadScript);
+vkatManifest.app.forEach(loadScript);
+// Selftest-реестр (dev-only): в браузерный манифест не входит
 loadScript('dev/selftest/l1-functions.js');
 loadScript('dev/selftest/l1-dicts.js');
 
@@ -110,6 +109,63 @@ function check(desc, condition) {
     failed++;
   }
 }
+
+console.log('\n=== Валидация манифеста загрузки (issue #12) ===');
+const fsRoot = path.join(__dirname, '..');
+// Манифест обязан покрывать все .js на диске в обе стороны: новая тема,
+// забытая в манифесте, и путь с опечаткой/неверным регистром (Linux!)
+// ловятся здесь, а не молча в браузере у ученика.
+const onDiskContent = [];
+(function walkContent(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkContent(full);
+    else if (entry.name.endsWith('.js') && !entry.name.startsWith('_') &&
+             full !== path.join(fsRoot, 'content', 'manifest.js')) {
+      onDiskContent.push(path.relative(fsRoot, full).split(path.sep).join('/'));
+    }
+  }
+})(path.join(fsRoot, 'content'));
+const manifestContent = vkatManifest.content;
+const manifestApp = vkatManifest.app;
+check('content/**/*.js на диске совпадает с манифестом (взаимно; черновики _*.js исключены)',
+  manifestContent.length === onDiskContent.length && manifestContent.every(f => onDiskContent.includes(f)));
+const onDiskApp = fs.readdirSync(path.join(fsRoot, 'app'), { withFileTypes: true })
+  .filter(e => e.isFile() && e.name.endsWith('.js') && e.name !== 'checker-worker.js')
+  .map(e => 'app/' + e.name).sort();
+check('app/*.js на диске совпадает с манифестом (checker-worker.js — контекст воркера, в манифест не входит)',
+  manifestApp.length === onDiskApp.length && manifestApp.every(f => onDiskApp.includes(f)));
+const manifestDupes = manifestContent.concat(manifestApp).filter((f, i, all) => all.indexOf(f) !== i);
+check('в манифесте нет дублей', manifestDupes.length === 0);
+check('app/kernel.js — первый в манифесте (service locator до всех модулей)', manifestApp[0] === 'app/kernel.js');
+check('app/app.js — последний в манифесте (оркестратор замыкает загрузку)', manifestApp[manifestApp.length - 1] === 'app/app.js');
+
+console.log('\n=== Валидация ядра (kernel.js) ===');
+const Vkat = context.window.Vkat;
+check('kernel.js экспортирует window.Vkat (define/get/has/require/list)',
+  Boolean(Vkat) && typeof Vkat.define === 'function' && typeof Vkat.get === 'function' &&
+  typeof Vkat.has === 'function' && typeof Vkat.require === 'function' && typeof Vkat.list === 'function');
+let probeFailed = false;
+try { Vkat.define('__validation_probe', 1); } catch (e) { probeFailed = true; }
+check('define нового имени регистрирует сервис', !probeFailed);
+try { Vkat.define('__validation_probe', 2); probeFailed = false; } catch (e) { probeFailed = true; }
+check('повторный define того же имени бросает ошибку (дубль модуля не молчится)', probeFailed);
+let missingThrown = false;
+try { Vkat.get('__validation_missing__'); } catch (e) { missingThrown = true; }
+check('get незарегистрированного имени бросает ошибку', missingThrown);
+let reqMissingThrown = false;
+try { Vkat.require('__validation_missing__'); } catch (e) { reqMissingThrown = true; }
+check('require незарегистрированного имени бросает ошибку', reqMissingThrown);
+check('require зарегистрированного имени возвращает сервис', Vkat.require('__validation_probe')[0] === 1);
+const EXPECTED_SERVICES = ['storage', 'errors', 'checker', 'codeHints', 'autocomplete', 'glyphs', 'highlighter',
+  'profiles', 'renderers', 'checkers', 'connect', 'help', 'gridWarp', 'life', 'petArt', 'petDictionaryLab',
+  'pet', 'sandbox', 'app'];
+const missingServices = EXPECTED_SERVICES.filter(s => !Vkat.list().includes(s));
+check('все 19 app-сервисов зарегистрированы в kernel', missingServices.length === 0);
+check('window-алиасы сервисов сохранены (контракт валидатора/харнесса/types.d.ts)',
+  ['VkatStorage', 'FriendlyErrors', 'CodeChecker', 'CodeHints', 'CodeIntelliSense', 'Glyphs', 'PythonHighlighter',
+   'VkatProfiles', 'VkatRenderers', 'VkatCheckers', 'VkatConnect', 'VkatHelp', 'VkatGridWarp', 'VkatLife',
+   'PetArt', 'PetDictionaryLab', 'VkatPet', 'VkatSandbox', 'VkatApp'].every(n => Boolean(context.window[n])));
 
 console.log('\n=== Валидация этапов и тем ===');
 check('COURSE_STAGES объявлен и содержит 3 этапа', Array.isArray(stages) && stages.length === 3);
@@ -987,10 +1043,11 @@ async function runStorageValidation() {
       typesOk = types.includes('interface AstRequirements') &&
                 types.includes('interface TaskItem') &&
                 types.includes('interface TaskTest') &&
-                types.includes('interface ProfileData');
+                types.includes('interface ProfileData') &&
+                types.includes('interface VkatKernelApi');
     } catch (e) {}
     check('jsconfig.json существует и noEmit (zero-build)', jsconfigOk);
-    check('docs/types.d.ts объявляет контракты AstRequirements/TaskItem/TaskTest/ProfileData', typesOk);
+    check('docs/types.d.ts объявляет контракты AstRequirements/TaskItem/TaskTest/ProfileData/VkatKernelApi', typesOk);
   }
 
   // 20.1 Мягкий режим первого задания (onboarding)
@@ -1100,8 +1157,8 @@ async function runStorageValidation() {
   check('Life: index.html содержит холст <canvas id="life-main-canvas">', lifeIndexHtml.includes('id="life-main-canvas"'));
   check('Life: index.html содержит карточку пет-проекта life-start-card', lifeIndexHtml.includes('id="life-start-card"'));
   check('Life: index.html содержит Python-скаффолд <script id="vkat-life-scaffold">', lifeIndexHtml.includes('id="vkat-life-scaffold"'));
-  check('Life: index.html подключает tasks.js и life-renderer.js',
-    lifeIndexHtml.includes('content/projects/life/tasks.js') && lifeIndexHtml.includes('app/life-renderer.js'));
+  check('Life: манифест подключает tasks.js и life-renderer.js',
+    vkatManifest.content.includes('content/projects/life/tasks.js') && vkatManifest.app.includes('app/life-renderer.js'));
   check('Life: скаффолд содержит __STUDENT_CODE__, simulate_step и get_grid_json',
     lifeIndexHtml.includes('__STUDENT_CODE__') && lifeIndexHtml.includes('def simulate_step(grid)') && lifeIndexHtml.includes('def get_grid_json(grid)'));
 
@@ -1241,11 +1298,11 @@ async function runStorageValidation() {
   check('Pet: скаффолд содержит __STUDENT_CODE__ и pet_state_json',
     lifeIndexHtml.includes('def pet_state_json(pet)') &&
     lifeIndexHtml.indexOf('__STUDENT_CODE__', lifeIndexHtml.indexOf('id="vkat-pet-scaffold"')) !== -1);
-  check('Pet: index.html подключает tasks.js, pet-art.css/js и pet-renderer.js',
-    lifeIndexHtml.includes('content/projects/pet/tasks.js') &&
-    lifeIndexHtml.includes('app/pet-art.css') &&
-    lifeIndexHtml.includes('app/pet-art.js') &&
-    lifeIndexHtml.includes('app/pet-renderer.js'));
+  check('Pet: манифест подключает tasks.js, pet-art.js и pet-renderer.js; index.html — pet-art.css (link)',
+    vkatManifest.content.includes('content/projects/pet/tasks.js') &&
+    vkatManifest.app.includes('app/pet-art.js') &&
+    vkatManifest.app.includes('app/pet-renderer.js') &&
+    lifeIndexHtml.includes('app/pet-art.css'));
   check('Pet: в index.html есть редактор терариума и строки ввода (pet-code-editor, pet-stdin-input)',
     lifeIndexHtml.includes('id="pet-code-editor"') && lifeIndexHtml.includes('id="pet-stdin-input"'));
   check('Pet: в app.js есть ветка showScreen(pet) и проводка VkatPet',
@@ -1320,6 +1377,10 @@ async function runBridgeValidation() {
   sandbox.document = { currentScript: null, querySelector: () => null };
   sandbox.Worker = MockWorker;
   vm.createContext(sandbox);
+
+  // kernel.js нужен checker.js: экспорт модуля завершается Vkat.define (issue #12)
+  const kernelSrc = fs.readFileSync(path.join(__dirname, '..', 'app', 'kernel.js'), 'utf8');
+  vm.runInContext(kernelSrc, sandbox, { filename: 'app/kernel.js' });
 
   const checkerSrc = fs.readFileSync(path.join(__dirname, '..', 'app', 'checker.js'), 'utf8');
   vm.runInContext(checkerSrc, sandbox, { filename: 'app/checker.js' });
@@ -1436,14 +1497,7 @@ async function runBridgeValidation() {
   check('Sandbox: модуль не обращается к localStorage/sessionStorage напрямую',
     !sandboxCode.includes('localStorage') && !sandboxCode.includes('sessionStorage'));
 
-  if (fs.existsSync(sandboxPath)) {
-    try {
-      loadScript('app/sandbox.js');
-    } catch (e) {
-      console.error('  Sandbox: app/sandbox.js выбросил исключение при загрузке:', e.message);
-    }
-  }
-
+  // sandbox.js уже загружен манифестом; повторная загрузка = дубль в kernel
   const SB = context.VkatSandbox;
   check('Sandbox: window.VkatSandbox успешно экспортирован', Boolean(SB) && typeof SB === 'object');
   check('Sandbox: методы init, enter, leave, runCode, stopExecution, selectPreset объявлены',
@@ -1458,7 +1512,7 @@ async function runBridgeValidation() {
   const currentHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const currentCss = fs.readFileSync(path.join(__dirname, '..', 'app', 'styles.css'), 'utf8');
   check('Sandbox: index.html содержит контейнер <div id="screen-sandbox">', currentHtml.includes('id="screen-sandbox"'));
-  check('Sandbox: index.html подключает app/sandbox.js', currentHtml.includes('app/sandbox.js'));
+  check('Sandbox: манифест подключает app/sandbox.js', vkatManifest.app.includes('app/sandbox.js'));
   check('Sandbox: styles.css содержит селекторы #screen-sandbox и .sandbox-header',
     currentCss.includes('#screen-sandbox') && currentCss.includes('.sandbox-header'));
 }

@@ -491,4 +491,5 @@
     fuzzyPredictMatch
   };
 
+  window.Vkat.define('checkers', window.VkatCheckers);
 })(window);

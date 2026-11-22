@@ -170,4 +170,6 @@
     };
   }
   window.PetArt = { render, pose, cracks, setStats, expression, watchGaze };
+
+  window.Vkat.define('petArt', window.PetArt);
 })();

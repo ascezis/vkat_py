@@ -508,4 +508,5 @@
     return !!(session && session.base);
   }
 
+  window.Vkat.define('connect', window.VkatConnect);
 })(typeof window !== 'undefined' ? window : globalThis);

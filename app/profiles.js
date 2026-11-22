@@ -414,4 +414,5 @@
     setupProfileEvents
   };
 
+  window.Vkat.define('profiles', window.VkatProfiles);
 })(window);

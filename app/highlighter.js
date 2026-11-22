@@ -141,4 +141,5 @@
   window.PythonHighlighter = PythonHighlighter;
   window.PythonHighlighter.highlightCode = highlightPython;
 
+  window.Vkat.define('highlighter', window.PythonHighlighter);
 })(window);

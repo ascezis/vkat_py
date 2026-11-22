@@ -901,4 +901,5 @@ exec(compile(${JSON.stringify(task.testCode)}, '<testcode>', 'exec'), _trusted)
     fuzzyMatchOutputJS
   };
 
+  window.Vkat.define('checker', window.CodeChecker);
 })(window);

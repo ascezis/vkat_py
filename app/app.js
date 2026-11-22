@@ -9,16 +9,10 @@
  *   5. Инициализирует редактор кода и глобальные события.
  *   6. Запускает приложение (startApp).
  *
- * Модули, подключаемые до этого файла (в index.html):
- *   app/storage.js     → window.VkatStorage
- *   app/checker.js     → window.CodeChecker
- *   app/errors.js      → window.FriendlyErrors
- *   app/highlighter.js → window.PythonHighlighter
- *   app/autocomplete.js → window.CodeIntelliSense
- *   app/glyphs.js      → window.Glyphs
- *   app/profiles.js    → window.VkatProfiles
- *   app/renderers.js   → window.VkatRenderers
- *   app/checkers.js    → window.VkatCheckers
+ * Порядок и список подключаемых скриптов — content/manifest.js (issue #12):
+ * этот файл последний, оркестратор замыкает загрузку. Модули регистрируются
+ * в микро-контейнере window.Vkat (app/kernel.js) и дублируют себя в window.*
+ * (алиасы — контракт валидатора, dev-харнесса и docs/types.d.ts).
  *
  * Экспортирует window.VkatApp — объект с публичным API для дочерних модулей.
  */
@@ -1029,4 +1023,5 @@
 
   window.addEventListener('DOMContentLoaded', startApp);
 
+  window.Vkat.define('app', window.VkatApp);
 })(window);

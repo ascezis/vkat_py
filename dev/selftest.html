@@ -135,6 +135,10 @@
   <script src="../assets/pyodide/pyodide.asm.js"></script>
   <script src="../assets/pyodide/pyodide.js"></script>
 
+  <!-- kernel.js грузится раньше модулей: их экспорт завершается Vkat.define
+       (issue #12). Это осознанное ПОДМНОЖЕСТВО манифеста — страница
+       самопроверки не грузит app.js/UI-модули и темы practice. -->
+  <script src="../app/kernel.js"></script>
   <script src="../app/errors.js"></script>
   <script src="../app/checker.js"></script>
 

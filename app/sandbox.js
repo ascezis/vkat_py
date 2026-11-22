@@ -762,4 +762,6 @@ for t in tests:
     _presets: PRESETS,
     _state: S
   };
+
+  window.Vkat.define('sandbox', window.VkatSandbox);
 })(window);

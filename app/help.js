@@ -772,4 +772,5 @@
     _getHandledRequestIds: () => handledRequestIds
   };
 
+  window.Vkat.define('help', window.VkatHelp);
 })(typeof window !== 'undefined' ? window : globalThis);

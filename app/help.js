@@ -194,7 +194,7 @@
       const isDictActive = dictView && !dictView.hidden;
 
       if (isDictActive) {
-        const dictEditor = document.getElementById('pet-dictionary-code');
+        const dictEditor = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('pet-dictionary-code'));
         if (dictEditor) {
           const curTask = (window.PetDictionaryLab && typeof window.PetDictionaryLab.getCurrent === 'function')
             ? window.PetDictionaryLab.getCurrent() : null;
@@ -212,7 +212,7 @@
           };
         }
       } else {
-        const petEditor = document.getElementById('pet-code-editor');
+        const petEditor = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('pet-code-editor'));
         if (petEditor) {
           const petState = window.VkatPet && window.VkatPet._state;
           const step = petState && petState.module && petState.module.steps
@@ -236,7 +236,7 @@
     // 3. Пет-проект: Жизнь Конвея / Alife-System (экран #screen-life)
     const lifeActive = dom.screenLife && dom.screenLife.classList.contains('active');
     if (lifeActive) {
-      const lifeEditor = document.getElementById('life-code-editor');
+      const lifeEditor = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('life-code-editor'));
       if (lifeEditor) {
         const lifeState = window.VkatLife && window.VkatLife._state;
         const step = lifeState && lifeState.module && lifeState.module.steps
@@ -259,7 +259,7 @@
     // 4. Песочница (экран #screen-sandbox)
     const sandboxActive = dom.screenSandbox && dom.screenSandbox.classList.contains('active');
     if (sandboxActive) {
-      const sandboxEditor = document.getElementById('sandbox-code-editor');
+      const sandboxEditor = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('sandbox-code-editor'));
       if (sandboxEditor) {
         const currentCode = typeof sandboxEditor.value === 'string' ? sandboxEditor.value : '';
         return {

@@ -356,6 +356,8 @@ interface Window {
   VkatPet?: Record<string, any>;
   /** Арт-компонент питомца (app/pet-art.js): render/pose/cracks/setStats/expression. */
   PetArt?: Record<string, any>;
+  /** Лаборатория словаря Байта (app/pet-dictionary-lab.js). */
+  PetDictionaryLab?: Record<string, any>;
   /** Модуль пет-проекта «Тамагочи» (content/projects/pet/tasks.js). */
   PET_MODULE?: LifeModule;
 

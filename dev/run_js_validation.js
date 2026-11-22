@@ -171,7 +171,7 @@ console.log('\n=== Валидация этапов и тем ===');
 check('COURSE_STAGES объявлен и содержит 3 этапа', Array.isArray(stages) && stages.length === 3);
 check('Этап start содержит 6 тем', stages[0].id === 'start' && stages[0].topics.length === 6);
 check('Этап core содержит l1_functions и l1_dicts', stages[1].id === 'core' && stages[1].topics.includes('l1_functions') && stages[1].topics.includes('l1_dicts'));
-check('Этап practice содержит l2_algorithms', stages[2].id === 'practice' && stages[2].topics.includes('l2_algorithms'));
+check('Этап practice содержит l2_algorithms и l2_debug_lab', stages[2].id === 'practice' && stages[2].topics.includes('l2_algorithms') && stages[2].topics.includes('l2_debug_lab'));
 
 const topicMap = new Map(topics.map(t => [t.id, t]));
 stages.forEach(st => {
@@ -501,6 +501,37 @@ check('[l2_io_input] Обязательных проверяемых элеме�
 check('[l2_io_input] Необязательных (★) элементов 1', optCountIo === 1);
 check('[l2_io_input] Элементов теории 2', theoryCountIo === 2);
 
+console.log('\n=== Валидация элементов темы l2_debug_lab (Практикум) ===');
+const l2dbg = topicMap.get('l2_debug_lab');
+check('Тема l2_debug_lab содержит items[]', l2dbg && Array.isArray(l2dbg.items));
+check('Тема l2_debug_lab содержит 21 элемент', l2dbg && l2dbg.items.length === 21);
+
+const expectedDbgOrder = [
+  'l2_dbg_t1', 'l2_dbg_q1', 'l2_dbg_p1', 'l2_dbg_p2', 'l2_dbg_c1',
+  'l2_dbg_c2', 'l2_dbg_q2', 'l2_dbg_p3', 'l2_dbg_f1', 'l2_dbg_f2',
+  'l2_dbg_p4', 'l2_dbg_f3', 'l2_dbg_f4', 'l2_dbg_f5', 'l2_dbg_f6',
+  'l2_dbg_f7', 'l2_dbg_f8', 'l2_dbg_t2', 'l2_dbg_c9', 'l2_dbg_c10',
+  'l2_dbg_t3'
+];
+expectedDbgOrder.forEach((id, idx) => {
+  check(`[l2_debug_lab] Элемент #${idx + 1} равен ${id}`, l2dbg && l2dbg.items[idx] && l2dbg.items[idx].id === id);
+});
+
+let reqCountDbg = 0, optCountDbg = 0, theoryCountDbg = 0, fixCountDbg = 0;
+if (l2dbg) {
+  l2dbg.items.forEach(it => {
+    const type = it.type || 'code';
+    if (type === 'theory') theoryCountDbg++;
+    else if (it.optional || it.tier === 'star') optCountDbg++;
+    else reqCountDbg++;
+    if (it.kind === 'fix') fixCountDbg++;
+  });
+}
+check('[l2_debug_lab] Обязательных проверяемых элементов 16', reqCountDbg === 16);
+check('[l2_debug_lab] Необязательных (★) элементов 2', optCountDbg === 2);
+check('[l2_debug_lab] Элементов теории 3', theoryCountDbg === 3);
+check('[l2_debug_lab] Заданий-починок (kind: fix) 8', fixCountDbg === 8);
+
 console.log('\n=== Валидация уникальности ID во всём курсе ===');
 const allIds = new Set();
 let hasDuplicates = false;
@@ -514,7 +545,7 @@ topics.forEach(t => {
     allIds.add(it.id);
   });
 });
-check(`Все ID элементов курса уникальны (${allIds.size} элементов)`, !hasDuplicates && allIds.size >= 65);
+check(`Все ID элементов курса уникальны (${allIds.size} элементов)`, !hasDuplicates && allIds.size >= 86);
 
 
 console.log('\n=== Валидация дружелюбных ошибок (FriendlyErrors) ===');

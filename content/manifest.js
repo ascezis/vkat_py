@@ -43,6 +43,7 @@ window.VKAT_MANIFEST = {
     // Раздел 3 «Практикум» (practice)
     'content/practice/l2-algorithms.js',
     'content/practice/l2-io-input.js',
+    'content/practice/l2-debug-lab.js',
     // База конструкций и подсказки по коду в теории
     'content/cheatsheet.js',
     // Витрина пет-проектов (вне COURSE_TOPICS/COURSE_STAGES)

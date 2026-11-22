@@ -959,6 +959,120 @@ tasks_data = {
             ('не перехватывает EOFError', 'total = 0\nwhile True:\n    total += int(input())\nprint(total)'),
             ('склеивает строки', 'total = ""\nwhile True:\n    try:\n        total += input()\n    except EOFError:\n        break\nprint(total)')
         ]
+    },
+    'l2_dbg_c1': {
+        "astRequirements": {},
+        "tests": [{'call': "safe_get({'lang': 'ru'}, 'lang', 'en')", 'returns': 'ru'}, {'call': "safe_get({}, 'theme', 'dark')", 'returns': 'dark'}, {'call': "safe_get({'retry': 5}, 'timeout', 30)", 'returns': 30, 'hidden': True}, {'call': "safe_get({'flag': 0}, 'flag', 1)", 'returns': 0, 'hidden': True}],
+        "ref": "def safe_get(settings, key, default):\n    if key in settings:\n        return settings[key]\n    return default\n\nprint(safe_get({'lang': 'ru'}, 'lang', 'en'))\nprint(safe_get({}, 'theme', 'dark'))",
+        "wrong": [
+            ('проверка через правдивость значения (теряет 0)', "def safe_get(settings, key, default):\n    if settings.get(key):\n        return settings[key]\n    return default\n\nprint(safe_get({'flag': 0}, 'flag', 1))"),
+            ('чтение вслепую без защиты', "def safe_get(settings, key, default):\n    return settings[key]\n\nprint(safe_get({}, 'theme', 'dark'))")
+        ]
+    },
+    'l2_dbg_c2': {
+        "astRequirements": {},
+        "tests": [{'call': 'divide(9, 3)', 'returns': 3}, {'call': 'divide(7, 2)', 'returns': 3.5}, {'call': 'divide(5, 0)', 'returns': None, 'hidden': True}],
+        "ref": 'def divide(a, b):\n    if b == 0:\n        return None\n    return a / b\n\nprint(divide(9, 3))\nprint(divide(5, 0))',
+        "wrong": [
+            ('наивное деление без защиты', 'def divide(a, b):\n    return a / b\n\nprint(divide(5, 0))'),
+            ('возвращает 0 вместо None', 'def divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return 0\n\nprint(divide(5, 0))')
+        ]
+    },
+    'l2_dbg_f1': {
+        "astRequirements": {},
+        "tests": [{'call': "scan(['INFO', 'WARN', 'FATAL'], 'WARN')", 'returns': 1}, {'call': "scan(['INFO', 'INFO'], 'FATAL')", 'returns': -1}, {'call': "scan([], 'WARN')", 'returns': -1, 'hidden': True}, {'call': "scan(['WARN'], 'WARN')", 'returns': 0, 'hidden': True}],
+        "ref": "def scan(rows, target):\n    i = 0\n    found = -1\n    while i < len(rows):\n        if rows[i] == target:\n            found = i\n            break\n        i += 1\n    return found\n\nprint(scan(['INFO', 'WARN', 'FATAL'], 'WARN'))",
+        "wrong": [
+            ('код не изменён (IndexError)', "def scan(rows, target):\n    i = 0\n    found = -1\n    while i <= len(rows):\n        if rows[i] == target:\n            found = i\n            break\n        i += 1\n    return found\n\nprint(scan(['INFO'], 'WARN'))"),
+            ('обход начинается с 1 (теряет первый элемент)', "def scan(rows, target):\n    i = 1\n    found = -1\n    while i < len(rows):\n        if rows[i] == target:\n            found = i\n            break\n        i += 1\n    return found\n\nprint(scan(['WARN'], 'WARN'))")
+        ]
+    },
+    'l2_dbg_f2': {
+        "astRequirements": {},
+        "tests": [{'call': "endpoint('auth')", 'returns': '10.0.0.1'}, {'call': "endpoint('notify')", 'returns': '10.0.0.3'}, {'call': "endpoint('billing')", 'returns': '10.0.0.2', 'hidden': True}],
+        "ref": "def endpoint(cfg):\n    services = {\n        'auth': '10.0.0.1',\n        'billing': '10.0.0.2',\n        'notify': '10.0.0.3'\n    }\n    return services[cfg]\n\nprint(endpoint('notify'))",
+        "wrong": [
+            ('код не изменён (KeyError)', "def endpoint(cfg):\n    services = {\n        'auth': '10.0.0.1',\n        'billing': '10.0.0.2',\n        'notyfy': '10.0.0.3'\n    }\n    return services[cfg]\n\nprint(endpoint('notify'))"),
+            ('заглушил KeyError через .get с неверной заглушкой', "def endpoint(cfg):\n    services = {\n        'auth': '10.0.0.1',\n        'billing': '10.0.0.2',\n        'notyfy': '10.0.0.3'\n    }\n    return services.get(cfg, '10.0.0.9')\n\nprint(endpoint('notify'))")
+        ]
+    },
+    'l2_dbg_f3': {
+        "astRequirements": {},
+        "stdin": "120\n30",
+        "tests": [
+            {'stdin': "120\n30", 'stdout': "150"},
+            {'stdin': "7\n8", 'stdout': "15", 'hidden': True}
+        ],
+        "ref": 'first = int(input())\nsecond = int(input())\ntotal = first + second\nprint(total)',
+        "wrong": [
+            ('код не изменён (склейка строк)', 'first = input()\nsecond = input()\ntotal = first + second\nprint(total)'),
+            ('int после склейки', 'first = input()\nsecond = input()\ntotal = int(first + second)\nprint(total)')
+        ]
+    },
+    'l2_dbg_f4': {
+        "astRequirements": {},
+        "tests": [{'call': 'bonus(92)', 'returns': 100}, {'call': 'bonus(70)', 'returns': 50}, {'call': 'bonus(30)', 'returns': 10}, {'call': 'bonus(0)', 'returns': 10, 'hidden': True}],
+        "ref": 'def bonus(score):\n    if score >= 85:\n        return 100\n    elif score >= 60:\n        return 50\n    else:\n        points = 10\n        return points\n\nprint(bonus(30))\nprint(bonus(92))',
+        "wrong": [
+            ('код не изменён (None в нижней ветке)', 'def bonus(score):\n    if score >= 85:\n        return 100\n    elif score >= 60:\n        return 50\n    else:\n        points = 10\n\nprint(bonus(30))'),
+            ('возвращает 0 вместо 10', 'def bonus(score):\n    if score >= 85:\n        return 100\n    elif score >= 60:\n        return 50\n    else:\n        return 0\n\nprint(bonus(30))')
+        ]
+    },
+    'l2_dbg_f5': {
+        "astRequirements": {},
+        "tests": [{'call': "clean(['INFO a', 'DEBUG b', 'INFO c', 'DEBUG d'])", 'returns': ['INFO a', 'INFO c']}, {'call': "clean(['DEBUG x', 'DEBUG y', 'INFO z'])", 'returns': ['INFO z'], 'hidden': True}, {'call': "clean(['INFO 1', 'INFO 2'])", 'returns': ['INFO 1', 'INFO 2'], 'hidden': True}, {'call': "clean([])", 'returns': [], 'hidden': True}],
+        "ref": 'def clean(rows):\n    result = []\n    for row in rows:\n        if not row.startswith("DEBUG"):\n            result.append(row)\n    return result\n\nprint(clean([\'DEBUG x\', \'DEBUG y\', \'INFO z\']))\nprint(clean([\'INFO a\', \'DEBUG b\', \'INFO c\', \'DEBUG d\']))',
+        "wrong": [
+            ('код не изменён (пропуск соседних элементов)', 'def clean(rows):\n    for row in rows:\n        if row.startswith("DEBUG"):\n            rows.remove(row)\n    return rows\n\nprint(clean([\'DEBUG x\', \'DEBUG y\', \'INFO z\']))'),
+            ('инвертированное условие (оставил DEBUG)', 'def clean(rows):\n    result = []\n    for row in rows:\n        if row.startswith("DEBUG"):\n            result.append(row)\n    return result\n\nprint(clean([\'DEBUG x\', \'INFO z\']))')
+        ]
+    },
+    'l2_dbg_f6': {
+        "astRequirements": {},
+        "tests": [{'call': 'signature("Иван Петров", "инженер")', 'returns': 'Иван Петров — инженер'}, {'call': 'signature("Анна Смирнова", "доктор")', 'returns': 'Анна Смирнова — доктор'}, {'call': 'signature("Бай", "термостат")', 'returns': 'Бай — термостат', 'hidden': True}],
+        "ref": 'def signature(name, role):\n    return name + " — " + role\n\nprint(signature("Иван Петров", "инженер"))',
+        "wrong": [
+            ('код не изменён (перевёрнутая подпись)', 'def signature(name, role):\n    return role + " — " + name\n\nprint(signature("Иван Петров", "инженер"))'),
+            ('потерял тире в шаблоне', 'def signature(name, role):\n    return name + " " + role\n\nprint(signature("Иван Петров", "инженер"))')
+        ]
+    },
+    'l2_dbg_f7': {
+        "astRequirements": {},
+        "tests": [{'call': 'max_window([1, 2, 3, 4], 2)', 'returns': 7}, {'call': 'max_window([5, 1, 1, 5], 2)', 'returns': 6}, {'call': 'max_window([9, 9, 9], 3)', 'returns': 27, 'hidden': True}, {'call': 'max_window([-5, -1, -3], 2)', 'returns': -4, 'hidden': True}],
+        "ref": 'def max_window(nums, k):\n    best = sum(nums[:k])\n    for i in range(len(nums) - k + 1):\n        window = nums[i:i + k]\n        best = max(best, sum(window))\n    return best\n\nprint(max_window([1, 2, 3, 4], 2))',
+        "wrong": [
+            ('код не изменён (последнее окно теряется)', 'def max_window(nums, k):\n    best = sum(nums[:k])\n    for i in range(len(nums) - k):\n        window = nums[i:i + k]\n        best = max(best, sum(window))\n    return best\n\nprint(max_window([1, 2, 3, 4], 2))'),
+            ('best = 0 вместо первого окна (ломается на отрицательных)', 'def max_window(nums, k):\n    best = 0\n    for i in range(len(nums) - k + 1):\n        window = nums[i:i + k]\n        best = max(best, sum(window))\n    return best\n\nprint(max_window([1, -2, 3], 2))')
+        ]
+    },
+    'l2_dbg_f8': {
+        "astRequirements": {"forbid_calls": ["min"], "forbid_methods": ["sort", "sorted"]},
+        "tests": [{'call': 'coldest([-15, -3, -8])', 'returns': -15}, {'call': 'coldest([4, 2, 7])', 'returns': 2}, {'call': 'coldest([-1])', 'returns': -1, 'hidden': True}, {'call': 'coldest([3, 3, 3])', 'returns': 3, 'hidden': True}],
+        "ref": 'def coldest(temps):\n    minimum = temps[0]\n    for t in temps:\n        if t < minimum:\n            minimum = t\n    return minimum\n\nprint(coldest([-15, -3, -8]))\nprint(coldest([4, 2, 7]))',
+        "wrong": [
+            ('код не изменён (нуль не пробивается)', 'def coldest(temps):\n    minimum = 0\n    for t in temps:\n        if t < minimum:\n            minimum = t\n    return minimum\n\nprint(coldest([-15, -3, -8]))'),
+            ('инвертированное сравнение (вернул максимум)', 'def coldest(temps):\n    minimum = temps[0]\n    for t in temps:\n        if t > minimum:\n            minimum = t\n    return minimum\n\nprint(coldest([4, 2, 7]))'),
+            ('подмена цикла встроенным min() (запрещено заданием)', 'def coldest(temps):\n    return min(temps)\n\nprint(coldest([-15, -3, -8]))')
+        ]
+    },
+    'l2_dbg_c9': {
+        "astRequirements": {},
+        "tests": [{'call': 'avg_passing([90, 40, 70])', 'returns': 80}, {'call': 'avg_passing([50, 40])', 'returns': 0}, {'call': 'avg_passing([60])', 'returns': 60, 'hidden': True}, {'call': 'avg_passing([])', 'returns': 0, 'hidden': True}],
+        "ref": 'def avg_passing(scores):\n    passing = []\n    for s in scores:\n        if s >= 60:\n            passing.append(s)\n    if not passing:\n        return 0\n    return sum(passing) / len(passing)\n\nprint(avg_passing([90, 40, 70]))\nprint(avg_passing([50, 40]))\nprint(avg_passing([]))',
+        "wrong": [
+            ('код не изменён (NameError)', 'def avg_passing(scores):\n    passing = []\n    for s in scores:\n        if s >= 60:\n            passing.append(s)\n    total = total + sum(passing)\n    return total / len(passing)\n\nprint(avg_passing([90, 40, 70]))'),
+            ('чинит только NameError (ZeroDivisionError остаётся)', 'def avg_passing(scores):\n    passing = []\n    for s in scores:\n        if s >= 60:\n            passing.append(s)\n    total = sum(passing)\n    return total / len(passing)\n\nprint(avg_passing([50, 40]))'),
+            ('пустой список возвращает None', 'def avg_passing(scores):\n    passing = []\n    for s in scores:\n        if s >= 60:\n            passing.append(s)\n    if not passing:\n        return None\n    return sum(passing) / len(passing)\n\nprint(avg_passing([]))')
+        ]
+    },
+    'l2_dbg_c10': {
+        "astRequirements": {},
+        "tests": [{'call': 'merge_sorted([1, 3, 5], [2, 4, 6])', 'returns': [1, 2, 3, 4, 5, 6]}, {'call': 'merge_sorted([1, 10, 11], [2])', 'returns': [1, 2, 10, 11]}, {'call': 'merge_sorted([], [1, 2])', 'returns': [1, 2], 'hidden': True}, {'call': 'merge_sorted([7], [3])', 'returns': [3, 7], 'hidden': True}],
+        "ref": 'def merge_sorted(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    result.extend(a[i:])\n    result.extend(b[j:])\n    return result\n\nprint(merge_sorted([1, 3, 5], [2, 4, 6]))\nprint(merge_sorted([1, 10, 11], [2]))',
+        "wrong": [
+            ('код не изменён (хвост потерян)', 'def merge_sorted(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    return result\n\nprint(merge_sorted([1, 10, 11], [2]))'),
+            ('дописывает обработанные элементы вместо остатков', 'def merge_sorted(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    result.extend(a[:i])\n    result.extend(b[:j])\n    return result\n\nprint(merge_sorted([1, 10, 11], [2]))')
+        ]
     }
 }
 
@@ -1025,7 +1139,11 @@ predict_tests = [
     ('l2_alg_p3', 'result = []\nfor i in range(3):\n    row = []\n    for j in range(i + 1):\n        row.append(j)\n    result.append(row)\nprint(result)', '[[0], [0, 1], [0, 1, 2]]'),
     ('l2_alg_p4', 'def merge_sorted(a, b):\n    result = []\n    i = 0\n    j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            j += 1\n    while i < len(a):\n        result.append(a[i])\n        i += 1\n    while j < len(b):\n        result.append(b[j])\n        j += 1\n    return result\n\nprint(merge_sorted([1, 4], [2, 3, 5]))', '[1, 2, 3, 4, 5]'),
     ('l2_io_p1', 'name = input()\nage = int(input())\nprint(f"{name}:{age + 1}")', 'Анна:20', 'Анна\n19'),
-    ('l2_io_p2', 'words = input().split()\nprint(len(words), words[0].upper())', '3 ALPHA', 'alpha beta gamma')
+    ('l2_io_p2', 'words = input().split()\nprint(len(words), words[0].upper())', '3 ALPHA', 'alpha beta gamma'),
+    ('l2_dbg_p1', 'total = 100\n\ndef checkout(price):\n    total = price * 2\n    return total\n\nprint(checkout(30))\nprint(total)', '60\n100'),
+    ('l2_dbg_p2', 'def warmest(nights):\n    highest = 0\n    for t in nights:\n        if t > highest:\n            highest = t\n    return highest\n\nprint(warmest([-15, -3, -8]))', '0'),
+    ("l2_dbg_p3", "row = 'sensor,temp,humidity'\nparts = row.split(',')\nprint(parts[1:-1])", "['temp']"),
+    ('l2_dbg_p4', "def report(name, errors):\n    return name + ' завершился с ' + str(errors) + ' ошибками'\n\nprint(report('деплой', 3))", 'деплой завершился с 3 ошибками')
 ]
 
 for item in predict_tests:

@@ -585,9 +585,14 @@
     open
   };
 
-  // Автоматическая регистрация при загрузке, если база уже доступна
-  if (typeof window !== 'undefined' && window.CHEATSHEET_SECTIONS) {
+  // Load-time зависимость от шпаргалки (content/manifest.js): раньше нарушалась
+  // молча — подсказки просто не появлялись. Теперь fail-fast.
+  if (typeof window !== 'undefined') {
+    if (!window.CHEATSHEET_SECTIONS) {
+      throw new Error('[code-hints] window.CHEATSHEET_SECTIONS недоступна при загрузке модуля — content/cheatsheet.js должен идти раньше app/code-hints.js (см. content/manifest.js)');
+    }
     register(window.CHEATSHEET_SECTIONS);
   }
 
+  window.Vkat.define('codeHints', window.CodeHints);
 })(typeof window !== 'undefined' ? window : global);

@@ -328,4 +328,6 @@
     exercises,
     free
   };
+
+  window.Vkat.define('petDictionaryLab', window.PetDictionaryLab);
 })(window, document);

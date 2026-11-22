@@ -1098,9 +1098,6 @@ __STUDENT_CODE__
   </script>
   <script src="assets/pyodide/pyodide.asm.js"></script>
   <script src="assets/pyodide/pyodide.js"></script>
-  <script src="app/version.js"></script>
-  <script src="app/storage.js"></script>
-  <script src="app/errors.js"></script>
 <script type="text/x-python" id="vkat-checker-python">
 import sys as _sys
 import io as _io
@@ -1622,69 +1619,23 @@ def _match_output_proxy(actual_str, expected_str):
 </script>
 
 
-  <script src="app/checker.js"></script>
-
-  <!-- Этапы курса (подключаются до файлов тем) -->
-  <script src="content/stages.js"></script>
-
-  <!-- Файлы тем контента: раздел 1 "Начало" (start) -->
-  <script src="content/start/01-variables.js"></script>
-  <script src="content/start/02-conditions.js"></script>
-  <script src="content/start/03-loops.js"></script>
-  <script src="content/start/04-functions.js"></script>
-  <script src="content/start/05-lists-dicts.js"></script>
-  <script src="content/start/06-strings.js"></script>
-
-  <!-- Файлы тем контента: раздел 2 "Основной курс" (core) -->
-  <script src="content/core/01-functions.js"></script>
-  <script src="content/core/02-dicts.js"></script>
-  <script src="content/core/03-lists.js"></script>
-  <script src="content/core/04-tuples.js"></script>
-  <script src="content/core/05-strings-adv.js"></script>
-  <script src="content/core/06-loops-adv.js"></script>
-  <script src="content/core/07-nested-structures.js"></script>
-  <script src="content/core/08-exceptions.js"></script>
-  <script src="content/core/11-code-style.js"></script>
-  <script src="content/practice/l2-algorithms.js"></script>
-  <script src="content/practice/l2-io-input.js"></script>
-
-  <!-- База конструкций и подсказки по коду в теории -->
-  <script src="content/cheatsheet.js"></script>
-  <script src="content/projects/life/tasks.js"></script>
-  <script src="content/projects/pet/tasks.js"></script>
-  <script src="app/code-hints.js"></script>
-
-  <!-- Интеллектуальный редактор (IntelliSense и парные скобки) -->
-  <script src="app/autocomplete.js"></script>
-  <!-- Схемы-иллюстрации к темам -->
-  <script src="app/glyphs.js"></script>
-  <!-- Подсветка синтаксиса Python (VS Code Dark+) -->
-  <script src="app/highlighter.js"></script>
-
-  <!-- Экран профилей и система входа -->
-  <script src="app/profiles.js"></script>
-  <!-- Рендереры типов учебных элементов и UI курса -->
-  <script src="app/renderers.js"></script>
-  <!-- Логика проверки заданий (code / predict / quiz) -->
-  <script src="app/checkers.js"></script>
-
-  <!-- Телеметрия CONNECT (no-op без endpoint'а; см. FEATURES/CONNECT-PROTOCOL.md) -->
-  <script src="app/connect.js"></script>
-  <!-- Удалённая помощь преподавателя -->
-  <script src="app/help.js"></script>
-
-  <!-- Интерактивная выпуклая сетка Antigravity (Grid Warp) -->
-  <script src="app/grid-warp.js"></script>
-  <script src="app/life-renderer.js"></script>
-  <script src="app/pet-art.js"></script>
-  <script src="app/pet-dictionary-lab.js"></script>
-  <script src="app/pet-renderer.js"></script>
-
-  <!-- Свободная песочница Python (Playground) -->
-  <script src="app/sandbox.js"></script>
-
-  <!-- Оркестратор приложения (инициализация, навигация, состояние) -->
-  <script src="app/app.js"></script>
+  <!-- Весь код приложения грузится из манифеста (Zero-build Convention Loader,
+       issue #12): контентные скрипты и app-модули в фиксированном порядке.
+       document.write даёт parser-вставленные теги — синхронный порядок
+       исполнения и совместимость с file:// (как и file://-бутстрап выше). -->
+  <script src="content/manifest.js"></script>
+  <script>
+    (function () {
+      var m = window.VKAT_MANIFEST;
+      if (!m) {
+        throw new Error('[vkat-boot] content/manifest.js не загрузился — список скриптов недоступен');
+      }
+      var all = m.content.concat(m.app);
+      for (var i = 0; i < all.length; i++) {
+        document.write('<script src="' + all[i] + '"><\/script>');
+      }
+    })();
+  </script>
 
 </body>
 

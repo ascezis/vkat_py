@@ -14,7 +14,8 @@
 <option value="eat">Ест</option><option value="play">Играет</option><option value="sleep">Спит</option>
 <option value="hungry">Голоден</option><option value="sad">Грустит</option><option value="full">Сыт</option><option value="happy-full">Счастлив</option></select>
 <button type="button" id="pet-run" hidden>Успешный прогон</button></div></main>
-<script src="../app/pet-art.js"></script><script>
+<!-- kernel.js раньше модуля: экспорт pet-art.js завершается Vkat.define (issue #12) -->
+<script src="../app/kernel.js"></script><script src="../app/pet-art.js"></script><script>
   const art = window.PetArt;
   document.querySelector('#pet-mount').innerHTML = art.render();
   const stage = document.querySelector('#pet-stage');

@@ -753,4 +753,5 @@
     updateLineNumbers
   };
 
+  window.Vkat.define('renderers', window.VkatRenderers);
 })(window);

@@ -1069,4 +1069,6 @@
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
   window.VkatPet = { init, enter, leave, renderCard, showIntroView, showWorkbenchView, setStep, _state: S };
+
+  window.Vkat.define('pet', window.VkatPet);
 })(window, document);

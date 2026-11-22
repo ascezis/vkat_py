@@ -311,8 +311,27 @@ interface VkatSandboxApi {
   _state: Record<string, any>;
 }
 
+/** Микро-контейнер зависимостей (app/kernel.js, issue #12 / TECH-DEBT P1). */
+interface VkatKernelApi {
+  /** Зарегистрировать сервис по имени; повторный define того же имени бросает ошибку. */
+  define(name: string, value: any): any;
+  /** Получить сервис; незарегистрированное имя — программная ошибка сборки. */
+  get(name: string): any;
+  /** Проверка наличия сервиса без броска. */
+  has(name: string): boolean;
+  /** Явные load-time зависимости модуля: бросают с перечнем недостающего. */
+  require(...names: string[]): any[];
+  /** Имена всех зарегистрированных сервисов (отладка и валидатор). */
+  list(): string[];
+  readonly size: number;
+}
+
 interface Window {
   VKAT_VERSION?: string;
+  /** Манифест загрузки скриптов (content/manifest.js, issue #12). */
+  VKAT_MANIFEST?: { content: string[]; app: string[] };
+  /** Микро-контейнер зависимостей (app/kernel.js, загружается первым). */
+  Vkat?: VkatKernelApi;
   VkatSandbox?: VkatSandboxApi;
   COURSE_STAGES?: CourseStage[];
   COURSE_TOPICS?: CourseTopic[];
@@ -337,6 +356,8 @@ interface Window {
   VkatPet?: Record<string, any>;
   /** Арт-компонент питомца (app/pet-art.js): render/pose/cracks/setStats/expression. */
   PetArt?: Record<string, any>;
+  /** Лаборатория словаря Байта (app/pet-dictionary-lab.js). */
+  PetDictionaryLab?: Record<string, any>;
   /** Модуль пет-проекта «Тамагочи» (content/projects/pet/tasks.js). */
   PET_MODULE?: LifeModule;
 

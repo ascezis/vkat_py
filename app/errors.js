@@ -83,4 +83,5 @@
     explain
   };
 
+  window.Vkat.define('errors', window.FriendlyErrors);
 })(window);

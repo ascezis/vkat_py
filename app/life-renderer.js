@@ -2103,4 +2103,6 @@
 
   // _state — отладочный хук (dev-консоль/E2E): S не является публичным контрактом
   window.VkatLife = { init, enter, leave, showIntroView, showWorkbenchView, renderStartCard, setStep, _state: S };
+
+  window.Vkat.define('life', window.VkatLife);
 })(window, document);

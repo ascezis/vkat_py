@@ -317,4 +317,5 @@
 
   window.CodeIntelliSense = CodeIntelliSense;
 
+  window.Vkat.define('autocomplete', window.CodeIntelliSense);
 })(window);

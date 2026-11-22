@@ -1,7 +1,7 @@
 {
   "$comment": "Типизация схем без шага сборки (TECH-DEBT P2). Zero-build: конфиг используется только IDE (VS Code / Cursor / WebStorm), в рантайме и деплое ничего не меняется. Контракты описаны в docs/types.d.ts. checkJs=true включён в Sprint 3: контент-схема и модули storage/checker строго типизированы; UI-модули сознательно any (их контракты — отдельная задача).",
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2023",
     "module": "esnext",
     "moduleResolution": "classic",
     "checkJs": true,

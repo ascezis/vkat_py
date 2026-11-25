@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "topics": [
+    {
+      "id": "matrices",
+      "title": "Матрицы",
+      "revision": 1,
+      "items": [
+        {
+          "id": "matrices_intro",
+          "title": "Матрицы",
+          "type": "theory",
+          "text": "В списке строк выражение a[i][j] выбирает строку i, затем элемент j этой строки."
+        },
+        {
+          "id": "matrices_practice",
+          "title": "Практика",
+          "type": "code",
+          "assignment": "Для a = [[1, 2, 3], [4, 5, 6]] выведите сумму каждой строки с новой строки.",
+          "expectedOutput": "6\n15"
+        }
+      ]
+    }
+  ]
+}

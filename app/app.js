@@ -813,6 +813,7 @@
     if (dom.btnTreeStart) dom.btnTreeStart.addEventListener('click', openTreeDrawer);
     if (dom.btnTopbarSandbox) dom.btnTopbarSandbox.addEventListener('click', () => showScreen('sandbox'));
     if (dom.btnStartSandbox) dom.btnStartSandbox.addEventListener('click', () => showScreen('sandbox'));
+    document.getElementById('btn-guided-start').addEventListener('click', () => startOrContinueStage('guided'));
     // Карусель модулей: стрелки <> ведут на витрину пет-проектов
     if (dom.btnModulesPrev) dom.btnModulesPrev.addEventListener('click', () => showScreen('projects'));
     if (dom.btnModulesNext) dom.btnModulesNext.addEventListener('click', () => showScreen('projects'));

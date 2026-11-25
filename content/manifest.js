@@ -38,6 +38,7 @@ window.VKAT_MANIFEST = {
     'content/core/05-strings-adv.js',
     'content/core/06-loops-adv.js',
     'content/core/07-nested-structures.js',
+    'content/guided/matrices.js',
     'content/core/08-exceptions.js',
     'content/core/11-code-style.js',
     // Раздел 3 «Практикум» (practice)

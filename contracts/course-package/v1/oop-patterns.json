@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "module": {
+    "id": "oop_patterns",
+    "title": "ООП и паттерны",
+    "revision": 1
+  },
+  "topics": [
+    {
+      "id": "oop_objects",
+      "title": "Объекты и состояние",
+      "revision": 1,
+      "items": [
+        {
+          "id": "oop_objects_intro",
+          "title": "Объекты и состояние",
+          "type": "theory",
+          "text": "Каждый экземпляр может хранить собственное состояние в атрибутах self."
+        },
+        {
+          "id": "oop_objects_practice",
+          "title": "Практика",
+          "type": "code",
+          "assignment": "Создайте класс Counter с методом increment. Увеличьте один счётчик дважды и выведите его значение.",
+          "expectedOutput": "2"
+        }
+      ]
+    },
+    {
+      "id": "oop_strategy",
+      "title": "Стратегия",
+      "revision": 1,
+      "items": [
+        {
+          "id": "oop_strategy_intro",
+          "title": "Стратегия",
+          "type": "theory",
+          "text": "Стратегия позволяет передать объекту способ расчёта и менять его независимо от вызывающего кода."
+        },
+        {
+          "id": "oop_strategy_practice",
+          "title": "Практика",
+          "type": "code",
+          "assignment": "Передайте в функцию расчёта цены две стратегии: обычная цена и скидка 20%. Для цены 100 выведите оба целых результата с новой строки.",
+          "expectedOutput": "100\n80"
+        }
+      ]
+    }
+  ]
+}

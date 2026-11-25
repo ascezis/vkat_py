@@ -168,7 +168,10 @@ check('window-алиасы сервисов сохранены (контракт
    'PetArt', 'PetDictionaryLab', 'VkatPet', 'VkatSandbox', 'VkatApp'].every(n => Boolean(context.window[n])));
 
 console.log('\n=== Валидация этапов и тем ===');
-check('COURSE_STAGES объявлен и содержит 3 этапа', Array.isArray(stages) && stages.length === 3);
+check('Три самостоятельных этапа и «Разборы» доступны по порядку',
+  Array.isArray(stages) && stages.map(stage => stage.id).join(',') === 'start,core,practice,guided');
+check('Матрицы входят только в «Разборы»',
+  stages.filter(stage => stage.topics.includes('l1_matrices')).map(stage => stage.id).join(',') === 'guided');
 check('Этап start содержит 6 тем', stages[0].id === 'start' && stages[0].topics.length === 6);
 check('Этап core содержит l1_functions и l1_dicts', stages[1].id === 'core' && stages[1].topics.includes('l1_functions') && stages[1].topics.includes('l1_dicts'));
 check('Этап practice содержит l2_algorithms', stages[2].id === 'practice' && stages[2].topics.includes('l2_algorithms'));

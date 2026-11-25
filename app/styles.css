@@ -73,6 +73,19 @@ body {
   gap: 16px;
 }
 
+#screen-start .topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+#btn-guided-start { justify-self: center; }
+#start-user-badge { justify-self: end; }
+@media (max-width: 640px) {
+  #screen-start .topbar { grid-template-columns: 1fr auto; }
+  #btn-guided-start { grid-row: 2; grid-column: 1 / -1; }
+  #start-user-badge { grid-row: 1; grid-column: 2; }
+  #screen-start .topbar-brand { flex-wrap: wrap; }
+}
+
 .btn-tree-toggle {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -1323,6 +1336,12 @@ body {
 
 .stage-cards {
   display: contents;
+}
+
+/* В неполном ряду карточки модулей остаются по центру. */
+@media (min-width: 769px) {
+  #screen-start .start-modules-grid { display: flex; flex-wrap: wrap; }
+  #stage-cards > .stage-card { flex: 1 1 280px; max-width: 340px; }
 }
 
 /* Витрина пет-проектов (#screen-projects) */

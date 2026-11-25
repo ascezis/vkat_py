@@ -8,5 +8,5 @@
  */
 (function (window) {
   'use strict';
-  window.VKAT_VERSION = '3.7.0';
+  window.VKAT_VERSION = '3.8.0';
 })(typeof window !== 'undefined' ? window : global);

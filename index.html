@@ -219,6 +219,7 @@
         </div>
         <button id="btn-tree-start" class="btn-tree-toggle" title="Оглавление курса">дерево тем</button>
       </div>
+      <button type="button" id="btn-guided-start" class="btn-tree-toggle">Разборы</button>
       <div id="start-user-badge" class="topbar-user" title="Активный профиль">
         <span id="start-user-name" class="user-name"></span>
         <button id="btn-start-switch-profile" class="btn-switch-profile">сменить</button>
@@ -227,9 +228,8 @@
     <div class="start-center">
       <div class="kicker">Платформа CONNECT</div>
       <h1 id="start-heading"><span class="heading-prompt">&gt;</span> <span id="start-typewriter">Пишешь код — сразу видишь результат</span></h1>
-      <p class="start-sub">Три модуля: экспресс-вкат, углублённая практика, практикум — и большой пет-проект
-        Alife-System соседним экраном, по стрелке. Без лекций и воды — честное исполнение в браузере без сервера и
-        интернета.</p>
+      <p class="start-sub">Для самостоятельной работы выбери «Начало», «Основной курс» или «Практикум».
+        На паре открой «Разборы». Пет-проекты доступны по стрелке.</p>
 
       <!-- Карточки модулей курса; стрелки по бокам ведут на витрину пет-проектов -->
       <div class="modules-carousel">
@@ -1623,7 +1623,7 @@ def _match_output_proxy(actual_str, expected_str):
        issue #12): контентные скрипты и app-модули в фиксированном порядке.
        document.write даёт parser-вставленные теги — синхронный порядок
        исполнения и совместимость с file:// (как и file://-бутстрап выше). -->
-  <script src="content/manifest.js"></script>
+  <script src="content/manifest.js?v=guided-1"></script>
   <script>
     (function () {
       var m = window.VKAT_MANIFEST;
@@ -1632,7 +1632,7 @@ def _match_output_proxy(actual_str, expected_str):
       }
       var all = m.content.concat(m.app);
       for (var i = 0; i < all.length; i++) {
-        document.write('<script src="' + all[i] + '"><\/script>');
+        document.write('<script src="' + all[i] + '?v=guided-1"><\/script>');
       }
     })();
   </script>

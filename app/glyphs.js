@@ -866,7 +866,53 @@
 
   // ---------- Реестр ----------
 
+  function matrixCells(rows, x, y, selected) {
+    return rows.map((row, i) => row.map((value, j) => {
+      const active = selected(i, j);
+      const left = x + j * 36, top = y + i * 32;
+      return rect(left, top, 36, 32, active ? 'gf' : 'gm') +
+        tx(left + 18, top + 21, value, active ? 'gi' : 'gT', mid);
+    }).join('')).join('');
+  }
+
+  function matrixRead(mode) {
+    n = 0;
+    const rows = [[8, 3, 5], [4, 9, 2]];
+    const column = mode === 'column', totals = mode === 'totals';
+    const selected = (i, j) => column ? j === 1 : totals ? i === 0 : i === 1 && j === 2;
+    return svg(
+      [0, 1, 2].map(j => tx(98 + 36 * j, 50, 'j=' + j, 'gt', mid)).join('') +
+      [0, 1].map(i => tx(70, 81 + 32 * i, 'i=' + i, 'gt', end)).join('') +
+      matrixCells(rows, 80, 60, selected) +
+      path('M194 92 H222 l-5 -4 M222 92 l-5 4', 'gm') +
+      tx(277, 97, column ? '[3, 9]' : totals ? '8+3+5' : 'a[1][2]', 'gT', mid) +
+      tx(180, 158, column ? 'j = 1' : totals ? 'sum(a[0]) = 16' : 'a[1] → [4, 9, 2]', 'gt', mid), 180);
+  }
+
+  function matrixAlias() {
+    n = 0;
+    return svg(tx(80, 50, 'panel[0]', 'gT', mid) + tx(80, 120, 'panel[1]', 'gT', mid) +
+      path('M120 45 H140 L163 80 H180 M120 115 H140 L163 80', 'gm') +
+      matrixCells([[0, 0, 1]], 185, 64, (_, j) => j === 2) +
+      tx(180, 158, 'panel[0] is panel[1]', 'gt', mid), 180);
+  }
+
+  function matrixTranspose() {
+    n = 0;
+    return svg(tx(86, 36, '2 × 3', 'gt', mid) + tx(263, 36, '3 × 2', 'gt', mid) +
+      matrixCells([[1, 2, 3], [4, 5, 6]], 32, 68, (_, j) => j === 1) +
+      path('M154 100 H201 l-6 -5 M201 100 l-6 5', 'gm') +
+      matrixCells([[1, 4], [2, 5], [3, 6]], 228, 52, i => i === 1) +
+      tx(180, 174, 'a[i][j] → result[j][i]', 'gt', mid), 195);
+  }
+
   const REGISTRY = {
+    l1_matrices: { draw: () => matrixRead('cell'), cap: 'первый индекс выбирает строку, второй — ячейку' },
+    l1_mat_predict: { draw: () => matrixRead('cell'), cap: 'читай индексы слева направо' },
+    l1_mat_column: { draw: () => matrixRead('column'), cap: 'номер столбца постоянен при переходе между строками' },
+    l1_mat_totals: { draw: () => matrixRead('totals'), cap: 'каждая строка даёт одну сумму' },
+    l1_mat_grid: { draw: matrixAlias, cap: 'две ссылки ведут к одному ряду ламп' },
+    l1_mat_transpose: { draw: matrixTranspose, cap: 'выделенный столбец становится строкой' },
     'variables':   { draw: variables,  cap: 'переменная — подписанная коробка со значением' },
     'conditions':  { draw: conditions, cap: 'if выбирает ветку — выполняется только одна' },
     'loops':       { draw: loops,      cap: 'цикл повторяет блок для каждого элемента' },
